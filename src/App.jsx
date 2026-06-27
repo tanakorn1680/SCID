@@ -104,7 +104,8 @@ const bodyHTML = `
     </div>
 
     <!-- ---------- ส่งออเดอร์ ---------- -->
-    <button type="button" class="submit-btn enabled" id="orderChatBtn" onclick="goToChat()">สั่งซื้อ</button>
+    <button type="button" class="submit-btn disabled" id="orderChatBtn" onclick="goToChat()" disabled>สั่งซื้อ</button>
+    <span class="field-error" id="err-qty" style="display:none; text-align:center; margin-top:6px;">*กรุณาใส่จำนวนรายการที่เลือกไว้</span>
   </div>
 
   <div class="footnote">ไอคอนใช้เพื่อประกอบการสั่งซื้อเท่านั้น · SimCity BuildIt is a trademark of Electronic Arts</div>
@@ -523,8 +524,64 @@ function recalc(){
     \`;
   }
 
+  // ── ตรวจว่ามีรายการที่ tick แต่ยังไม่ได้ใส่จำนวน ──
+  let hasUncompleted = false;
+
+  const checkQtyMissing = (items, stateGroup) => {
+    items.forEach(item => {
+      const s = stateGroup[item.id];
+      if(s && s.checked && s.qty.trim() === "") hasUncompleted = true;
+    });
+  };
+  checkQtyMissing(currencyItems,  state.currency);
+  checkQtyMissing(expansionItems, state.expansion);
+  checkQtyMissing(speedupItems,   state.speedup);
+
+  window._hasUncompleted = hasUncompleted;
   window._lastLines = lines;
   window._lastTotal = total;
+  updateOrderBtn();
+}
+
+// ============ อัพเดตสถานะปุ่มสั่งซื้อ ============
+function updateOrderBtn(){
+  const btn   = document.getElementById("orderChatBtn");
+  const email = (document.getElementById("fieldEmail")?.value || "").trim();
+  const lines = window._lastLines || [];
+
+  // ── Email: ต้องลงท้าย .com เสมอ ──
+  const emailOk = /^[^\s@]+@[^\s@]+\.com$/i.test(email);
+
+  // ── Qty: รายการที่ tick แล้วต้องมีจำนวน ──
+  const hasUncompleted = window._hasUncompleted || false;
+
+  // ── Error elements ──
+  const emailWrap = document.getElementById("wrap-email");
+  const errEmail  = document.getElementById("err-email");
+  const errQty    = document.getElementById("err-qty");
+
+  // show/hide email error
+  if(email !== "" && !emailOk){
+    emailWrap && emailWrap.classList.add("has-error");
+    errEmail  && (errEmail.style.display = "block");
+  } else {
+    emailWrap && emailWrap.classList.remove("has-error");
+    errEmail  && (errEmail.style.display = "none");
+  }
+
+  // show/hide qty error
+  if(errQty) errQty.style.display = hasUncompleted ? "block" : "none";
+
+  const canOrder = lines.length > 0 && emailOk && !hasUncompleted;
+  if(canOrder){
+    btn.classList.remove("disabled");
+    btn.classList.add("enabled");
+    btn.disabled = false;
+  } else {
+    btn.classList.remove("enabled");
+    btn.classList.add("disabled");
+    btn.disabled = true;
+  }
 }
 
 // ============ TOGGLE DETAIL ============
@@ -592,19 +649,20 @@ function goToChat(){
   const lines = window._lastLines || [];
   const total = window._lastTotal || 0;
   const email = (document.getElementById("fieldEmail")?.value || "").trim();
+  if(lines.length === 0 || email === "") return; // guard: ไม่ควรถึงตรงนี้ แต่กัน bug
 
   // ---- สร้างข้อความออเดอร์ ----
   let itemLines = "";
   lines.forEach(l => {
-    itemLines += "• " + l.name + " " + l.detail + "\\n";
-    itemLines += " ราคา " + l.price.toLocaleString() + " บ.\\n";
+    itemLines += "• " + l.name + " " + l.detail + "\n";
+    itemLines += " ราคา " + l.price.toLocaleString() + " บ.\n";
   });
 
   const msg =
-    "แจ้งรายการ\\n" +
-    itemLines + "\\n" +
-    "รวมทั้งหมด " + total.toLocaleString() + " บาท\\n" +
-    "\\nEA Email\\n" +
+    "แจ้งรายการ\n" +
+    itemLines + "\n" +
+    "รวมทั้งหมด " + total.toLocaleString() + " บาท\n" +
+    "\nEA Email\n" +
     email;
 
   const pageUsername = "803443002843176"; // เพจ Mayor Service
@@ -612,6 +670,9 @@ function goToChat(){
   window.open(url, "_blank");
 }
 
+
+// ============ Email → อัพเดตสถานะปุ่ม ============
+document.getElementById("fieldEmail").addEventListener("input", updateOrderBtn);
 
 renderQtyRow("currency-list", currencyItems, state.currency);
 renderQtyRow("expansion-list", expansionItems, state.expansion);
