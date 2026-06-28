@@ -1,0 +1,1945 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เมนูสั่งซื้อ SimCity BuildIt</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root{
+    --paper: #FBF8F1;
+    --navy: #1A6BA0;
+    --sky: #2196C9;
+    --gold: #D9A330;
+    --gold-deep: #B9821F;
+    --ink: #1A3A52;
+    --muted: rgba(26,58,82,0.55);
+    --line: rgba(26,106,160,0.18);
+    --green-go: #3F8557;
+    --card: rgba(255,255,255,0.93);
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; background: #81CFF0; }
+
+  body{
+    font-family: 'IBM Plex Sans Thai', sans-serif;
+    background: transparent;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    padding: 16px 10px 90px;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* ===== FLOATING WATERMARK BACKGROUND ===== */
+  #watermark-layer{
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    background-image: url('images/bg-watermark-pattern.jpg');
+    background-size: cover;
+    background-position: center;
+  }
+  .wm-icon{
+    position: absolute;
+    opacity: 0.72;
+    border-radius: 50%;
+    filter: drop-shadow(0 6px 16px rgba(0,60,130,0.22));
+    will-change: transform;
+  }
+
+  @keyframes drift-a{
+    0%   { transform: translate(0,0) scale(1); }
+    33%  { transform: translate(16px,-20px) scale(1.04); }
+    66%  { transform: translate(-8px,-10px) scale(0.97); }
+    100% { transform: translate(0,0) scale(1); }
+  }
+  @keyframes drift-b{
+    0%   { transform: translate(0,0) scale(1); }
+    40%  { transform: translate(-18px,16px) scale(1.05); }
+    75%  { transform: translate(10px,8px) scale(0.97); }
+    100% { transform: translate(0,0) scale(1); }
+  }
+  @keyframes drift-c{
+    0%   { transform: translate(0,0) scale(1); }
+    45%  { transform: translate(14px,18px) scale(1.04); }
+    80%  { transform: translate(-6px,8px) scale(0.98); }
+    100% { transform: translate(0,0) scale(1); }
+  }
+
+  /* ===== SHEET ===== */
+  .sheet{
+    max-width: 460px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .menu-header{
+    text-align:center;
+    padding: 10px 8px 18px;
+  }
+  .menu-title{
+    font-family:'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    color: #1A3A52;
+    margin: 4px 0 2px;
+    text-shadow: 0 2px 8px rgba(255,255,255,0.6);
+  }
+  .menu-sub{
+    font-size: 12.5px;
+    color: rgba(26,58,82,0.7);
+  }
+
+  /* ===== CATEGORY ===== */
+  .category{
+    margin-bottom: 14px;
+  }
+  .cat-label{
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    padding: 0 4px 8px;
+  }
+  .cat-label .icon{ font-size: 17px; }
+  .cat-label .name{
+    font-family:'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 15.5px;
+    color: #1A3A52;
+  }
+  .cat-label .rule{
+    flex:1;
+    height: 1px;
+    background: rgba(26,58,82,0.22);
+  }
+  .cat-note{
+    font-size: 11px;
+    color: rgba(26,58,82,0.6);
+    padding: 0 4px 8px;
+    margin-top:-4px;
+  }
+
+  .menu-card{
+    background: var(--card);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(0,90,160,0.15), 0 2px 6px rgba(0,80,140,0.10);
+    backdrop-filter: blur(4px);
+  }
+
+  /* ===== ITEM ROW (menu line) ===== */
+  .item{
+    display:flex;
+    align-items:center;
+    gap: 11px;
+    padding: 11px 13px;
+    border-bottom: 1px solid var(--line);
+  }
+  .item:last-child{ border-bottom:none; }
+
+  .item-icon{
+    width: 44px; height:48px;
+    border-radius: 10px;
+    background: transparent;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    overflow:hidden;
+  }
+  .item-icon img{ width: 44px; height:48px; object-fit:contain; }
+
+  .item-info{ flex:1; min-width:0; }
+  .item-name{
+    font-weight:600;
+    font-size: 13.5px;
+    line-height:1.3;
+    color: var(--ink);
+  }
+  .item-price-tag{
+    font-family:'Space Mono', monospace;
+    font-size: 10.5px;
+    color: var(--sky);
+  }
+
+  .item-control{
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+
+  .qty-field{
+    width: 96px;
+    padding: 7px 8px;
+    font-family:'Space Mono', monospace;
+    font-size: 12.5px;
+    text-align:right;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    background: #FAFAF8;
+    color: var(--ink);
+  }
+  .qty-field:focus{ outline:none; border-color: var(--sky); background:#fff; }
+  .qty-field::placeholder{ color: rgba(35,35,35,0.3); }
+
+  .chk-wrap{ cursor:pointer; }
+  .chk-box{
+    width: 25px; height:25px;
+    border: 2px solid var(--navy);
+    border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    background: #fff;
+    transition: background .15s, transform .1s, border-color .15s;
+  }
+  .chk-box svg{ opacity:0; transition: opacity .1s; width:14px; height:14px; }
+  .chk-wrap.checked .chk-box{ background: var(--green-go); border-color: var(--green-go); }
+  .chk-wrap.checked .chk-box svg{ opacity:1; }
+  .chk-wrap:active .chk-box{ transform: scale(0.88); }
+
+  .text-field{
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family:'IBM Plex Sans Thai', sans-serif;
+    border: 1.5px solid var(--line);
+    border-radius: 8px;
+    background:#FAFAF8;
+    color: var(--ink);
+  }
+  .text-field:focus{ outline:none; border-color: var(--sky); background:#fff; }
+
+  /* tier rows for mayor pass */
+  .tier{
+    display:flex;
+    align-items:center;
+    gap: 11px;
+    padding: 11px 13px;
+    border-bottom: 1px solid var(--line);
+    cursor:pointer;
+    transition: background .15s;
+  }
+  .menu-card .tier:last-of-type{ border-bottom:none; }
+  .tier.active{ background: rgba(62,157,212,0.07); }
+  .tier-radio{
+    width:20px; height:20px;
+    border-radius:50%;
+    border: 2px solid var(--navy);
+    flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .tier-radio::after{
+    content:"";
+    width:10px; height:10px;
+    border-radius:50%;
+    background: var(--navy);
+    transform: scale(0);
+    transition: transform .12s;
+  }
+  .tier.active .tier-radio::after{ transform: scale(1); }
+  .tier-icon{
+    width: 44px; height: 48px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .tier-icon img{ width: 44px; height: 48px; object-fit: contain; }
+  .tier-info{ flex:1; min-width:0; }
+  .tier-info-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap: 6px;
+  }
+  .tier-title{ font-weight:600; font-size:13.5px; line-height:1.3; color:var(--ink); }
+  .tier-desc{ font-size:11px; color:var(--muted); white-space:nowrap; flex-shrink:0; }
+  .item-name-row{ display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
+  .item-qty-badge{ font-size:11px; font-weight:700; color:var(--navy); white-space:nowrap; flex-shrink:0; }
+  .tier-price{
+    font-family:'Space Mono', monospace;
+    font-size: 10.5px;
+    color: var(--sky);
+    margin-top: 2px;
+  }
+  .tier-custom-input{
+    padding: 0 13px 12px;
+  }
+
+  /* ===== SUMMARY BAR ===== */
+  .summary-bar{
+    position: sticky;
+    bottom: 8px;
+    margin-top: 16px;
+    z-index: 5;
+  }
+  .summary-card{
+    background: linear-gradient(135deg, #1A6BA0 0%, #0E4C7A 100%);
+    border-radius: 14px;
+    padding: 9px 13px;
+    color: #1A3A52;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+  }
+  .summary-card.empty{ opacity:0.6; }
+  .summary-top{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom: 0;
+  }
+  .summary-label{
+    font-family:'Baloo 2', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    color: rgba(251,248,241,0.7);
+  }
+  .summary-count{
+    font-size: 10.5px;
+    color: rgba(251,248,241,0.5);
+  }
+  .summary-total{
+    display:flex;
+    align-items:baseline;
+    gap:4px;
+  }
+  .summary-total .amount{
+    font-family:'Baloo 2', sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--gold);
+    transition: transform .15s;
+    line-height: 1.15;
+  }
+  .summary-total .amount.bump{ transform: scale(1.08); }
+  .summary-total .unit{ font-size:12px; color: rgba(251,248,241,0.65); }
+
+  .toggle-detail-btn{
+    margin-top:6px;
+    width:100%;
+    background: rgba(251,248,241,0.08);
+    border: 1px solid rgba(251,248,241,0.2);
+    color: rgba(251,248,241,0.85);
+    border-radius: 8px;
+    padding: 5px 10px;
+    font-size: 11.5px;
+    font-family:'IBM Plex Sans Thai', sans-serif;
+    cursor:pointer;
+    /* ซ่อนไว้ก่อน — JS จะ reveal เมื่อ scroll ถึง order form */
+    display: none;
+    opacity: 0;
+    transition: opacity .25s ease;
+  }
+  .toggle-detail-btn.visible{
+    display: block;
+    opacity: 1;
+  }
+  .toggle-detail-btn:active{ background: rgba(255,255,255,0.2); }
+
+  .detail-receipt{
+    margin-top: 9px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 9px;
+    padding: 9px 11px;
+    font-family:'Space Mono', monospace;
+    font-size: 11.5px;
+    line-height:1.6;
+    max-height: 0;
+    overflow:hidden;
+    transition: max-height .25s ease;
+  }
+  .detail-receipt.open{ max-height: 300px; overflow-y:auto; }
+  .detail-row{
+    display:flex; justify-content:space-between; gap:8px;
+    color: rgba(240,248,255,0.9);
+    border-bottom: 1px dotted rgba(251,248,241,0.15);
+    padding: 3px 0;
+  }
+  .detail-row span:first-child{ word-break: break-word; }
+  .detail-row .v{ white-space:nowrap; }
+
+  @keyframes drift-d{
+    0%   { transform: translate(0,0) scale(1); }
+    30%  { transform: translate(12px,-16px) scale(1.06); }
+    70%  { transform: translate(-14px,12px) scale(0.96); }
+    100% { transform: translate(0,0) scale(1); }
+  }
+
+  @keyframes bob{
+    0%,100% { transform: translateY(0px) scale(1); }
+    50%     { transform: translateY(-12px) scale(1.04); }
+  }
+
+  /* ===== SHOP STATUS BANNER ===== */
+  .shop-status-banner{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 16px;
+    border-radius: 14px;
+    margin-bottom: 18px;
+    font-weight: 600;
+    font-size: 15px;
+    backdrop-filter: blur(8px);
+    transition: background .4s, color .4s;
+  }
+  .shop-status-banner.open{
+    background: rgba(255,255,255,0.88);
+    color: #1A6B3C;
+    box-shadow: 0 4px 18px rgba(0,140,60,0.13);
+    border: 1.5px solid rgba(63,133,87,0.22);
+  }
+  .shop-status-banner.closed{
+    background: rgba(255,240,240,0.92);
+    color: #A0220A;
+    box-shadow: 0 4px 18px rgba(180,30,10,0.10);
+    border: 1.5px solid rgba(200,50,30,0.18);
+  }
+  .status-dot{
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  .open .status-dot { background: #3AB36A; box-shadow: 0 0 0 4px rgba(58,179,106,0.2); }
+  .closed .status-dot { background: #E04433; box-shadow: 0 0 0 4px rgba(224,68,51,0.18); animation: none; }
+  @keyframes pulse-dot{
+    0%,100% { transform: scale(1); box-shadow: 0 0 0 4px rgba(58,179,106,0.2); }
+    50%      { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(58,179,106,0.08); }
+  }
+  .status-text-wrap{ display: flex; flex-direction: column; gap: 1px; }
+  .status-title{ font-size: 14px; font-weight: 700; }
+  .status-sub{ font-size: 12px; font-weight: 400; opacity: .75; }
+
+  /* ===== ORDER FORM (customer info) ===== */
+  .order-form-section{
+    background: rgba(255,255,255,0.92);
+    border-radius: 14px;
+    padding: 18px 16px 20px;
+    margin-top: 16px;
+    box-shadow: 0 6px 24px rgba(0,90,160,0.10);
+    backdrop-filter: blur(4px);
+  }
+  .order-form-title{
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: #1A3A52;
+    margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .order-form-title::before{
+    content: '';
+    display: inline-block;
+    width: 4px; height: 18px;
+    border-radius: 3px;
+    background: var(--sky);
+  }
+  .field-group{ display: flex; flex-direction: column; gap: 12px; }
+  .field-wrap{ display: flex; flex-direction: column; gap: 5px; transition: opacity .3s ease; }
+  .field-label{
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .field-input{
+    padding: 11px 13px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    font-family: 'IBM Plex Sans Thai', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    background: #fff;
+    transition: border-color .2s, box-shadow .2s;
+    outline: none;
+    width: 100%;
+  }
+  .field-input:focus{
+    border-color: var(--sky);
+    box-shadow: 0 0 0 3px rgba(33,150,201,0.13);
+  }
+  .field-input::placeholder{ color: rgba(26,58,82,0.35); }
+  .field-error{
+    font-size: 11.5px;
+    color: #C0392B;
+    display: none;
+    margin-top: 2px;
+  }
+  .field-wrap.has-error .field-input{ border-color: #E04433; }
+  .field-wrap.has-error .field-error{ display: block; }
+
+  /* ===== SUBMIT BUTTON ===== */
+  .submit-btn{
+    width: 100%;
+    margin-top: 18px;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s, background .2s, opacity .2s;
+    letter-spacing: .02em;
+  }
+  .submit-btn.enabled{
+    background: linear-gradient(135deg, #1A8CD8 0%, #0E6BAA 100%);
+    color: #fff;
+    box-shadow: 0 6px 20px rgba(14,107,170,0.35);
+  }
+  .submit-btn.enabled:active{ transform: scale(0.98); box-shadow: 0 3px 10px rgba(14,107,170,0.25); }
+  .submit-btn.disabled{
+    background: rgba(26,58,82,0.12);
+    color: rgba(26,58,82,0.38);
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  /* ===== QTY WARNING (under submit button) ===== */
+  .qty-warning{
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #C0392B;
+    text-align: center;
+    margin-top: 9px;
+    display: none;
+  }
+  .qty-warning.show{ display: block; }
+
+  /* ===== SUBSECTIONS INSIDE A CARD ===== */
+  .subsection{ margin-top: 22px; }
+  .subsection:first-child{ margin-top: 0; }
+
+  /* ===== PROCESS STEPS ROADMAP (horizontal dot stepper, saves vertical space) =====
+     Redesigned as a connected timeline: each step is a CSS circle joined by a
+     connector line. Colors transition smoothly when a step's state changes
+     (e.g. via .step-dot.active / .step-dot.complete), and the row stays a
+     single horizontal line at every screen size. */
+  .steps-row{
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    padding: 6px 2px 2px;
+    gap: 0;
+  }
+  .step-col{
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 4px;
+  }
+  /* connector line drawn behind the dots, skipped for the first column */
+  .step-col::before{
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: -50%;
+    width: 100%;
+    height: 2px;
+    background: var(--line);
+    z-index: 0;
+    transition: background-color .45s ease;
+  }
+  .step-col:first-child::before{ content: none; }
+  .step-dot{
+    position: relative;
+    z-index: 1;
+    width: 13px; height: 13px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 3px var(--paper);
+    transition: background-color .45s ease, box-shadow .45s ease, transform .3s ease;
+  }
+  /* colors mirror the open/closed status dot language used in the shop banner */
+  .step-dot.s1{ background:#D94040; }                                  /* เลือกสินค้า – แดง */
+  .step-dot.s2{ background:#E07832; }                                  /* แจ้งราการ   – ส้ม  */
+  .step-dot.s3{ background:#D9A330; }                                  /* ชำระเงิน   – ทอง  */
+  .step-dot.s4{ background:#2196C9; }                                  /* รอส่งต่อOTP – ฟ้า  */
+  .step-dot.s5{ background:#1A6BA0; }                                  /* กำลังดำเนินการ – น้ำเงินเข้ม */
+  .step-dot.s6{ background: var(--green-go); }                        /* สำเร็จ     – เขียว */
+  /* progress states layered on top of the existing s1–s6 colors */
+  .step-dot.is-complete{ box-shadow: 0 0 0 3px var(--paper), 0 0 0 4.5px rgba(58,179,106,0.35); }
+  .step-dot.is-current{ transform: scale(1.35); box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px rgba(33,150,201,0.30); }
+  .step-col.is-complete::before, .step-col.is-current::before{ background: var(--sky); }
+  .step-label{
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1px;
+    max-width: 100%;
+    transition: color .45s ease;
+  }
+  .step-col.is-current .step-label{ color: var(--navy); font-weight: 700; }
+
+  /* Wider viewports (tablet/desktop): give the timeline more breathing room */
+  @media (min-width: 560px){
+    .steps-row{ padding: 10px 6px 4px; }
+    .step-col{ gap: 6px; }
+    .step-dot{ width: 16px; height: 16px; box-shadow: 0 0 0 4px var(--paper); }
+    .step-dot.is-current{ box-shadow: 0 0 0 4px var(--paper), 0 0 0 6.5px rgba(33,150,201,0.30); }
+    .step-col::before{ top: 7px; height: 2.5px; }
+    .step-label{ font-size: 11.5px; }
+  }
+
+
+  /* Smooth entrance for sections that JS reveals via style.display (logic untouched) */
+  @keyframes fade-in-up{
+    0%   { opacity: 0; transform: translateY(4px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  /* ===== SLIP UPLOAD ===== */
+  /* ===== RECOMMENDED AMOUNT HINT ===== */
+  .recommend-hint{
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--gold-deep);
+    margin-top: 2px;
+    line-height: 1.45;
+  }
+  .info-icon-btn{
+    all: unset;
+    display: inline-block;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--sky);
+    line-height: 1;
+    vertical-align: -2px;
+    margin-left: 4px;
+  }
+  .qty-field.over-limit{ color: #C0392B; font-weight:700; border-color:#E04433; }
+  .qty-field.qty-missing{ border-color:#E04433; background: rgba(224,68,51,0.06); }
+
+  /* ===== SELECTION TOOLS TOOLBAR ===== */
+  .selection-tools{
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    align-items: stretch;
+  }
+
+  /* ── shared base ── */
+  .sel-btn{
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 10px;
+    border-radius: 10px;
+    font-family: 'IBM Plex Sans Thai', sans-serif;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: background .18s, border-color .18s, color .18s, transform .1s, box-shadow .18s;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+    line-height: 1.3;
+    text-align: center;
+  }
+  .sel-btn:active{ transform: scale(0.96); }
+
+  /* ── Clear Selection button ── */
+  .sel-btn-clear{
+    background: rgba(255,255,255,0.82);
+    border-color: rgba(26,58,82,0.18);
+    color: var(--ink);
+    box-shadow: 0 2px 8px rgba(0,60,120,0.08);
+    backdrop-filter: blur(4px);
+  }
+  .sel-btn-clear:hover{
+    background: rgba(255,255,255,0.96);
+    border-color: rgba(26,58,82,0.28);
+  }
+  /* dim when nothing selected */
+  .sel-btn-clear.inactive{
+    opacity: 0.42;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .sel-btn-clear.inactive:active{ transform: none; }
+
+  /* ── Recommended Mode toggle ── */
+  .sel-btn-rec{
+    background: rgba(255,255,255,0.82);
+    border-color: rgba(26,58,82,0.18);
+    color: var(--muted);
+    box-shadow: 0 2px 8px rgba(0,60,120,0.08);
+    backdrop-filter: blur(4px);
+  }
+  .sel-btn-rec:hover{
+    background: rgba(255,255,255,0.96);
+    border-color: var(--sky);
+    color: var(--sky);
+  }
+  /* ACTIVE state — mode is ON */
+  .sel-btn-rec.rec-on{
+    background: linear-gradient(135deg, #1A8CD8 0%, #0E6BAA 100%);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(14,107,170,0.32);
+  }
+  .sel-btn-rec.rec-on:hover{
+    background: linear-gradient(135deg, #2196C9 0%, #155F99 100%);
+    color: #fff;
+  }
+
+  /* icon inside button */
+  .sel-btn-icon{
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    display: block;
+  }
+
+  /* rec-mode status pill — small badge shown inside the rec button when ON */
+  .rec-status-pill{
+    display: inline-flex;
+    align-items: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    padding: 1px 5px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.22);
+    color: rgba(255,255,255,0.92);
+    margin-left: 2px;
+    flex-shrink: 0;
+  }
+  .sel-btn-rec:not(.rec-on) .rec-status-pill{ display: none; }
+
+  /* ===== CUSTOM CONFIRM DIALOG ===== */
+  .confirm-backdrop{
+    position: fixed;
+    inset: 0;
+    background: rgba(10,30,55,0.45);
+    backdrop-filter: blur(3px);
+    z-index: 200;
+    opacity: 0;
+    transition: opacity .2s ease;
+    pointer-events: none;
+  }
+  .confirm-backdrop.visible{
+    opacity: 1;
+    pointer-events: all;
+  }
+  .confirm-sheet{
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) translateY(100%);
+    width: 100%;
+    max-width: 460px;
+    background: var(--paper);
+    border-radius: 20px 20px 0 0;
+    padding: 10px 20px 32px;
+    z-index: 201;
+    box-shadow: 0 -8px 32px rgba(0,40,100,0.18);
+    transition: transform .25s cubic-bezier(.32,.72,0,1);
+  }
+  .confirm-backdrop.visible .confirm-sheet{
+    transform: translateX(-50%) translateY(0);
+  }
+  .confirm-handle{
+    width: 36px; height: 4px;
+    border-radius: 2px;
+    background: rgba(26,58,82,0.18);
+    margin: 0 auto 18px;
+  }
+  .confirm-title{
+    font-family: 'Baloo 2', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .confirm-body{
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.55;
+    margin-bottom: 20px;
+  }
+  .confirm-actions{
+    display: flex;
+    gap: 10px;
+  }
+  .confirm-btn{
+    flex: 1;
+    padding: 13px 10px;
+    border: none;
+    border-radius: 12px;
+    font-family: 'IBM Plex Sans Thai', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform .12s, opacity .12s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .confirm-btn:active{ transform: scale(0.97); opacity: .85; }
+  .confirm-btn-cancel{
+    background: rgba(26,58,82,0.08);
+    color: var(--muted);
+  }
+  .confirm-btn-ok{
+    background: #C0392B;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(192,57,43,0.3);
+  }
+
+  .info-popover{
+    position: fixed;
+    max-width: 252px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,30,60,0.28);
+    padding: 12px 14px 12px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--ink);
+    z-index: 100;
+    display: none;
+  }
+  .info-popover.visible{ display:block; }
+  .info-popover .ip-title{ font-weight:700; margin-bottom:4px; color: var(--navy); }
+  .info-popover .ip-close{
+    position:absolute; top:4px; right:6px;
+    background:none; border:none; font-size:15px; color: var(--muted); cursor:pointer; padding:6px;
+  }
+
+  .footnote{
+    padding: 10px 14px 0;
+    font-size: 10px;
+    color: rgba(26,58,82,0.5);
+    text-align:center;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div id="watermark-layer"></div>
+
+<div class="sheet">
+
+  <div class="menu-header">
+    <img src="images/logo-simcity-buildit.png" alt="SimCity BuildIt" class="site-logo" style="max-width:260px; width:80%; display:block; margin:0 auto 6px; filter:drop-shadow(0 3px 10px rgba(0,60,120,0.35));">
+    <div class="menu-title" style="font-size:22px;">เมนูสั่งซื้อ</div>
+    <div class="menu-sub">เลือกรายการ ระบุจำนวน ดูราคารวมด้านล่าง</div>
+  </div>
+
+  <!-- ===================== SHOP STATUS ===================== -->
+  <div class="shop-status-banner open" id="shopStatusBanner">
+    <div class="status-dot"></div>
+    <div class="status-text-wrap">
+      <div class="status-title" id="statusTitle">เปิดรับออเดอร์</div>
+      <div class="status-sub" id="statusSub">เลือกสินค้าและกดส่งออเดอร์ได้เลย</div>
+    </div>
+  </div>
+
+  <!-- ===================== SELECTION TOOLS ===================== -->
+  <div class="selection-tools" id="selectionTools">
+    <!-- Clear Selection -->
+    <button type="button" class="sel-btn sel-btn-clear inactive" id="btnClearAll" aria-label="ล้างรายการที่เลือกทั้งหมด">
+      <svg class="sel-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M7 3h6M3.5 6h13M5.5 6l.84 9.24A1 1 0 0 0 7.33 16h5.34a1 1 0 0 0 .99-.76L14.5 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8.5 10v3M11.5 10v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <span>ล้างรายการ</span>
+    </button>
+
+    <!-- Recommended Quantity Mode toggle -->
+    <button type="button" class="sel-btn sel-btn-rec" id="btnRecMode" aria-label="เปิด/ปิดโหมดกรอกจำนวนอัตโนมัติ">
+      <svg class="sel-btn-icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M10 2.5 L11.55 7.2 H16.5 L12.5 10.05 L14.05 14.75 L10 11.9 L5.95 14.75 L7.5 10.05 L3.5 7.2 H8.45 Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
+      </svg>
+      <span id="recModeLabel">กรอกจำนวนอัตโนมัติ</span>
+      <span class="rec-status-pill" aria-live="polite">เปิด</span>
+    </button>
+  </div>
+
+  <!-- ===================== CURRENCY ===================== -->
+  <div class="category">
+    <div class="cat-label"><span class="name">Currency</span><span class="rule"></span></div>
+    <div class="cat-note">ระบุจำนวนที่ต้องการ — 10 บาทต่อรายการ ไม่ว่าจำนวนเท่าไหร่</div>
+    <div class="menu-card" id="currency-list"></div>
+  </div>
+
+  <!-- ===================== EXPANSION ===================== -->
+  <div class="category">
+    <div class="cat-label"><span class="name">Expansion Items</span><span class="rule"></span></div>
+    <div class="cat-note">ไอเท็มขยายพื้นที่ — 10 บาทต่อรายการ</div>
+    <div class="menu-card" id="expansion-list"></div>
+  </div>
+
+  <!-- ===================== SPEED UP ===================== -->
+  <div class="category">
+    <div class="cat-label"><span class="name">Speed-Up ×12</span><span class="rule"></span></div>
+    <div class="cat-note">ไอเท็มเร่งการผลิต — 10 บาทต่อรายการ</div>
+    <div class="menu-card" id="speedup-list"></div>
+  </div>
+
+  <!-- ===================== MAYOR'S PASS ===================== -->
+  <div class="category">
+    <div class="cat-label"><span class="name">Mayor's Pass Buildings</span><span class="rule"></span></div>
+    <div class="cat-note">สิ่งก่อสร้างพิเศษจากซีซั่นที่ผ่านมา — เลือกได้ 1 แพ็กเกจ</div>
+    <div class="menu-card" id="mayorpass-tiers"></div>
+  </div>
+
+  <!-- ===================== MASS TRANSITION ===================== -->
+  <div class="category">
+    <div class="cat-label"><span class="name">Mass Transition</span><span class="rule"></span></div>
+    <div class="cat-note">ระบบรถไฟและการขนส่งมวลชน</div>
+    <div class="menu-card" id="masstransit-list"></div>
+  </div>
+
+  <!-- ===================== TRANSFER ===================== -->
+  <div class="category">
+    <div class="cat-label"><span class="name">Transfer to Cheat Server</span><span class="rule"></span></div>
+    <div class="menu-card" id="transfer-item"></div>
+  </div>
+
+  <!-- ===================== SUMMARY ===================== -->
+  <div class="summary-bar">
+    <div class="summary-card empty" id="summaryCard">
+      <div class="summary-top">
+        <span class="summary-label">สรุปราคา</span>
+        <span class="summary-count" id="itemCount">ยังไม่ได้เลือกรายการ</span>
+      </div>
+      <div class="summary-total">
+        <span class="amount" id="totalAmount">0</span><span class="unit">บาท</span>
+      </div>
+      <button class="toggle-detail-btn" id="toggleDetail" type="button">ดูรายละเอียดราคา ▾</button>
+      <div class="detail-receipt" id="detailReceipt"></div>
+    </div>
+  </div>
+
+  <!-- ===================== ORDER FORM ===================== -->
+  <div class="order-form-section" id="orderFormSection">
+
+    <!-- ---------- ขั้นตอนการสั่งซื้อ ---------- -->
+    <div class="subsection">
+      <div class="order-form-title">ขั้นตอนการสั่งซื้อ</div>
+      <div class="steps-row">
+        <div class="step-col"><div class="step-dot s1"></div><div class="step-label">เลือกสินค้า</div></div>
+        <div class="step-col"><div class="step-dot s2"></div><div class="step-label">แจ้งรายการ</div></div>
+        <div class="step-col"><div class="step-dot s3"></div><div class="step-label">ชำระเงิน</div></div>
+        <div class="step-col"><div class="step-dot s4"></div><div class="step-label">รอส่งต่อOTP</div></div>
+        <div class="step-col"><div class="step-dot s5"></div><div class="step-label">กำลังดำเนินการ</div></div>
+        <div class="step-col"><div class="step-dot s6"></div><div class="step-label">สำเร็จ</div></div>
+      </div>
+    </div>
+
+
+    <!-- ---------- ข้อมูลผู้สั่ง ---------- -->
+    <div class="subsection">
+      <div class="order-form-title">ข้อมูลผู้สั่ง</div>
+      <div class="field-group">
+        <div class="field-wrap" id="wrap-email">
+          <label class="field-label" for="fieldEmail">EA Email</label>
+          <input class="field-input" id="fieldEmail" type="email"
+            inputmode="email" autocomplete="email"
+            placeholder="example@gmail.com">
+          <span class="field-error" id="err-email">กรุณากรอกอีเมลให้ถูกต้อง ในรูปแบบ example@mail.com</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ---------- ส่งออเดอร์ ---------- -->
+    <button type="button" class="submit-btn disabled" id="orderChatBtn" onclick="goToChat()" disabled>แจ้งรายการ</button>
+    <div class="qty-warning" id="qtyWarning">*กรุณาใส่จำนวนรายการที่เลือกไว้</div>
+  </div>
+
+  <div class="footnote">· เมื่อกด"แจ้งรายการ"จะไปต่อที่ Messenger สามารถกดส่งรายการที่เลือกไว้ได้ทันที ·</div>
+
+</div>
+
+<div class="info-popover" id="infoPopover"></div>
+
+<!-- ===== CUSTOM CONFIRM DIALOG ===== -->
+<div class="confirm-backdrop" id="confirmBackdrop" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+  <div class="confirm-sheet" id="confirmSheet">
+    <div class="confirm-handle"></div>
+    <div class="confirm-title" id="confirmTitle">ล้างรายการทั้งหมด?</div>
+    <div class="confirm-body" id="confirmBody">รายการที่เลือกไว้ก่อนหน้านี้<br>จะถูกรีเซ็ตทั้งหมด</div>
+    <div class="confirm-actions">
+      <button type="button" class="confirm-btn confirm-btn-cancel" id="confirmCancel">ยกเลิก</button>
+      <button type="button" class="confirm-btn confirm-btn-ok" id="confirmOk">ล้างรายการ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ICONS = {
+  simcash: "images/icon-simcash.png",
+  simoleons: "images/icon-simoleons.png",
+  neosimoleons: "images/icon-neosimoleons.png",
+  goldenkey: "images/icon-goldenkey.png",
+  platinumkey: "images/icon-platinumkey.png",
+  speedup_factory: "images/icon-speedup_factory.png",
+  speedup_shop: "images/icon-speedup_shop.png",
+  exp_land: "images/icon-exp_land.webp",
+  exp_beach: "images/icon-exp_beach.webp",
+  exp_mountain: "images/icon-exp_mountain.webp",
+  mayorpass: "images/icon-mayorpass.webp?v=2",
+  rail_station: "images/icon-rail_station.webp?v=2",
+  rail_card:    "images/icon-rail_card.png",
+  rail_token:   "images/icon-rail_token.webp",
+};
+const WATERMARK_ICONS = [
+  "images/watermark-01.png",
+  "images/watermark-02.png",
+  "images/watermark-03.png",
+  "images/watermark-04.png",
+  "images/watermark-05.png",
+  "images/watermark-06.png",
+  "images/watermark-07.png",
+  "images/watermark-08.png",
+  "images/watermark-09.png",
+  "images/watermark-10.png",
+  "images/watermark-11.png",
+  "images/watermark-12.png",
+  "images/watermark-13.png",
+  "images/watermark-14.png",
+  "images/watermark-15.png",
+  "images/watermark-16.png",
+  "images/watermark-17.png"
+];
+</script>
+<script>
+// ============ WATERMARK BACKGROUND ============
+(function(){
+  const layer = document.getElementById("watermark-layer");
+  if(!layer || typeof WATERMARK_ICONS === "undefined" || WATERMARK_ICONS.length === 0) return;
+
+  const animClasses = ["drift-a", "drift-b", "drift-c", "drift-d", "bob"];
+  const docHeight = () => Math.max(document.body.scrollHeight, window.innerHeight);
+
+  // Build a loose scatter of icons across the full scrollable height
+  const count = 32;
+  const vw = window.innerWidth;
+
+  for(let i = 0; i < count; i++){
+    const src = WATERMARK_ICONS[i % WATERMARK_ICONS.length];
+    const img = document.createElement("img");
+    img.src = src;
+    img.className = "wm-icon";
+    const size = 48 + Math.random() * 40; // 48-88px — bigger icons pop on light bg
+    img.style.width = size + "px";
+    img.style.height = size + "px";
+    img.style.left = (Math.random() * 92) + "%";
+    img.style.top = (Math.random() * 100) + "%";
+    const anim = animClasses[i % animClasses.length];
+    const duration = 9 + Math.random() * 8; // 9-17s, dreamy float
+    const delay = Math.random() * -10;
+    img.style.animation = `${anim} ${duration}s ease-in-out ${delay}s infinite`;
+    img.style.transform = `rotate(${(Math.random()*30-15).toFixed(1)}deg)`;
+    layer.appendChild(img);
+  }
+
+  // Reposition vertical spread once content height is known (after render)
+  function spreadIcons(){
+    const h = docHeight();
+    const imgs = layer.querySelectorAll(".wm-icon");
+    imgs.forEach((img, i) => {
+      const topPct = (i / imgs.length) * 100 + (Math.random()*12 - 6);
+      img.style.top = Math.max(0, Math.min(96, topPct)) + "%";
+      // randomise horizontal for more natural scatter
+      img.style.left = (5 + Math.random() * 88) + "%";
+    });
+    layer.style.height = h + "px";
+  }
+  window.addEventListener("load", spreadIcons);
+  setTimeout(spreadIcons, 300);
+})();
+
+</script>
+<script>
+// ============ DATA MODEL ============
+const FIXED_PRICE = 10; // baht per currency/expansion/speedup item, regardless of quantity entered
+
+const currencyItems = [
+  { id: "resetcash", name: "SimCash (แบงค์)", icon: "simcash", hint: "< 48,000", max: 48000, recommendedLabel: "48,000" },
+  { id: "simoleons", name: "Simoleons (เหรียญทอง)", icon: "simoleons", hint: "< 80M", max: 80000000 },
+  { id: "neosimoleons", name: "NeoSimoleons (เหรียญNeo)", icon: "neosimoleons", hint: "< 18,000,000", max: 18000000 },
+  { id: "goldenkey", name: "Golden Key (กุญแจทอง)", icon: "goldenkey", hint: "< 18,000", max: 18000 },
+  { id: "platinumkey", name: "Platinum Key (กุญแจแพลทินัม)", icon: "platinumkey", hint: "< 18,000", max: 18000 },
+];
+
+const expansionItems = [
+  { id: "exp_land", name: "Expansion Land (พื้นที่บก)", icon: "exp_land", hint: "< 100", max: 100 },
+  { id: "exp_beach", name: "Expansion Beach (ชายหาด)", icon: "exp_beach", hint: "< 100", max: 100 },
+  { id: "exp_mountain", name: "Expansion Mountain (ภูเขา)", icon: "exp_mountain", hint: "< 100", max: 100 },
+];
+
+const speedupItems = [
+  { id: "speedup_factory", name: "Factory (โรงงาน)", icon: "speedup_factory", hint: "< 100", max: 100 },
+  { id: "speedup_shop", name: "Shop (ร้านค้า)", icon: "speedup_shop", hint: "< 100", max: 100 },
+];
+
+const mayorPassTiers = [
+  { id: "mp_all",     title: "ปลดล็อกทุกซีซั่นทั้งหมด (1–ปัจจุบัน)", desc: "~500 ชิ้น",               price: 750, icon: "mayorpass" },
+  { id: "mp_one",     title: "เลือกเอง 1 ชิ้น",            desc: "ระบุชื่อสิ่งก่อสร้าง",    price: 10,  icon: "mayorpass", needsInput: true },
+  { id: "mp_current", title: "ซีซั่นปัจจุบัน",             desc: "~10 ชิ้น",                price: 40,  icon: "mayorpass" },
+];
+
+const massTransitItems = [
+  { id: "rail_station", name: "ปลดล็อกสถานีรถไฟทั้งหมด",           icon: "rail_station", price: 50, checkOnly: true, blend: true },
+  { id: "rail_cards",   name: "รับการ์ดรถไฟทั้งหมด",              icon: "rail_card",    price: 50, checkOnly: true, desc: "× 900 ใบ" },
+  { id: "rail_token",   name: "Rail Token",                          icon: "rail_token",   price: 10, hint: "< 1,000", max: 1000, recommendedLabel: "1,000" },
+];
+
+const transferItem = { id: "transfer", name: "Transfer to Cheat Server", desc: "ย้ายไปเซิร์ฟเวอร์โปร", price: 150 };
+
+// ============ STATE ============
+const state = {
+  currency: {},      // id -> { checked: bool, qty: string }
+  expansion: {},
+  speedup: {},
+  masstransit: {},
+  mayorpass: { selected: null, customName: "" },
+  transfer: false,
+  payMethod: "promptpay",                       // promptpay | truemoney
+  slip: { attached: false, filename: "" },      // proof-of-payment slip
+  recommendedMode: false,                       // Recommended Quantity Mode toggle
+};
+
+currencyItems.forEach(i => state.currency[i.id] = { checked: false, qty: "" });
+expansionItems.forEach(i => state.expansion[i.id] = { checked: false, qty: "" });
+speedupItems.forEach(i => state.speedup[i.id] = { checked: false, qty: "" });
+massTransitItems.forEach(i => state.masstransit[i.id] = { checked: false, qty: "" });
+
+// ============ ICON HELPER ============
+function iconImg(key, alt){
+  const src = (typeof ICONS !== "undefined" && ICONS[key]) ? ICONS[key] : "";
+  if(src){
+    return `<img src="${src}" alt="${alt}">`;
+  }
+  return `<span class="placeholder">🎮</span>`;
+}
+
+function checkSvg(){
+  return `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 13l4 4L19 7" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+// ============ SELECTION TOOLS ============
+
+// ── helper: get recommended qty string for an item (falls back to max or "") ──
+function getRecommendedQty(item){
+  // Use explicit recommendedQty if set; otherwise use max as the recommended cap
+  if(typeof item.recommendedQty !== "undefined") return String(item.recommendedQty);
+  if(typeof item.max !== "undefined") return String(item.max);
+  return "";
+}
+
+// ── update Clear button visual state (inactive when nothing selected) ──
+function updateClearBtnState(){
+  const btn = document.getElementById("btnClearAll");
+  if(!btn) return;
+  const hasAny = hasAnySelection();
+  btn.classList.toggle("inactive", !hasAny);
+}
+
+function hasAnySelection(){
+  const groups = [
+    { map: state.currency,     items: currencyItems },
+    { map: state.expansion,    items: expansionItems },
+    { map: state.speedup,      items: speedupItems },
+    { map: state.masstransit,  items: massTransitItems },
+  ];
+  for(const g of groups){
+    for(const item of g.items){
+      const s = g.map[item.id];
+      if(s && (s.checked || s.qty !== "")) return true;
+    }
+  }
+  if(state.mayorpass.selected) return true;
+  if(state.transfer) return true;
+  return false;
+}
+
+// ── Custom Confirm Dialog ──
+function showConfirmDialog(onConfirm){
+  const backdrop = document.getElementById("confirmBackdrop");
+  const btnOk     = document.getElementById("confirmOk");
+  const btnCancel = document.getElementById("confirmCancel");
+
+  function close(){ backdrop.classList.remove("visible"); }
+
+  function handleOk(){
+    close();
+    cleanup();
+    onConfirm();
+  }
+  function handleCancel(){
+    close();
+    cleanup();
+  }
+  function handleBackdrop(e){
+    if(e.target === backdrop){ close(); cleanup(); }
+  }
+  function cleanup(){
+    btnOk.removeEventListener("click", handleOk);
+    btnCancel.removeEventListener("click", handleCancel);
+    backdrop.removeEventListener("click", handleBackdrop);
+  }
+
+  btnOk.addEventListener("click", handleOk);
+  btnCancel.addEventListener("click", handleCancel);
+  backdrop.addEventListener("click", handleBackdrop);
+  backdrop.classList.add("visible");
+}
+
+// ── Clear All Selection ──
+function clearAllSelections(){
+  if(!hasAnySelection()) return;
+  showConfirmDialog(function(){
+    // Reset currency / expansion / speedup / masstransit
+    const groupMeta = [
+      { map: state.currency,    items: currencyItems },
+      { map: state.expansion,   items: expansionItems },
+      { map: state.speedup,     items: speedupItems },
+      { map: state.masstransit, items: massTransitItems },
+    ];
+    groupMeta.forEach(({ map, items }) => {
+      items.forEach(item => {
+        map[item.id].checked = false;
+        map[item.id].qty = "";
+      });
+    });
+
+    // Reset Mayor's Pass
+    state.mayorpass.selected = null;
+    state.mayorpass.customName = "";
+
+    // Reset Transfer
+    state.transfer = false;
+
+    // Re-render all sections (reuse existing render functions)
+    renderQtyRow("currency-list",   currencyItems,   state.currency);
+    renderQtyRow("expansion-list",  expansionItems,  state.expansion);
+    renderQtyRow("speedup-list",    speedupItems,    state.speedup);
+    renderMayorPass();
+    renderMassTransit();
+    renderTransfer();
+    recalc();
+    updateClearBtnState();
+  });
+}
+
+// ── Recommended Mode toggle ──
+function toggleRecommendedMode(){
+  state.recommendedMode = !state.recommendedMode;
+  updateRecModeUI();
+}
+
+function updateRecModeUI(){
+  const btn = document.getElementById("btnRecMode");
+  const label = document.getElementById("recModeLabel");
+  if(!btn) return;
+  if(state.recommendedMode){
+    btn.classList.add("rec-on");
+    if(label) label.textContent = "กรอกจำนวนอัตโนมัติ";
+  } else {
+    btn.classList.remove("rec-on");
+    if(label) label.textContent = "กรอกจำนวนอัตโนมัติ";
+  }
+}
+
+// ── Apply recommended qty to a single item row (called on checkbox click when mode is ON) ──
+// group: state sub-object (e.g. state.currency), item: data model object, chk: DOM element
+function applyRecommendedIfNeeded(group, item, chk, qtyInput){
+  if(!state.recommendedMode) return;
+  // Only apply when item supports qty (not checkOnly) and qty field exists
+  if(!qtyInput) return;
+  const recQty = getRecommendedQty(item);
+  if(!recQty) return;
+  // Fill recommended value
+  group[item.id].qty = recQty;
+  group[item.id].checked = true;
+  chk.classList.add("checked");
+  // Format display value with commas
+  qtyInput.value = Number(recQty).toLocaleString();
+}
+
+// ── Wire toolbar buttons after DOM ready ──
+function initSelectionTools(){
+  document.getElementById("btnClearAll").addEventListener("click", clearAllSelections);
+  document.getElementById("btnRecMode").addEventListener("click", toggleRecommendedMode);
+  updateClearBtnState();
+  updateRecModeUI();
+}
+function renderQtyRow(containerId, items, group){
+  const container = document.getElementById(containerId);
+  container.innerHTML = items.map(item => {
+    const s = group[item.id];
+    const hintHtml = item.recommendedLabel ? `
+        <div class="recommend-hint">⭐ แนะนำ: ไม่ควรมีเกิน ${item.recommendedLabel}
+          <button type="button" class="info-icon-btn" data-role="info" aria-label="คำแนะนำ">ⓘ</button>
+        </div>` : "";
+    return `
+    <div class="item" data-group="${containerId}" data-id="${item.id}">
+      <div class="item-icon">${iconImg(item.icon, item.name)}</div>
+      <div class="item-info">
+        <div class="item-name">${item.name}</div>
+        <div class="item-price-tag">10 บาท / รายการ</div>
+        ${hintHtml}
+      </div>
+      <div class="item-control">
+        <input
+          type="text"
+          inputmode="numeric"
+          class="qty-field"
+          placeholder="${item.hint}"
+          value="${s.qty ? Number(s.qty).toLocaleString() : ''}"
+          data-role="qty"
+        >
+        <div class="chk-wrap ${s.checked ? 'checked' : ''}" data-role="chk" title="เลือกรายการนี้">
+          <div class="chk-box">${checkSvg()}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  // wire events
+  container.querySelectorAll(".item").forEach(row => {
+    const id = row.dataset.id;
+    const item = items.find(i => i.id === id);
+    const qtyInput = row.querySelector('[data-role="qty"]');
+    const chk = row.querySelector('[data-role="chk"]');
+    const infoBtn = row.querySelector('[data-role="info"]');
+
+    function getRawQty(){
+      return (qtyInput.value || "").replace(/[^0-9]/g, "");
+    }
+
+    function checkMax(){
+      if(!item.max) return;
+      const numeric = Number(getRawQty());
+      const over = numeric > item.max;
+      qtyInput.classList.toggle("over-limit", over);
+    }
+
+    function checkMissing(){
+      const missing = group[id].checked && getRawQty() === "";
+      qtyInput.classList.toggle("qty-missing", missing);
+    }
+
+    qtyInput.addEventListener("input", () => {
+      // strip ทุกอักขระที่ไม่ใช่ตัวเลข
+      const raw = getRawQty();
+      // format comma แล้วเซ็ตกลับ พร้อม preserve cursor position
+      const formatted = raw === "" ? "" : Number(raw).toLocaleString();
+      if(qtyInput.value !== formatted){
+        const selEnd = qtyInput.selectionEnd;
+        const prevLen = qtyInput.value.length;
+        qtyInput.value = formatted;
+        // ขยับ cursor ตาม comma ที่เพิ่ม/ลด
+        const diff = formatted.length - prevLen;
+        const newPos = Math.max(0, selEnd + diff);
+        qtyInput.setSelectionRange(newPos, newPos);
+      }
+      // เก็บค่า raw (ไม่มี comma) ใน state
+      group[id].qty = raw;
+      // auto-check when a quantity is typed, auto-uncheck when cleared (unless manually checked with no qty)
+      if(raw !== ""){
+        group[id].checked = true;
+        chk.classList.add("checked");
+      }
+      checkMax();
+      checkMissing();
+      recalc();
+      updateClearBtnState();
+    });
+    checkMax();
+    checkMissing();
+
+    chk.addEventListener("click", () => {
+      group[id].checked = !group[id].checked;
+      chk.classList.toggle("checked");
+      if(group[id].checked){
+        // Recommended Mode: auto-fill qty when checking ON
+        applyRecommendedIfNeeded(group, item, chk, qtyInput);
+      } else {
+        // Uncheck → clear qty from both state and DOM
+        group[id].qty = "";
+        qtyInput.value = "";
+        qtyInput.classList.remove("over-limit", "qty-missing");
+      }
+      checkMissing();
+      recalc();
+      updateClearBtnState();
+    });
+
+    if(infoBtn){
+      infoBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showInfoPopover(infoBtn, "คำแนะนำ",
+          "จำนวนที่แนะนำ มีไว้เพื่อแนะนำว่าในไอดีไม่ควรมีไอเท็ม,เงินเกินจำนวนที่แนะนำไว้ ช่วยลดความเสี่ยงที่ไอดีจะถูกย้ายไปเซิร์ฟเวอร์โปร ไม่ใช่ข้อบังคับ<br><br>สำหรับผู้ที่ยอมรับความเสี่ยงสูงได้สามารถกรอกจำนวนมากกว่าที่แนะนำและกดแจ้งรายการได้ปกติ ตัวเลขที่กรอกจะเปลี่ยนเป็นสีแดงเพื่อเตือนว่าจะมีความเสี่ยงเพิ่มขึ้นเท่านั้น");
+      });
+    }
+  });
+}
+
+// ============ INFO POPOVER (ⓘ tooltip) ============
+function showInfoPopover(anchor, title, html){
+  const pop = document.getElementById("infoPopover");
+  pop.innerHTML = `<button type="button" class="ip-close" data-role="ip-close" aria-label="ปิด">×</button><div class="ip-title">${title}</div><div>${html}</div>`;
+  pop.classList.add("visible");
+
+  const rect = anchor.getBoundingClientRect();
+  const popWidth = Math.min(252, window.innerWidth - 24);
+  let left = rect.left;
+  let top  = rect.bottom + 8;
+  if(left + popWidth + 12 > window.innerWidth) left = Math.max(8, window.innerWidth - popWidth - 12);
+  if(top + 120 > window.innerHeight) top = Math.max(8, rect.top - 8 - 120);
+  pop.style.left = left + "px";
+  pop.style.top  = top + "px";
+
+  pop.querySelector('[data-role="ip-close"]').addEventListener("click", (e) => {
+    e.stopPropagation();
+    hideInfoPopover();
+  });
+}
+function hideInfoPopover(){
+  document.getElementById("infoPopover").classList.remove("visible");
+}
+document.addEventListener("click", (e) => {
+  const pop = document.getElementById("infoPopover");
+  if(!pop.classList.contains("visible")) return;
+  if(pop.contains(e.target)) return;
+  hideInfoPopover();
+});
+
+// ============ RENDER: Mayor's Pass tiers ============
+function renderMayorPass(){
+  const container = document.getElementById("mayorpass-tiers");
+  container.innerHTML = mayorPassTiers.map(tier => {
+    const active = state.mayorpass.selected === tier.id;
+    const iconHtml = iconImg(tier.icon, tier.title);
+    const inputHtml = tier.needsInput ? `
+      <div class="tier-custom-input" style="${active ? '' : 'display:none;'}">
+        <input type="text" class="text-field" id="mpCustomName" placeholder="ชื่อสิ่งก่อสร้างหรือแนบรูปภาพ" value="${state.mayorpass.customName}">
+      </div>` : "";
+    return `
+    <div>
+      <div class="tier ${active ? 'active' : ''}" data-tier="${tier.id}">
+        <div class="tier-icon">${iconHtml}</div>
+        <div class="tier-info">
+          <div class="tier-info-top">
+            <span class="tier-title">${tier.title}</span>
+            <span class="tier-desc">${tier.desc}</span>
+          </div>
+          <div class="tier-price">ราคา ${tier.price.toLocaleString()} บ.</div>
+        </div>
+        <div class="tier-radio"></div>
+      </div>
+      ${inputHtml}
+    </div>`;
+  }).join("");
+
+  container.querySelectorAll(".tier").forEach(el => {
+    el.addEventListener("click", () => {
+      const id = el.dataset.tier;
+      state.mayorpass.selected = (state.mayorpass.selected === id) ? null : id;
+      renderMayorPass();
+      recalc();
+      updateClearBtnState();
+      if(state.mayorpass.selected){
+        const inp = document.getElementById("mpCustomName");
+        if(inp){
+          inp.addEventListener("input", () => {
+            state.mayorpass.customName = inp.value;
+            recalc();
+          });
+          if(document.activeElement !== inp && state.mayorpass.selected === "mp_one"){
+            // focus only on fresh selection, not on every recalc-triggered re-render
+          }
+        }
+      }
+    });
+  });
+}
+
+// ============ RENDER: Mass Transition ============
+function renderMassTransit(){
+  const container = document.getElementById("masstransit-list");
+  container.innerHTML = massTransitItems.map(item => {
+    const s = state.masstransit[item.id];
+    // รูปที่มี background ขาว ใช้ mix-blend-mode:multiply เพื่อให้เนียนกับ card
+    const imgStyle = item.blend ? ' style="mix-blend-mode:multiply;"' : '';
+    const src = (typeof ICONS !== "undefined" && ICONS[item.icon]) ? ICONS[item.icon] : "";
+    const iconHtml = src
+      ? `<img src="${src}" alt="${item.name}"${imgStyle}>`
+      : `<span class="placeholder">🎮</span>`;
+
+    const hintHtml = item.recommendedLabel ? `
+        <div class="recommend-hint">⭐ แนะนำ: ไม่ควรมีเกิน ${item.recommendedLabel}
+          <button type="button" class="info-icon-btn" data-role="info" aria-label="คำแนะนำ">ⓘ</button>
+        </div>` : "";
+
+    if(item.checkOnly){
+      return `
+      <div class="item" data-id="${item.id}">
+        <div class="item-icon">${iconHtml}</div>
+        <div class="item-info">
+          <div class="item-name-row">
+            <span class="item-name">${item.name}</span>
+            ${item.desc ? `<span class="item-qty-badge">${item.desc}</span>` : ''}
+          </div>
+          <div class="item-price-tag">${item.price.toLocaleString()} บาท / รายการ</div>
+        </div>
+        <div class="item-control">
+          <div class="chk-wrap ${s.checked ? 'checked' : ''}" data-role="chk" title="เลือกรายการนี้">
+            <div class="chk-box">${checkSvg()}</div>
+          </div>
+        </div>
+      </div>`;
+    } else {
+      return `
+      <div class="item" data-id="${item.id}">
+        <div class="item-icon">${iconHtml}</div>
+        <div class="item-info">
+          <div class="item-name">${item.name}</div>
+          <div class="item-price-tag">10 บาท / รายการ</div>
+          ${hintHtml}
+        </div>
+        <div class="item-control">
+          <input
+            type="text"
+            inputmode="numeric"
+            class="qty-field"
+            placeholder="${item.hint}"
+            value="${s.qty ? Number(s.qty).toLocaleString() : ''}"
+            data-role="qty"
+          >
+          <div class="chk-wrap ${s.checked ? 'checked' : ''}" data-role="chk" title="เลือกรายการนี้">
+            <div class="chk-box">${checkSvg()}</div>
+          </div>
+        </div>
+      </div>`;
+    }
+  }).join("");
+
+  container.querySelectorAll(".item").forEach(row => {
+    const id = row.dataset.id;
+    const item = massTransitItems.find(i => i.id === id);
+    const chk  = row.querySelector('[data-role="chk"]');
+
+    if(item.checkOnly){
+      chk.addEventListener("click", () => {
+        state.masstransit[id].checked = !state.masstransit[id].checked;
+        chk.classList.toggle("checked");
+        recalc();
+        updateClearBtnState();
+      });
+    } else {
+      const qtyInput = row.querySelector('[data-role="qty"]');
+      const infoBtn  = row.querySelector('[data-role="info"]');
+      function getRawQty(){ return (qtyInput.value || "").replace(/[^0-9]/g, ""); }
+      function checkMax(){
+        if(!item.max) return;
+        qtyInput.classList.toggle("over-limit", Number(getRawQty()) > item.max);
+      }
+      function checkMissing(){
+        qtyInput.classList.toggle("qty-missing", state.masstransit[id].checked && getRawQty() === "");
+      }
+      qtyInput.addEventListener("input", () => {
+        const raw = getRawQty();
+        const formatted = raw === "" ? "" : Number(raw).toLocaleString();
+        if(qtyInput.value !== formatted){
+          const sel = qtyInput.selectionEnd;
+          const prev = qtyInput.value.length;
+          qtyInput.value = formatted;
+          const pos = Math.max(0, sel + (formatted.length - prev));
+          qtyInput.setSelectionRange(pos, pos);
+        }
+        state.masstransit[id].qty = raw;
+        if(raw !== ""){ state.masstransit[id].checked = true; chk.classList.add("checked"); }
+        checkMax(); checkMissing(); recalc(); updateClearBtnState();
+      });
+      chk.addEventListener("click", () => {
+        state.masstransit[id].checked = !state.masstransit[id].checked;
+        chk.classList.toggle("checked");
+        if(state.masstransit[id].checked){
+          // Recommended Mode: auto-fill qty when checking ON
+          applyRecommendedIfNeeded(state.masstransit, item, chk, qtyInput);
+        } else {
+          // Uncheck → clear qty from both state and DOM
+          state.masstransit[id].qty = "";
+          qtyInput.value = "";
+          qtyInput.classList.remove("over-limit", "qty-missing");
+        }
+        checkMissing(); recalc(); updateClearBtnState();
+      });
+      if(infoBtn){
+        infoBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          showInfoPopover(infoBtn, "คำแนะนำ",
+            "จำนวนที่แนะนำ มีไว้เพื่อแนะนำว่าในไอดีไม่ควรมีไอเท็ม,เงินเกินจำนวนที่แนะนำไว้ ช่วยลดความเสี่ยงที่ไอดีจะถูกย้ายไปเซิร์ฟเวอร์โปร ไม่ใช่ข้อบังคับ<br><br>สำหรับผู้ที่ยอมรับความเสี่ยงสูงได้สามารถกรอกจำนวนมากกว่าที่แนะนำและกดแจ้งรายการได้ปกติ ตัวเลขที่กรอกจะเปลี่ยนเป็นสีแดงเพื่อเตือนว่าจะมีความเสี่ยงเพิ่มขึ้นเท่านั้น");
+        });
+      }
+      checkMax(); checkMissing();
+    }
+  });
+}
+
+// ============ RENDER: Transfer ============
+function renderTransfer(){
+  const container = document.getElementById("transfer-item");
+  container.innerHTML = `
+    <div class="item" data-id="transfer">
+      <div class="item-icon"><span class="placeholder">🔓</span></div>
+      <div class="item-info">
+        <div class="item-name">${transferItem.name}</div>
+        <div class="item-price-tag">${transferItem.desc} · ${transferItem.price.toLocaleString()} บาท</div>
+      </div>
+      <div class="item-control">
+        <div class="chk-wrap ${state.transfer ? 'checked' : ''}" data-role="chk">
+          <div class="chk-box">${checkSvg()}</div>
+        </div>
+      </div>
+    </div>`;
+
+  container.querySelector('[data-role="chk"]').addEventListener("click", (e) => {
+    state.transfer = !state.transfer;
+    e.currentTarget.classList.toggle("checked");
+    recalc();
+    updateClearBtnState();
+  });
+}
+
+// ============ CALC + SUMMARY ============
+function recalc(){
+  let total = 0;
+  let lines = [];
+  let missingQty = false; // true ถ้ามีรายการที่เลือกไว้ (checked) แต่ยังไม่กรอกจำนวน
+
+  // currency
+  currencyItems.forEach(item => {
+    const s = state.currency[item.id];
+    if(s.checked){
+      total += FIXED_PRICE;
+      const qtyLabel = s.qty.trim() !== "" ? Number(s.qty).toLocaleString() : "-";
+      if(s.qty.trim() === "") missingQty = true;
+      lines.push({ name: item.name, detail: `จำนวน ${qtyLabel}`, price: FIXED_PRICE });
+    }
+  });
+
+  // expansion
+  expansionItems.forEach(item => {
+    const s = state.expansion[item.id];
+    if(s.checked){
+      total += FIXED_PRICE;
+      const qtyLabel = s.qty.trim() !== "" ? Number(s.qty).toLocaleString() : "-";
+      if(s.qty.trim() === "") missingQty = true;
+      lines.push({ name: item.name, detail: `จำนวน ${qtyLabel}`, price: FIXED_PRICE });
+    }
+  });
+
+  // speedup
+  speedupItems.forEach(item => {
+    const s = state.speedup[item.id];
+    if(s.checked){
+      total += FIXED_PRICE;
+      const qtyLabel = s.qty.trim() !== "" ? Number(s.qty).toLocaleString() : "-";
+      if(s.qty.trim() === "") missingQty = true;
+      lines.push({ name: item.name, detail: `จำนวน ${qtyLabel}`, price: FIXED_PRICE });
+    }
+  });
+
+  // mayor's pass
+  if(state.mayorpass.selected){
+    const tier = mayorPassTiers.find(t => t.id === state.mayorpass.selected);
+    total += tier.price;
+    let detail = tier.desc;
+    if(tier.needsInput){
+      detail = state.mayorpass.customName.trim() !== "" ? `สิ่งก่อสร้าง: ${state.mayorpass.customName.trim()}` : "ยังไม่ระบุชื่อสิ่งก่อสร้าง";
+    }
+    lines.push({ name: `Mayor's Pass: ${tier.title}`, detail, price: tier.price });
+  }
+
+  // mass transition
+  massTransitItems.forEach(item => {
+    const s = state.masstransit[item.id];
+    if(s.checked){
+      if(item.checkOnly){
+        total += item.price;
+        lines.push({ name: item.name, detail: "เลือกรายการนี้", price: item.price });
+      } else {
+        total += FIXED_PRICE;
+        const qtyLabel = s.qty.trim() !== "" ? Number(s.qty).toLocaleString() : "-";
+        if(s.qty.trim() === "") missingQty = true;
+        lines.push({ name: item.name, detail: `จำนวน ${qtyLabel}`, price: FIXED_PRICE });
+      }
+    }
+  });
+
+  // transfer
+  if(state.transfer){
+    total += transferItem.price;
+    lines.push({ name: transferItem.name, detail: transferItem.desc, price: transferItem.price });
+  }
+
+  // update UI
+  const totalEl = document.getElementById("totalAmount");
+  const prevVal = totalEl.textContent.replace(/,/g,"");
+  totalEl.textContent = total.toLocaleString();
+  if(Number(prevVal) !== total){
+    totalEl.classList.remove("bump");
+    requestAnimationFrame(() => {
+      totalEl.classList.add("bump");
+      setTimeout(() => totalEl.classList.remove("bump"), 180);
+    });
+  }
+
+  const card = document.getElementById("summaryCard");
+  const countEl = document.getElementById("itemCount");
+  if(lines.length === 0){
+    card.classList.add("empty");
+    countEl.textContent = "ยังไม่ได้เลือกรายการ";
+  } else {
+    card.classList.remove("empty");
+    countEl.textContent = `${lines.length} รายการ`;
+  }
+
+  // detail receipt
+  const detailEl = document.getElementById("detailReceipt");
+  if(lines.length === 0){
+    detailEl.innerHTML = `<div class="detail-row"><span>ยังไม่มีรายการที่เลือก</span></div>`;
+  } else {
+    detailEl.innerHTML = lines.map(l => `
+      <div class="detail-row">
+        <span>${l.name}<br><span style="opacity:.6;font-size:10.5px;">${l.detail}</span></span>
+        <span class="v">${l.price.toLocaleString()} บ.</span>
+      </div>
+    `).join("") + `
+      <div class="detail-row" style="border-bottom:none; margin-top:4px; font-weight:700; color:#D9A330;">
+        <span>รวมทั้งหมด</span>
+        <span class="v">${total.toLocaleString()} บาท</span>
+      </div>
+    `;
+  }
+
+  window._lastLines = lines;
+  window._lastTotal = total;
+  window._missingQty = missingQty;
+  updateOrderBtn();
+}
+
+// ============ ตรวจสอบรูปแบบอีเมล (ต้องเป็น ...@(ผู้ให้บริการ mail ใดก็ได้).com เท่านั้น) ============
+function isValidEmailFormat(email){
+  return /^[^\s@]+@[^\s@]+\.com$/i.test(email);
+}
+
+// ============ อัพเดตสถานะปุ่มสั่งซื้อ ============
+function updateOrderBtn(){
+  const btn       = document.getElementById("orderChatBtn");
+  const wrapEmail = document.getElementById("wrap-email");
+  const warningEl = document.getElementById("qtyWarning");
+  const email     = (document.getElementById("fieldEmail")?.value || "").trim();
+  const lines     = window._lastLines || [];
+  const missingQty = window._missingQty || false;
+  const emailValid  = isValidEmailFormat(email);
+
+  // error อีเมล: ขึ้นเฉพาะเมื่อมีการกรอกแล้วแต่รูปแบบไม่ถูกต้อง (ยังไม่กรอกเลย จะยังไม่โชว์ error)
+  if(wrapEmail){
+    wrapEmail.classList.toggle("has-error", email !== "" && !emailValid);
+  }
+
+  // ข้อความเตือน: เลือกรายการไว้แล้วแต่ยังไม่กรอกจำนวน
+  if(warningEl){
+    warningEl.classList.toggle("show", missingQty);
+  }
+
+  const canOrder = lines.length > 0 && emailValid && !missingQty;
+  if(canOrder){
+    btn.classList.remove("disabled");
+    btn.classList.add("enabled");
+    btn.disabled = false;
+  } else {
+    btn.classList.remove("enabled");
+    btn.classList.add("disabled");
+    btn.disabled = true;
+  }
+}
+
+// ============ TOGGLE DETAIL ============
+document.getElementById("toggleDetail").addEventListener("click", (e) => {
+  const detailEl = document.getElementById("detailReceipt");
+  const isOpen = detailEl.classList.toggle("open");
+  e.currentTarget.textContent = isOpen ? "ซ่อนรายละเอียดราคา ▴" : "ดูรายละเอียดราคา ▾";
+});
+
+// ── reveal ปุ่ม "ดูรายละเอียดราคา" เมื่อ scroll ลงมาถึง order form ──
+(function(){
+  const btn = document.getElementById("toggleDetail");
+  const target = document.getElementById("orderFormSection");
+  if(!btn || !target) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    // isIntersecting = true  → order form เริ่มโผล่ในจอ  → แสดงปุ่ม
+    // isIntersecting = false → scrollกลับขึ้นไปจนพ้น    → ซ่อนปุ่ม + ปิด detail
+    const visible = entries[0].isIntersecting;
+    btn.classList.toggle("visible", visible);
+    if(!visible){
+      document.getElementById("detailReceipt").classList.remove("open");
+      btn.textContent = "ดูรายละเอียดราคา ▾";
+    }
+  }, {
+    // threshold 0 = โผล่แค่ 1px ก็ trigger แล้ว
+    threshold: 0,
+    // rootMargin บวก 60px ด้านบน เพื่อ trigger ก่อนที่ sticky bar จะทับ
+    rootMargin: "60px 0px 0px 0px"
+  });
+
+  observer.observe(target);
+})();
+
+// ============ PHASE 1: SHOP STATUS + ORDER SUBMIT (localStorage mock) ============
+
+// =========================================================
+// --- Shop open/closed: ปิด/เปิดรับออเดอร์ ---
+// ค่าสถานะถูกดึงมาจากไฟล์ "status.json" (อยู่โฟลเดอร์เดียวกับ index.html)
+// วิธีเปิด/ปิดร้าน: แก้ค่า "shopOpen" ในไฟล์ status.json แล้วอัปโหลด/แทนที่
+// ไฟล์นั้นไฟล์เดียวบน Vercel — ไม่ต้องแก้ index.html และไม่ต้อง deploy ใหม่ทั้งโปรเจกต์
+//
+//   status.json ตัวอย่าง:
+//   { "shopOpen": true }   -> เปิดรับออเดอร์
+//   { "shopOpen": false }  -> ปิดรับออเดอร์ชั่วคราว
+//
+// หมายเหตุ: ถ้าโหลด status.json ไม่ได้ (ไฟล์หาย/เน็ตมีปัญหา) ระบบจะ fallback
+// เป็น "เปิดรับออเดอร์" (true) เพื่อไม่ให้เว็บพังหรือปิดร้านโดยไม่ตั้งใจ
+// =========================================================
+const SHOP_STATUS_URL = "status.json";
+const SHOP_STATUS_FALLBACK = true; // ใช้ตอน fetch ไม่สำเร็จเท่านั้น
+
+let SHOP_OPEN = SHOP_STATUS_FALLBACK;
+
+function isShopOpen(){
+  return SHOP_OPEN;
+}
+
+function renderShopStatus(){
+  const banner = document.getElementById("shopStatusBanner");
+  const title  = document.getElementById("statusTitle");
+  const sub    = document.getElementById("statusSub");
+  const form   = document.getElementById("orderFormSection");
+  if(isShopOpen()){
+    banner.className = "shop-status-banner open";
+    title.textContent = "เปิดให้บริการ";
+    sub.textContent   = "เลือกสินค้าและกดแจ้งรายการได้เลย";
+    form.style.display = "";
+  } else {
+    banner.className = "shop-status-banner closed";
+    title.textContent = "ปิดให้บริการชั่วคราว";
+    sub.textContent   = "ขออภัย ขณะนี้ปิดให้บริการ กรุณาลองใหม่ภายหลัง";
+    form.style.display = "none";
+  }
+}
+
+async function loadShopStatusAndRender(){
+  try {
+    // กัน cache ของเบราว์เซอร์/CDN ด้วย timestamp ท้าย URL
+    const res = await fetch(SHOP_STATUS_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if(!res.ok) throw new Error("status.json fetch failed: " + res.status);
+    const data = await res.json();
+    SHOP_OPEN = (typeof data.shopOpen === "boolean") ? data.shopOpen : SHOP_STATUS_FALLBACK;
+  } catch(err){
+    console.warn("ไม่สามารถโหลด status.json ได้ ใช้ค่า fallback:", err);
+    SHOP_OPEN = SHOP_STATUS_FALLBACK;
+  }
+  renderShopStatus();
+}
+
+renderShopStatus();          // เรนเดอร์ทันทีด้วยค่า fallback ก่อน (กันจอกระพริบ/ว่าง)
+loadShopStatusAndRender();   // แล้วค่อยอัปเดตด้วยค่าจริงจาก status.json
+
+// --- Sync the "ขั้นตอนการสั่งซื้อ" timeline (steps-row) ---
+// แสดงผลอย่างเดียว (ไม่เกี่ยวข้องกับการคำนวณราคา) เริ่มต้นที่ s1 "เลือกสินค้า"
+const STEPS_ROW_ORDER = ["s1", "s2", "s4", "s5", "s6"];
+function setStepsRowCurrent(stepKey){
+  const currentIdx = STEPS_ROW_ORDER.indexOf(stepKey);
+  STEPS_ROW_ORDER.forEach((stepKeyIter, idx) => {
+    const dot = document.querySelector(`.step-dot.${stepKeyIter}`);
+    if(!dot) return;
+    const col = dot.closest(".step-col");
+    dot.classList.remove("is-complete", "is-current");
+    if(col) col.classList.remove("is-complete", "is-current");
+    if(idx < currentIdx){
+      dot.classList.add("is-complete");
+      if(col) col.classList.add("is-complete");
+    } else if(idx === currentIdx){
+      dot.classList.add("is-current");
+      if(col) col.classList.add("is-current");
+    }
+  });
+}
+setStepsRowCurrent("s1");
+
+// ============ ส่งออเดอร์ผ่านแชท Facebook Messenger ============
+// ดึงรายการและยอดรวมจาก window._lastLines / window._lastTotal
+// ซึ่งถูกตั้งค่าโดย recalc() ด้านบน (ไม่มีการคำนวณราคาใหม่ที่นี่)
+function goToChat(){
+  const lines = window._lastLines || [];
+  const total = window._lastTotal || 0;
+  const missingQty = window._missingQty || false;
+  const email = (document.getElementById("fieldEmail")?.value || "").trim();
+  // guard: ไม่ควรถึงตรงนี้ (ปุ่มถูก disabled ไว้แล้ว) แต่กัน bug ไว้อีกชั้น
+  if(lines.length === 0 || missingQty || !isValidEmailFormat(email)) return;
+
+  // ---- สร้างข้อความออเดอร์ ----
+  let itemLines = "";
+  lines.forEach(l => {
+    itemLines += "• " + l.name + " " + l.detail + "\n";
+    itemLines += " ราคา " + l.price.toLocaleString() + " บ.\n";
+  });
+
+  const msg =
+    "แจ้งรายการ\n" +
+    itemLines + "\n" +
+    "รวมทั้งหมด " + total.toLocaleString() + " บาท\n" +
+    "\nEA Email\n" +
+    email;
+
+  const pageUsername = "803443002843176"; // เพจ Mayor Service
+  const url = `https://m.me/${pageUsername}?text=${encodeURIComponent(msg)}`;
+  window.open(url, "_blank");
+}
+
+
+// ============ Email → อัพเดตสถานะปุ่ม ============
+document.getElementById("fieldEmail").addEventListener("input", updateOrderBtn);
+
+renderQtyRow("currency-list", currencyItems, state.currency);
+renderQtyRow("expansion-list", expansionItems, state.expansion);
+renderQtyRow("speedup-list", speedupItems, state.speedup);
+renderMayorPass();
+renderMassTransit();
+renderTransfer();
+recalc();
+initSelectionTools(); // Selection Tools: wire buttons + sync initial UI state
+
+</script>
+
+</body>
+</html>
