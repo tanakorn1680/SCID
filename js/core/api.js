@@ -201,22 +201,13 @@ export const order = {
       return { success: false, error: 'อัปโหลดรูปไม่สำเร็จ กรุณาลองใหม่' };
     }
 
-    // ดึง signed URL อายุยาว (ใช้แสดงรูปตอน admin ตรวจสอบใน Phase 4)
-    const { data: signedData, error: signedError } = await supabase.storage
-      .from('payment-slips')
-      .createSignedUrl(path, 60 * 60 * 24 * 30); // 30 วัน
-
-    // ถ้า sign ไม่สำเร็จ ห้าม fallback เป็น path ดิบ เพราะ path เฉยๆ ใช้เป็น <img src>
-    // ไม่ได้จริง (bucket เป็น private) ผลคือ slip_url ที่บันทึกลง DB จะเป็นรูปที่โหลดไม่ขึ้น
-    // ตลอดไป — ทั้งฝั่ง admin ตรวจสอบและฝั่งลูกค้าดูประวัติออเดอร์ตัวเอง
-    // ถือว่าเคสนี้ล้มเหลวไปเลยดีกว่า ลูกค้ากดส่งสลิปใหม่ได้ทันที (ไฟล์ใน storage ไม่หาย
-    // เพราะ upload สำเร็จแล้วและ path เดิมใช้ upsert:true อยู่แล้ว)
-    if (signedError || !signedData?.signedUrl) {
-      console.error('createSignedUrl failed:', signedError);
-      return { success: false, error: 'สร้างลิงก์รูปสลิปไม่สำเร็จ กรุณากดส่งสลิปอีกครั้ง' };
-    }
-
-    const slipUrl = signedData.signedUrl;
+    // บันทึก raw path ลง DB แทน signed URL
+    // เหตุผล: signed URL มีอายุจำกัด (เดิม 30 วัน) — เมื่อหมดอายุรูปจะโหลดไม่ขึ้นทันที
+    // และ Supabase อาจ invalidate token ได้ก่อนกำหนด (rotate key ฯลฯ)
+    // แนวทางที่ถูก: เก็บแค่ path ดิบ แล้วให้ฝั่งอ่าน (admin/ลูกค้า) สร้าง signed URL
+    // ใหม่ทุกครั้งที่เปิดดู — URL มีอายุแค่ 10 นาที (เพียงพอสำหรับดูครั้งเดียว) และ
+    // ไม่มีวันหมดอายุค้างอยู่ใน DB
+    const slipUrl = path; // เก็บเป็น path ดิบ เช่น "{user_id}/{order_id}.jpg"
 
     // อัปเดตสถานะ order ผ่าน function (ตรวจสิทธิ์ + validate state ฝั่ง DB)
     const { data: submitData, error: submitError } = await supabase.rpc('submit_order_slip', {
