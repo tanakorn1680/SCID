@@ -178,40 +178,33 @@ export const order = {
     };
   },
 
-  // อัปโหลดไฟล์สลิปขึ้น Storage แล้วเรียก submit_order_slip() เพื่ออัปเดตสถานะ
-  // แยก 2 ขั้นตอนนี้ตั้งใจ: ถ้า upload สำเร็จแต่ DB update ล้มเหลว
-  // อย่างน้อยไฟล์ก็อยู่ใน storage แล้ว ไม่ต้องให้ลูกค้าอัปโหลดซ้ำ
+  // ── ระบบ submitSlip ใหม่ ──
+  // path: slips/{order_id}.{ext} — ชัดเจน เดาได้ ไม่ขึ้นกับ user_id
+  // bucket public → getPublicUrl() ได้เลย ไม่ต้อง signed URL
   async submitSlip(orderId, file) {
-    const session = await supabase.auth.getSession();
-    const userId = session.data.session?.user?.id;
+    const ext = (() => {
+      const n = file.name.toLowerCase();
+      if (n.endsWith('.jpg') || n.endsWith('.jpeg')) return 'jpg';
+      if (n.endsWith('.png')) return 'png';
+      if (n.endsWith('.webp')) return 'webp';
+      return 'jpg';
+    })();
 
-    if (!userId) {
-      return { success: false, error: 'กรุณาเข้าสู่ระบบใหม่อีกครั้ง' };
-    }
-
-    // path convention: {user_id}/{order_id}.{ext} — ตรงกับ Storage RLS (migration 007)
-    const ext = file.name.split('.').pop();
-    const path = `${userId}/${orderId}.${ext}`;
+    const storagePath = `slips/${orderId}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from('payment-slips')
-      .upload(path, file, { upsert: true }); // upsert: true รองรับ "เปลี่ยนรูปได้ก่อนส่ง"
+      .upload(storagePath, file, { upsert: true, contentType: file.type });
 
     if (uploadError) {
+      console.error('submitSlip upload error:', uploadError);
       return { success: false, error: 'อัปโหลดรูปไม่สำเร็จ กรุณาลองใหม่' };
     }
 
-    // บันทึก storage path ดิบลง DB แทน signed URL
-    // เหตุผล: signed URL มีอายุจำกัด (30 วัน) ถ้าบันทึก URL สำเร็จตอนส่ง
-    // แต่ admin เปิดดูทีหลัง URL ก็หมดอายุแล้ว ทำให้รูปสลิปหายไปในหน้า admin
-    // วิธีที่ถูกต้องคือบันทึก path ดิบ แล้ว generate signed URL ใหม่ทุกครั้งที่ admin เปิดดู
-    // (ดู admin.getSignedSlipUrl() ด้านล่าง)
-    const slipUrl = path; // เก็บแค่ path: "{user_id}/{order_id}.{ext}"
-
-    // อัปเดตสถานะ order ผ่าน function (ตรวจสิทธิ์ + validate state ฝั่ง DB)
+    // บันทึก path ดิบ — admin ใช้ getPublicUrl(path) ตอนแสดงผล
     const { data: submitData, error: submitError } = await supabase.rpc('submit_order_slip', {
       p_order_id: orderId,
-      p_slip_url: slipUrl
+      p_slip_url: storagePath
     });
 
     if (submitError) {
@@ -223,12 +216,8 @@ export const order = {
       return { success: false, error: row?.error || 'เกิดข้อผิดพลาด' };
     }
 
-    // แจ้งเตือน Discord ผ่าน Edge Function — ไม่ block flow หลักถ้าแจ้งเตือนล้มเหลว
-    // (ลูกค้าควรเห็นว่าส่งสลิปสำเร็จ แม้ Discord จะมีปัญหาชั่วคราว)
     try {
-      await supabase.functions.invoke('notify-discord', {
-        body: { order_id: orderId }
-      });
+      await supabase.functions.invoke('notify-discord', { body: { order_id: orderId } });
     } catch (e) {
       console.warn('Discord notification failed (non-blocking):', e);
     }
@@ -345,6 +334,12 @@ export const admin = {
   //   format A: URL เต็ม (https://...supabase.co/storage/v1/object/...) — ใช้ได้เลย
   //   format B: path ดิบ "{user_id}/{filename}" — สร้าง public URL
   //   format C: UUID เปล่า (บั๊กเก่า) — ต้องหา path จริงจาก Storage list
+  // แสดงรูปสลิป — bucket เป็น public ใช้ getPublicUrl() ได้เลย
+  // รองรับทุก format ที่มีใน DB:
+  //   "slips/{order_id}.jpg"          → path ใหม่ (หลัง deploy ระบบนี้)
+  //   "{user_id}/{filename}.jpg"      → path เก่า (มี / คั่น)
+  //   "https://...supabase.co/..."    → URL เต็ม (ออเดอร์เก่ามาก)
+  //   "{uuid}"                        → UUID เปล่า (บั๊กเก่า — list Storage)
   async getSlipUrl(slipUrlOrPath, order = null) {
     if (!slipUrlOrPath) return { success: false, url: null };
 
@@ -353,36 +348,30 @@ export const admin = {
       return { success: true, url: slipUrlOrPath };
     }
 
-    // format B: path มี / คั่น เช่น "{user_id}/{filename}.jpg"
+    // format B: path ดิบ มี / คั่น ("slips/xxx.jpg" หรือ "{uid}/xxx.jpg")
     if (slipUrlOrPath.includes('/')) {
       const { data } = supabase.storage.from('payment-slips').getPublicUrl(slipUrlOrPath);
       return { success: true, url: data.publicUrl };
     }
 
-    // format C: UUID เปล่า — ค่านี้คือ user_id (folder name) ไม่ใช่ order_id
-    // list ไฟล์ใน folder นั้น แล้วเอาไฟล์ล่าสุดที่ตรงกับ order นี้
-    const folderId = slipUrlOrPath; // UUID ใน DB คือ folder (user_id)
+    // format C: UUID เปล่า — บั๊กเก่าบันทึก user_id ไว้เป็น slip_url
+    // list ไฟล์ใน folder นั้น (UUID = folder name = user_id)
     const { data: files, error } = await supabase.storage
       .from('payment-slips')
-      .list(folderId, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+      .list(slipUrlOrPath, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
-    if (error || !files || files.length === 0) {
-      console.error('getSlipUrl: list failed', error, 'folder:', folderId);
+    if (error || !files?.length) {
+      console.error('getSlipUrl list failed:', error, 'folder:', slipUrlOrPath);
       return { success: false, url: null };
     }
 
-    // ถ้ามีหลายไฟล์ในโฟลเดอร์ ลองหาไฟล์ที่ชื่อตรงกับ order.id ก่อน
-    // ถ้าไม่เจอใช้ไฟล์ล่าสุด (เรียงโดย created_at desc แล้ว)
-    const matched = order?.id
-      ? (files.find(f => f.name.startsWith(order.id)) || files[0])
-      : files[0];
-
+    // หาไฟล์ที่ตรงกับ order.id ก่อน ถ้าไม่เจอใช้ไฟล์ล่าสุด
+    const match = (order?.id && files.find(f => f.name.startsWith(order.id))) || files[0];
     const { data } = supabase.storage
       .from('payment-slips')
-      .getPublicUrl(`${folderId}/${matched.name}`);
-
+      .getPublicUrl(`${slipUrlOrPath}/${match.name}`);
     return { success: true, url: data.publicUrl };
-  },
+  },,
 
   // ───── ตรวจสอบสลิป (Phase 4) ─────
   // ยืนยันสลิป + ส่งไอดี เป็น atomic เดียวกันที่ DB (migration 009)
