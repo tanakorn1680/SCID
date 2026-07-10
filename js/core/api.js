@@ -340,55 +340,57 @@ export const admin = {
   // เพราะ URL ใน DB อาจเป็น signed URL เก่าที่หมดอายุแล้ว (ออเดอร์เก่า)
   // หรือเป็น storage path ดิบ (ออเดอร์ใหม่หลังแก้บั๊ก)
   // ฟังก์ชันนี้รองรับทั้ง 2 กรณีโดยตรวจจาก pattern ของ value
-  // slipUrlOrPath = order.slip_url, order = full order object (ต้องการ user_id + id)
-  async getSignedSlipUrl(slipUrlOrPath, order = null) {
+  // bucket payment-slips เป็น PUBLIC — ใช้ public URL แทน signed URL
+  // รองรับ slip_url ทุก format ที่มีใน DB:
+  //   format A: URL เต็ม (https://...supabase.co/storage/v1/object/...) — ใช้ได้เลย
+  //   format B: path ดิบ "{user_id}/{filename}" — สร้าง public URL
+  //   format C: UUID เปล่า (บั๊กเก่า) — ต้องหา path จริงจาก Storage list
+  async getSlipUrl(slipUrlOrPath, order = null) {
     if (!slipUrlOrPath) return { success: false, url: null };
 
-    let storagePath = null;
-
-    // กรณี 1: URL เต็มจาก signed/public URL — ดึง path ออกมา
-    // pattern: https://*.supabase.co/storage/v1/object/sign/payment-slips/{path}
-    const signMatch = slipUrlOrPath.match(/payment-slips\/(.+?)(?:\?|$)/);
-    if (signMatch) {
-      storagePath = decodeURIComponent(signMatch[1]);
-    }
-    // กรณี 2: path ดิบ "{user_id}/{order_id}.{ext}" — มี / คั่น
-    else if (slipUrlOrPath.includes('/')) {
-      storagePath = slipUrlOrPath;
-    }
-    // กรณี 3: UUID เปล่า (บั๊กเก่า — บันทึก orderId แทน path)
-    // ต้อง reconstruct path จาก user_id + order.id แล้วลอง ext ที่เป็นไปได้
-    else if (order?.user_id && order?.id) {
-      // ลอง extension ที่ bucket รองรับตามลำดับที่พบบ่อย
-      const exts = ['jpg', 'jpeg', 'png', 'webp'];
-      for (const ext of exts) {
-        const tryPath = `${order.user_id}/${order.id}.${ext}`;
-        const { data } = await supabase.storage
-          .from('payment-slips')
-          .createSignedUrl(tryPath, 60 * 60);
-        if (data?.signedUrl) {
-          return { success: true, url: data.signedUrl };
-        }
+    // format A: URL เต็มอยู่แล้ว — ใช้ได้เลย
+    if (slipUrlOrPath.startsWith('http')) {
+      // ถ้าเป็น signed URL เก่า (มี token= ต่อท้าย) แปลงเป็น public URL แทน
+      const pathMatch = slipUrlOrPath.match(/\/object\/(?:sign|public)\/payment-slips\/(.+?)(?:\?|$)/);
+      if (pathMatch) {
+        const cleanPath = decodeURIComponent(pathMatch[1]);
+        const { data } = supabase.storage.from('payment-slips').getPublicUrl(cleanPath);
+        return { success: true, url: data.publicUrl };
       }
-      console.error('getSignedSlipUrl: UUID fallback failed for order', order.id);
-      return { success: false, url: null };
+      // URL รูปแบบอื่น — ใช้ตรงๆ
+      return { success: true, url: slipUrlOrPath };
     }
-    else {
-      console.error('getSignedSlipUrl: unrecognized format', slipUrlOrPath);
+
+    // format B: path ดิบ มี / คั่น เช่น "{user_id}/{filename}.jpg"
+    if (slipUrlOrPath.includes('/')) {
+      const { data } = supabase.storage.from('payment-slips').getPublicUrl(slipUrlOrPath);
+      return { success: true, url: data.publicUrl };
+    }
+
+    // format C: UUID เปล่า (บั๊กเก่า บันทึก orderId แทน path)
+    // list files ใน folder ของ user แล้วหาไฟล์ที่ชื่อขึ้นต้นด้วย order.id
+    if (order?.user_id) {
+      const { data: files } = await supabase.storage
+        .from('payment-slips')
+        .list(order.user_id, { search: order.id });
+
+      if (files && files.length > 0) {
+        // หาไฟล์ที่ตรงกับ order id (ชื่อไฟล์อาจมี ext ต่อท้าย หรือเป็น UUID ตรงๆ)
+        const match = files.find(f =>
+          f.name.startsWith(order.id) || f.name === slipUrlOrPath
+        ) || files[0]; // fallback ใช้ไฟล์แรกถ้าหาไม่เจอ
+
+        const filePath = `${order.user_id}/${match.name}`;
+        const { data } = supabase.storage.from('payment-slips').getPublicUrl(filePath);
+        return { success: true, url: data.publicUrl };
+      }
+
+      console.error('getSlipUrl: no file found in storage for order', order?.id);
       return { success: false, url: null };
     }
 
-    // generate signed URL อายุ 1 ชั่วโมง
-    const { data, error } = await supabase.storage
-      .from('payment-slips')
-      .createSignedUrl(storagePath, 60 * 60);
-
-    if (error || !data?.signedUrl) {
-      console.error('getSignedSlipUrl failed:', error, 'path:', storagePath);
-      return { success: false, url: null };
-    }
-
-    return { success: true, url: data.signedUrl };
+    console.error('getSlipUrl: unrecognized format and no order context', slipUrlOrPath);
+    return { success: false, url: null };
   },
 
   // ───── ตรวจสอบสลิป (Phase 4) ─────
