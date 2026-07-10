@@ -201,13 +201,12 @@ export const order = {
       return { success: false, error: 'อัปโหลดรูปไม่สำเร็จ กรุณาลองใหม่' };
     }
 
-    // บันทึก raw path ลง DB แทน signed URL
-    // เหตุผล: signed URL มีอายุจำกัด (เดิม 30 วัน) — เมื่อหมดอายุรูปจะโหลดไม่ขึ้นทันที
-    // และ Supabase อาจ invalidate token ได้ก่อนกำหนด (rotate key ฯลฯ)
-    // แนวทางที่ถูก: เก็บแค่ path ดิบ แล้วให้ฝั่งอ่าน (admin/ลูกค้า) สร้าง signed URL
-    // ใหม่ทุกครั้งที่เปิดดู — URL มีอายุแค่ 10 นาที (เพียงพอสำหรับดูครั้งเดียว) และ
-    // ไม่มีวันหมดอายุค้างอยู่ใน DB
-    const slipUrl = path; // เก็บเป็น path ดิบ เช่น "{user_id}/{order_id}.jpg"
+    // บันทึก storage path ดิบลง DB แทน signed URL
+    // เหตุผล: signed URL มีอายุจำกัด (30 วัน) ถ้าบันทึก URL สำเร็จตอนส่ง
+    // แต่ admin เปิดดูทีหลัง URL ก็หมดอายุแล้ว ทำให้รูปสลิปหายไปในหน้า admin
+    // วิธีที่ถูกต้องคือบันทึก path ดิบ แล้ว generate signed URL ใหม่ทุกครั้งที่ admin เปิดดู
+    // (ดู admin.getSignedSlipUrl() ด้านล่าง)
+    const slipUrl = path; // เก็บแค่ path: "{user_id}/{order_id}.{ext}"
 
     // อัปเดตสถานะ order ผ่าน function (ตรวจสิทธิ์ + validate state ฝั่ง DB)
     const { data: submitData, error: submitError } = await supabase.rpc('submit_order_slip', {
@@ -334,6 +333,36 @@ export const admin = {
 
     if (error) return { success: false, error: error.message, data: null };
     return { success: true, data };
+  },
+
+  // ───── generate fresh signed URL จาก slip path ─────
+  // เรียกตอน admin เปิด modal ดูสลิป — ไม่ใช้ URL ที่เก็บใน DB โดยตรง
+  // เพราะ URL ใน DB อาจเป็น signed URL เก่าที่หมดอายุแล้ว (ออเดอร์เก่า)
+  // หรือเป็น storage path ดิบ (ออเดอร์ใหม่หลังแก้บั๊ก)
+  // ฟังก์ชันนี้รองรับทั้ง 2 กรณีโดยตรวจจาก pattern ของ value
+  async getSignedSlipUrl(slipUrlOrPath) {
+    if (!slipUrlOrPath) return { success: false, url: null };
+
+    // ถ้าเป็น URL เต็ม (ออเดอร์เก่าก่อนแก้บั๊ก) — ดึง path จาก URL แล้ว re-sign
+    // pattern: https://*.supabase.co/storage/v1/object/sign/payment-slips/{path}
+    //       หรือ https://*.supabase.co/storage/v1/object/public/payment-slips/{path}
+    let storagePath = slipUrlOrPath;
+    const signMatch = slipUrlOrPath.match(/payment-slips\/(.+?)(?:\?|$)/);
+    if (signMatch) {
+      storagePath = decodeURIComponent(signMatch[1]);
+    }
+
+    // generate signed URL อายุ 1 ชั่วโมง — สั้นพอที่จะ secure แต่นานพอสำหรับ session admin
+    const { data, error } = await supabase.storage
+      .from('payment-slips')
+      .createSignedUrl(storagePath, 60 * 60); // 1 ชั่วโมง
+
+    if (error || !data?.signedUrl) {
+      console.error('getSignedSlipUrl failed:', error, 'path:', storagePath);
+      return { success: false, url: null };
+    }
+
+    return { success: true, url: data.signedUrl };
   },
 
   // ───── ตรวจสอบสลิป (Phase 4) ─────
