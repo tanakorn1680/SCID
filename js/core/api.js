@@ -348,49 +348,40 @@ export const admin = {
   async getSlipUrl(slipUrlOrPath, order = null) {
     if (!slipUrlOrPath) return { success: false, url: null };
 
-    // format A: URL เต็มอยู่แล้ว — ใช้ได้เลย
+    // format A: URL เต็ม — ใช้ได้เลย
     if (slipUrlOrPath.startsWith('http')) {
-      // ถ้าเป็น signed URL เก่า (มี token= ต่อท้าย) แปลงเป็น public URL แทน
-      const pathMatch = slipUrlOrPath.match(/\/object\/(?:sign|public)\/payment-slips\/(.+?)(?:\?|$)/);
-      if (pathMatch) {
-        const cleanPath = decodeURIComponent(pathMatch[1]);
-        const { data } = supabase.storage.from('payment-slips').getPublicUrl(cleanPath);
-        return { success: true, url: data.publicUrl };
-      }
-      // URL รูปแบบอื่น — ใช้ตรงๆ
       return { success: true, url: slipUrlOrPath };
     }
 
-    // format B: path ดิบ มี / คั่น เช่น "{user_id}/{filename}.jpg"
+    // format B: path มี / คั่น เช่น "{user_id}/{filename}.jpg"
     if (slipUrlOrPath.includes('/')) {
       const { data } = supabase.storage.from('payment-slips').getPublicUrl(slipUrlOrPath);
       return { success: true, url: data.publicUrl };
     }
 
-    // format C: UUID เปล่า (บั๊กเก่า บันทึก orderId แทน path)
-    // list files ใน folder ของ user แล้วหาไฟล์ที่ชื่อขึ้นต้นด้วย order.id
-    if (order?.user_id) {
-      const { data: files } = await supabase.storage
-        .from('payment-slips')
-        .list(order.user_id, { search: order.id });
+    // format C: UUID เปล่า — ค่านี้คือ user_id (folder name) ไม่ใช่ order_id
+    // list ไฟล์ใน folder นั้น แล้วเอาไฟล์ล่าสุดที่ตรงกับ order นี้
+    const folderId = slipUrlOrPath; // UUID ใน DB คือ folder (user_id)
+    const { data: files, error } = await supabase.storage
+      .from('payment-slips')
+      .list(folderId, { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
-      if (files && files.length > 0) {
-        // หาไฟล์ที่ตรงกับ order id (ชื่อไฟล์อาจมี ext ต่อท้าย หรือเป็น UUID ตรงๆ)
-        const match = files.find(f =>
-          f.name.startsWith(order.id) || f.name === slipUrlOrPath
-        ) || files[0]; // fallback ใช้ไฟล์แรกถ้าหาไม่เจอ
-
-        const filePath = `${order.user_id}/${match.name}`;
-        const { data } = supabase.storage.from('payment-slips').getPublicUrl(filePath);
-        return { success: true, url: data.publicUrl };
-      }
-
-      console.error('getSlipUrl: no file found in storage for order', order?.id);
+    if (error || !files || files.length === 0) {
+      console.error('getSlipUrl: list failed', error, 'folder:', folderId);
       return { success: false, url: null };
     }
 
-    console.error('getSlipUrl: unrecognized format and no order context', slipUrlOrPath);
-    return { success: false, url: null };
+    // ถ้ามีหลายไฟล์ในโฟลเดอร์ ลองหาไฟล์ที่ชื่อตรงกับ order.id ก่อน
+    // ถ้าไม่เจอใช้ไฟล์ล่าสุด (เรียงโดย created_at desc แล้ว)
+    const matched = order?.id
+      ? (files.find(f => f.name.startsWith(order.id)) || files[0])
+      : files[0];
+
+    const { data } = supabase.storage
+      .from('payment-slips')
+      .getPublicUrl(`${folderId}/${matched.name}`);
+
+    return { success: true, url: data.publicUrl };
   },
 
   // ───── ตรวจสอบสลิป (Phase 4) ─────
