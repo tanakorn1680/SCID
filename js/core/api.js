@@ -340,22 +340,48 @@ export const admin = {
   // เพราะ URL ใน DB อาจเป็น signed URL เก่าที่หมดอายุแล้ว (ออเดอร์เก่า)
   // หรือเป็น storage path ดิบ (ออเดอร์ใหม่หลังแก้บั๊ก)
   // ฟังก์ชันนี้รองรับทั้ง 2 กรณีโดยตรวจจาก pattern ของ value
-  async getSignedSlipUrl(slipUrlOrPath) {
+  // slipUrlOrPath = order.slip_url, order = full order object (ต้องการ user_id + id)
+  async getSignedSlipUrl(slipUrlOrPath, order = null) {
     if (!slipUrlOrPath) return { success: false, url: null };
 
-    // ถ้าเป็น URL เต็ม (ออเดอร์เก่าก่อนแก้บั๊ก) — ดึง path จาก URL แล้ว re-sign
+    let storagePath = null;
+
+    // กรณี 1: URL เต็มจาก signed/public URL — ดึง path ออกมา
     // pattern: https://*.supabase.co/storage/v1/object/sign/payment-slips/{path}
-    //       หรือ https://*.supabase.co/storage/v1/object/public/payment-slips/{path}
-    let storagePath = slipUrlOrPath;
     const signMatch = slipUrlOrPath.match(/payment-slips\/(.+?)(?:\?|$)/);
     if (signMatch) {
       storagePath = decodeURIComponent(signMatch[1]);
     }
+    // กรณี 2: path ดิบ "{user_id}/{order_id}.{ext}" — มี / คั่น
+    else if (slipUrlOrPath.includes('/')) {
+      storagePath = slipUrlOrPath;
+    }
+    // กรณี 3: UUID เปล่า (บั๊กเก่า — บันทึก orderId แทน path)
+    // ต้อง reconstruct path จาก user_id + order.id แล้วลอง ext ที่เป็นไปได้
+    else if (order?.user_id && order?.id) {
+      // ลอง extension ที่ bucket รองรับตามลำดับที่พบบ่อย
+      const exts = ['jpg', 'jpeg', 'png', 'webp'];
+      for (const ext of exts) {
+        const tryPath = `${order.user_id}/${order.id}.${ext}`;
+        const { data } = await supabase.storage
+          .from('payment-slips')
+          .createSignedUrl(tryPath, 60 * 60);
+        if (data?.signedUrl) {
+          return { success: true, url: data.signedUrl };
+        }
+      }
+      console.error('getSignedSlipUrl: UUID fallback failed for order', order.id);
+      return { success: false, url: null };
+    }
+    else {
+      console.error('getSignedSlipUrl: unrecognized format', slipUrlOrPath);
+      return { success: false, url: null };
+    }
 
-    // generate signed URL อายุ 1 ชั่วโมง — สั้นพอที่จะ secure แต่นานพอสำหรับ session admin
+    // generate signed URL อายุ 1 ชั่วโมง
     const { data, error } = await supabase.storage
       .from('payment-slips')
-      .createSignedUrl(storagePath, 60 * 60); // 1 ชั่วโมง
+      .createSignedUrl(storagePath, 60 * 60);
 
     if (error || !data?.signedUrl) {
       console.error('getSignedSlipUrl failed:', error, 'path:', storagePath);
@@ -492,7 +518,7 @@ export const admin = {
 
     let query = supabase
       .from('orders')
-      .select('*, profiles(email, display_name), order_items(*, products(name, category_id))', { count: 'exact' })
+      .select('id, user_id, status, total_amount, slip_url, slip_submitted_at, reject_reason, profiles(email, display_name), order_items(*, products(name, category_id))', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
 

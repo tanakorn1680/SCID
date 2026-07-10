@@ -280,7 +280,7 @@ async function openOrderModal(orderId, allOrders) {
   // ไม่ใช้ order.slip_url โดยตรงเพราะอาจเป็น URL เก่าที่หมดอายุแล้ว
   let freshSlipUrl = null;
   if (order.slip_url) {
-    const signResult = await admin.getSignedSlipUrl(order.slip_url);
+    const signResult = await admin.getSignedSlipUrl(order.slip_url, order);
     freshSlipUrl = signResult.url;
   }
 
