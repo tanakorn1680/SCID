@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+  :root{ --navy:#1A6BA0; --gold:#D9A330; --ink:#1A3A52; --green-go:#3F8557; --danger:#E04433; }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{
+    font-family:'IBM Plex Sans Thai', sans-serif;
+    background:#F0F4F8; color:var(--ink); min-height:100vh;
+  }
+  .stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+  @media (max-width:900px){ .stat-grid{ grid-template-columns:repeat(2,1fr); } }
+  .stat-card{
+    background:#fff; border-radius:12px; padding:16px;
+    box-shadow:0 2px 10px rgba(0,40,80,0.08);
+    position:relative; overflow:hidden;
+  }
+  .stat-card.urgent::before{
+    content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--danger);
+  }
+  .stat-label{ font-size:12px; color:rgba(26,58,82,0.55); margin-bottom:6px; }
+  .stat-value{ font-family:'Baloo 2',sans-serif; font-size:26px; font-weight:800; }
+  .stat-value.go{ color:var(--green-go); }
+  .stat-value.urgent{ color:var(--danger); }
+
+  .realtime-badge{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:11.5px; color:var(--green-go); font-weight:600;
+    margin-bottom:18px;
+  }
+  .realtime-dot{
+    width:7px; height:7px; border-radius:50%; background:var(--green-go);
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:0.3; } }
+
+  .section-box{
+    background:#fff; border-radius:12px; padding:18px;
+    box-shadow:0 2px 10px rgba(0,40,80,0.08);
+    margin-bottom:18px;
+  }
+  .section-title{ font-size:14px; font-weight:700; margin-bottom:14px; }
+
+  .stock-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:9px 0; border-bottom:1px dotted rgba(26,106,160,0.15); font-size:13px;
+  }
+  .stock-row:last-child{ border-bottom:none; }
+  .stock-count{ font-family:'Baloo 2',sans-serif; font-weight:800; }
+  .stock-count.low{ color:var(--danger); }
+
+  .quick-link-btn{
+    display:inline-block; padding:9px 16px;
+    background:var(--navy); color:#fff; border-radius:8px;
+    font-size:13px; font-weight:600; text-decoration:none;
+    margin-right:8px; margin-top:6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="admin-shell" id="adminShell"></div>
+
+<script type="module">
+import { renderAdminSidebar, ADMIN_SIDEBAR_CSS } from '../../js/admin/sidebar.js';
+import { requireAdmin } from '../../js/core/router.js';
+import { setupSessionExpiryHandler } from '../../js/core/auth.js';
+setupSessionExpiryHandler();
+import { admin, exportUtil } from '../../js/core/api.js';
+import { supabase } from '../../js/config/supabase.js';
+
+const styleEl = document.createElement('style');
+styleEl.textContent = ADMIN_SIDEBAR_CSS;
+document.head.appendChild(styleEl);
+
+document.getElementById('adminShell').innerHTML = `
+  <div class="sidebar">${renderAdminSidebar('dashboard')}</div>
+  <div class="main-content">
+    <div class="realtime-badge"><span class="realtime-dot"></span> อัปเดตแบบเรียลไทม์</div>
+
+    <div class="stat-grid" id="statGrid">
+      <div class="stat-card urgent">
+        <div class="stat-label">รอตรวจสอบสลิป</div>
+        <div class="stat-value urgent" id="statReview">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">รอส่งไอดี (ยืนยันแล้ว)</div>
+        <div class="stat-value" id="statDelivery">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ส่งสำเร็จวันนี้</div>
+        <div class="stat-value go" id="statDeliveredToday">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">สินค้าทั้งหมด</div>
+        <div class="stat-value" id="statTotalProducts">-</div>
+      </div>
+    </div>
+
+    <div class="section-box">
+      <div class="section-title">สต็อกคงเหลือแยกตามประเภทสินค้า</div>
+      <div id="stockByProduct">กำลังโหลด...</div>
+    </div>
+
+    <div class="section-box">
+      <div class="section-title">ทางลัด</div>
+      <a href="/pages/admin/orders.html" class="quick-link-btn">ตรวจสอบสลิป</a>
+      <a href="/pages/admin/inventory.html" class="quick-link-btn">เพิ่มไอดี</a>
+      <a href="/pages/admin/audit.html" class="quick-link-btn">ดู Audit Log</a>
+    </div>
+
+    <div class="section-box">
+      <div class="section-title">Export ข้อมูล (CSV)</div>
+      <div style="font-size:12px;color:rgba(26,58,82,0.55);margin-bottom:10px;">สำรองข้อมูลก่อนอัปเดตระบบ</div>
+      <button class="quick-link-btn" id="exportOrdersBtn">📥 Export ออเดอร์</button>
+      <button class="quick-link-btn" id="exportInventoryBtn" style="background:var(--green-go)">📥 Export คลังไอดี</button>
+      <button class="quick-link-btn" id="exportAuditBtn" style="background:#666">📥 Export Audit Log</button>
+      <div id="exportStatus" style="font-size:12px;margin-top:8px;color:var(--green-go);display:none;"></div>
+    </div>
+  </div>
+`;
+
+// ───────── โหลด stats ─────────
+async function loadStats() {
+  const result = await admin.getDashboardStats();
+  if (!result.success || !result.data) return;
+
+  const s = result.data;
+
+  document.getElementById('statReview').textContent = s.pending_review_count ?? 0;
+  document.getElementById('statDelivery').textContent = s.pending_delivery_count ?? 0;
+  document.getElementById('statDeliveredToday').textContent = s.delivered_today_count ?? 0;
+
+  const stockMap = s.stock_by_product || {};
+  const productCount = Object.keys(stockMap).length;
+  document.getElementById('statTotalProducts').textContent = productCount;
+
+  const stockEl = document.getElementById('stockByProduct');
+  if (productCount === 0) {
+    stockEl.innerHTML = `<div style="color:rgba(26,58,82,0.5);font-size:13px;">ยังไม่มีสินค้าในระบบ</div>`;
+    return;
+  }
+
+  stockEl.innerHTML = Object.entries(stockMap).map(([name, count]) => {
+    const isLow = count < 5; // เตือนเมื่อสต็อกเหลือน้อย
+    return `
+      <div class="stock-row">
+        <span>${escapeHtml(name)}</span>
+        <span class="stock-count ${isLow ? 'low' : ''}">${count} ไอดี</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+// ───────── Realtime subscription ─────────
+// subscribe การเปลี่ยนแปลงตาราง orders — ทุกครั้งที่มี order ใหม่/สถานะเปลี่ยน
+// ให้ดึง stats ใหม่ทันที ไม่ต้องรอ refresh หน้า (ตามข้อกำหนด "Real-time")
+let realtimeChannel = null;
+
+function subscribeRealtime() {
+  realtimeChannel = supabase
+    .channel('admin-dashboard-orders')
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'orders' },
+      () => { loadStats(); }
+    )
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'inventory' },
+      () => { loadStats(); }
+    )
+    .subscribe();
+}
+
+// cleanup เมื่อออกจากหน้า — กัน memory leak / connection ค้าง
+window.addEventListener('beforeunload', () => {
+  if (realtimeChannel) supabase.removeChannel(realtimeChannel);
+});
+
+// ───────── Init ─────────
+async function init() {
+  const result = await requireAdmin();
+  if (!result) return;
+
+  await loadStats();
+  subscribeRealtime();
+}
+
+init();
+
+// ── Export buttons ──
+async function handleExport(type) {
+  const statusEl = document.getElementById('exportStatus');
+  statusEl.textContent = 'กำลัง export...';
+  statusEl.style.display = 'block';
+  let result;
+  if (type === 'orders')    result = await exportUtil.exportOrders();
+  if (type === 'inventory') result = await exportUtil.exportInventory();
+  if (type === 'audit')     result = await exportUtil.exportAuditLogs();
+  statusEl.textContent = result.success ? 'ดาวน์โหลดสำเร็จ ✅' : `ผิดพลาด: ${result.error}`;
+  setTimeout(() => { statusEl.style.display = 'none'; }, 3000);
+}
+document.getElementById('exportOrdersBtn')?.addEventListener('click', () => handleExport('orders'));
+document.getElementById('exportInventoryBtn')?.addEventListener('click', () => handleExport('inventory'));
+document.getElementById('exportAuditBtn')?.addEventListener('click', () => handleExport('audit'));
+</script>
+
+</body>
+</html>

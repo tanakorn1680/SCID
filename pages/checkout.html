@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ชำระเงิน</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root{
+    --navy:#1A6BA0; --sky:#2196C9; --gold:#D9A330; --gold-deep:#B9821F;
+    --ink:#1A3A52; --line:rgba(26,106,160,0.18); --muted:rgba(26,58,82,0.55);
+    --green-go:#3F8557; --danger:#E04433;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ background:#81CFF0; }
+
+  body{
+    font-family:'IBM Plex Sans Thai', sans-serif;
+    color:var(--ink);
+    min-height:100vh;
+    padding:14px 14px 40px;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .back-link{
+    display:inline-flex; align-items:center; gap:5px;
+    margin-bottom:12px; color:#fff; font-size:13px; font-weight:600;
+    text-decoration:none;
+  }
+
+  .page-title{
+    font-family:'Baloo 2', sans-serif;
+    font-size:19px; font-weight:800; color:#fff;
+    margin-bottom:14px;
+  }
+
+  .checkout-card{
+    background:rgba(255,255,255,0.97);
+    border-radius:16px;
+    padding:18px;
+    margin-bottom:14px;
+    box-shadow:0 8px 24px rgba(0,40,80,0.18);
+  }
+
+  .section-title{
+    font-size:13.5px; font-weight:700;
+    margin-bottom:12px;
+    display:flex; align-items:center; gap:6px;
+  }
+
+  /* ───── Order Summary ───── */
+  .summary-product-row{
+    display:flex; gap:12px; align-items:center;
+    padding-bottom:14px; margin-bottom:14px;
+    border-bottom:1px dashed var(--line);
+  }
+  .summary-product-img{
+    width:64px; height:64px; border-radius:10px;
+    object-fit:cover; flex-shrink:0;
+    background:linear-gradient(135deg, #E8F2FA, #D4E9F7);
+  }
+  .summary-product-name{ font-size:14px; font-weight:700; margin-bottom:3px; }
+  .summary-product-qty{ font-size:12px; color:var(--muted); }
+
+  .summary-row{
+    display:flex; justify-content:space-between;
+    font-size:13px; margin-bottom:8px;
+  }
+  .summary-row.total{
+    font-size:16px; font-weight:800;
+    margin-top:10px; padding-top:10px;
+    border-top:1.5px solid var(--line);
+  }
+  .summary-row.total .amount{ color:var(--gold); font-family:'Baloo 2', sans-serif; }
+
+  .buyer-info-row{
+    display:flex; justify-content:space-between;
+    font-size:13px; padding:8px 0;
+  }
+  .buyer-info-row .label{ color:var(--muted); }
+  .buyer-info-row .value{ font-weight:600; }
+
+  /* ───── Confirm button ───── */
+  .confirm-btn{
+    width:100%; padding:14px 0;
+    background:linear-gradient(135deg, var(--navy) 0%, #0E4C7A 100%);
+    color:#fff; border:none; border-radius:11px;
+    font-size:15.5px; font-weight:700;
+    font-family:'Baloo 2', sans-serif;
+    cursor:pointer;
+  }
+  .confirm-btn:disabled{ opacity:0.55; cursor:not-allowed; }
+
+  /* ───── Payment Step ───── */
+  .countdown-banner{
+    background:rgba(217,163,48,0.12);
+    border:1px solid rgba(217,163,48,0.3);
+    border-radius:10px;
+    padding:10px 14px;
+    text-align:center;
+    font-size:13px;
+    color:var(--gold-deep);
+    margin-bottom:14px;
+  }
+  .countdown-banner .time{ font-weight:800; font-family:'Space Mono', monospace; }
+  .countdown-banner.danger{
+    background:rgba(224,68,51,0.1);
+    border-color:rgba(224,68,51,0.3);
+    color:var(--danger);
+  }
+
+  .qr-wrap{
+    text-align:center;
+    padding:16px;
+    background:rgba(26,106,160,0.04);
+    border-radius:12px;
+    margin-bottom:14px;
+  }
+  .qr-wrap img{
+    width:180px; height:180px;
+    border-radius:10px;
+    background:#fff;
+    padding:8px;
+    box-shadow:0 2px 10px rgba(0,40,80,0.1);
+  }
+
+  .pay-detail-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 0;
+    border-bottom:1px dotted var(--line);
+    font-size:13.5px;
+  }
+  .pay-detail-row:last-child{ border-bottom:none; }
+  .pay-detail-row .label{ color:var(--muted); }
+  .pay-detail-row .value{ font-weight:700; font-family:'Space Mono', monospace; }
+  .copy-btn{
+    background:rgba(26,106,160,0.1); color:var(--navy);
+    border:none; border-radius:6px;
+    padding:3px 9px; font-size:11px; font-weight:700;
+    cursor:pointer; margin-left:8px;
+  }
+
+  .pay-amount-highlight{
+    text-align:center;
+    padding:14px 0;
+    margin-bottom:14px;
+  }
+  .pay-amount-highlight .amount{
+    font-family:'Baloo 2', sans-serif;
+    font-size:30px; font-weight:800; color:var(--gold);
+  }
+  .pay-amount-highlight .label{ font-size:12px; color:var(--muted); }
+
+  /* ───── Slip Upload ───── */
+  .slip-upload-zone{
+    border:2px dashed var(--line);
+    border-radius:12px;
+    padding:24px 16px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s ease;
+  }
+  .slip-upload-zone:hover{ border-color:var(--sky); }
+  .slip-upload-zone.has-preview{ padding:12px; border-style:solid; }
+
+  .slip-preview-img{
+    width:100%; max-height:260px;
+    object-fit:contain;
+    border-radius:8px;
+    margin-bottom:10px;
+  }
+  .upload-icon{ font-size:32px; margin-bottom:8px; }
+  .upload-text{ font-size:13px; color:var(--muted); }
+  .upload-hint{ font-size:11px; color:var(--muted); margin-top:4px; }
+
+  .change-img-btn{
+    font-size:12px; color:var(--navy); font-weight:600;
+    background:none; border:none; cursor:pointer;
+    text-decoration:underline;
+  }
+
+  .submit-slip-btn{
+    width:100%; padding:14px 0;
+    background:linear-gradient(135deg, var(--green-go) 0%, #2F6B43 100%);
+    color:#fff; border:none; border-radius:11px;
+    font-size:15px; font-weight:700;
+    font-family:'Baloo 2', sans-serif;
+    cursor:pointer;
+    margin-top:14px;
+  }
+  .submit-slip-btn:disabled{ opacity:0.45; cursor:not-allowed; }
+
+  .form-alert{
+    padding:10px 12px; border-radius:8px; font-size:13px;
+    margin-bottom:14px; display:none;
+  }
+  .form-alert.show{ display:block; }
+  .form-alert.error{ background:rgba(224,68,51,0.1); color:var(--danger); border:1px solid rgba(224,68,51,0.25); }
+  .form-alert.success{ background:rgba(63,133,87,0.1); color:var(--green-go); border:1px solid rgba(63,133,87,0.25); }
+
+  .step-hidden{ display:none; }
+
+  .skeleton{ text-align:center; padding:60px 20px; color:rgba(255,255,255,0.85); font-size:14px; }
+
+  .success-icon{ font-size:48px; text-align:center; margin-bottom:10px; }
+  .success-title{ text-align:center; font-size:17px; font-weight:700; margin-bottom:8px; }
+  .success-desc{ text-align:center; font-size:13px; color:var(--muted); line-height:1.6; }
+
+  @media (max-width: 480px){
+    .qr-wrap img{ width: 150px; height: 150px; }
+    .pay-amount-highlight .amount{ font-size: 26px; }
+    .confirm-btn, .submit-slip-btn{ font-size: 14px; padding: 12px 0; }
+  }
+</style>
+</head>
+<body>
+
+<a href="/pages/shop.html" class="back-link" id="backLink">← กลับหน้าสินค้า</a>
+<div class="page-title">ชำระเงิน</div>
+
+<div id="checkoutWrap">
+  <div class="skeleton">กำลังโหลด...</div>
+</div>
+
+<script type="module">
+import { shop, order, settings } from '../js/core/api.js';
+import { setupSessionExpiryHandler } from '../js/core/auth.js';
+setupSessionExpiryHandler();
+import { requireAuth } from '../js/core/router.js';
+import { getProfile } from '../js/core/auth.js';
+import { RESERVATION_TTL_MINUTES } from '../js/config/supabase.js';
+
+const params = new URLSearchParams(window.location.search);
+const productId = params.get('product_id');
+const existingOrderId = params.get('order_id'); // รองรับ resume ถ้า refresh หน้าหลังสร้าง order แล้ว
+const wrapEl = document.getElementById('checkoutWrap');
+
+let countdownInterval = null;
+let selectedFile = null;
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+// ───────── STEP 1: แสดงสรุปคำสั่งซื้อ + ยืนยัน ─────────
+async function renderConfirmStep(product, profile) {
+  wrapEl.innerHTML = `
+    <div class="checkout-card">
+      <div class="section-title">📦 สรุปคำสั่งซื้อ</div>
+      <div class="summary-product-row">
+        <img class="summary-product-img" src="${product.image_url || '../images/placeholder.png'}"
+             alt="${escapeHtml(product.name)}" onerror="this.style.display='none'">
+        <div>
+          <div class="summary-product-name">${escapeHtml(product.name)}</div>
+          <div class="summary-product-qty">จำนวน 1 ${escapeHtml(product.unit)}</div>
+        </div>
+      </div>
+      <div class="summary-row">
+        <span>ราคาสินค้า</span>
+        <span>฿${Number(product.price).toLocaleString()}</span>
+      </div>
+      <div class="summary-row total">
+        <span>ยอดรวมทั้งหมด</span>
+        <span class="amount">฿${Number(product.price).toLocaleString()}</span>
+      </div>
+    </div>
+
+    <div class="checkout-card">
+      <div class="section-title">👤 ข้อมูลผู้สั่งซื้อ</div>
+      <div class="buyer-info-row">
+        <span class="label">อีเมล</span>
+        <span class="value">${escapeHtml(profile.email)}</span>
+      </div>
+      <div class="buyer-info-row">
+        <span class="label">ชื่อที่แสดง</span>
+        <span class="value">${escapeHtml(profile.display_name || '-')}</span>
+      </div>
+    </div>
+
+    <div class="form-alert" id="confirmAlert"></div>
+
+    <button class="confirm-btn" id="confirmBtn">ยืนยันการสั่งซื้อ</button>
+  `;
+
+  document.getElementById('confirmBtn').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    btn.textContent = 'กำลังสร้างออเดอร์...';
+
+    const result = await order.create(product.id);
+
+    if (!result.success) {
+      const alertEl = document.getElementById('confirmAlert');
+      alertEl.textContent = result.error;
+      alertEl.className = 'form-alert show error';
+      btn.disabled = false;
+      btn.textContent = 'ยืนยันการสั่งซื้อ';
+      return;
+    }
+
+    // อัปเดต URL ให้มี order_id โดยไม่ reload หน้า — รองรับ refresh แล้ว resume ได้
+    const newUrl = `${window.location.pathname}?order_id=${result.orderId}`;
+    window.history.replaceState({}, '', newUrl);
+
+    renderPaymentStep(result.orderId, result.reservationExpiresAt, product);
+  });
+}
+
+// ───────── STEP 2: แสดงรายละเอียดชำระเงิน + อัปโหลดสลิป ─────────
+async function renderPaymentStep(orderId, expiresAtIso, product) {
+  document.getElementById('backLink').textContent = '← กลับหน้าสินค้า (ออเดอร์ยังคงอยู่)';
+
+  // ดึงข้อมูลการชำระเงินจาก site_settings (DB) — ไม่ hardcode
+  const cfg = await settings.getAll();
+  const siteConfig  = cfg.data || {};
+  const bankName    = siteConfig['payment.bank_name']    || 'ยังไม่ได้ตั้งค่า';
+  const accountNo   = siteConfig['payment.account_no']   || 'ยังไม่ได้ตั้งค่า';
+  const accountName = siteConfig['payment.account_name'] || 'ยังไม่ได้ตั้งค่า';
+  const qrUrl       = siteConfig['payment.qr_url']       || '';
+  const qrHtml = qrUrl
+    ? `<img src="${qrUrl}" alt="QR Code" loading="lazy" style="width:180px;height:180px;object-fit:contain;">`
+    : `<div style="width:180px;height:180px;margin:0 auto;background:#eee;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#999;font-size:12px;text-align:center;">รอตั้งค่า QR Code<br>ในหน้าแอดมิน</div>`;
+
+
+  wrapEl.innerHTML = `
+    <div id="countdownBanner" class="countdown-banner"></div>
+
+    <div class="checkout-card">
+      <div class="section-title">💳 ชำระเงินผ่าน QR Code</div>
+      <div class="qr-wrap">
+        ${qrHtml}
+      </div>
+
+      <div class="pay-detail-row">
+        <span class="label">ธนาคาร</span>
+        <span class="value">${bankName}</span>
+      </div>
+      <div class="pay-detail-row">
+        <span class="label">เลขบัญชี</span>
+        <span class="value" id="accountNumber">${accountNo}
+          <button class="copy-btn" id="copyAccountBtn">คัดลอก</button>
+        </span>
+      </div>
+      <div class="pay-detail-row">
+        <span class="label">ชื่อบัญชี</span>
+        <span class="value">${accountName}</span>
+      </div>
+
+      <div class="pay-amount-highlight">
+        <div class="label">ยอดที่ต้องชำระ</div>
+        <div class="amount">฿${Number(product.price).toLocaleString()}</div>
+      </div>
+    </div>
+
+    <div class="checkout-card">
+      <div class="section-title">📎 แนบสลิปการโอนเงิน</div>
+
+      <div class="form-alert" id="slipAlert"></div>
+
+      <div class="slip-upload-zone" id="uploadZone">
+        <div class="upload-icon">📤</div>
+        <div class="upload-text">แตะเพื่อเลือกรูปสลิป</div>
+        <div class="upload-hint">รองรับ JPG, PNG, WEBP (ไม่เกิน 5MB)</div>
+      </div>
+      <input type="file" id="slipFileInput" accept="image/jpeg,image/png,image/webp" style="display:none;">
+
+      <button class="submit-slip-btn" id="submitSlipBtn" disabled>ส่งสลิป</button>
+    </div>
+  `;
+
+  // ───── Countdown timer ─────
+  const expiresAt = new Date(expiresAtIso).getTime();
+  startCountdown(expiresAt);
+
+  // ───── Copy account number ─────
+  document.getElementById('copyAccountBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(accountNo);
+    e.target.textContent = 'คัดลอกแล้ว';
+    setTimeout(() => { e.target.textContent = 'คัดลอก'; }, 1500);
+  });
+
+  // ───── Slip upload zone ─────
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('slipFileInput');
+  const submitBtn = document.getElementById('submitSlipBtn');
+
+  uploadZone.addEventListener('click', () => {
+    // เปิด file picker จาก zone ได้เฉพาะตอนยังไม่มี preview
+    // หลังมี preview แล้วต้องกดปุ่ม "เปลี่ยนรูป" เท่านั้น (ผูก listener แยกตอน render preview)
+    // กันกรณีกดโดนรูปแล้ว file picker เด้งโดยไม่ตั้งใจ
+    if (!uploadZone.classList.contains('has-preview')) {
+      fileInput.click();
+    }
+  });
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showSlipAlert('ไฟล์มีขนาดใหญ่เกิน 5MB', 'error');
+      fileInput.value = '';
+      return;
+    }
+
+    // ตรวจ magic bytes จริง — ไม่เชื่อแค่ MIME type ที่ browser รายงาน
+    // หรือนามสกุลไฟล์ เพราะผู้ไม่หวังดีเปลี่ยน .exe เป็น .jpg ได้ง่ายมาก
+    // JPEG: FF D8 FF | PNG: 89 50 4E 47 | WEBP: 52 49 46 46 xx xx xx xx 57 45 42 50
+    const isValidImage = await validateImageMagicBytes(file);
+    if (!isValidImage) {
+      showSlipAlert('ไฟล์ไม่ใช่รูปภาพที่รองรับ (JPG, PNG, WEBP เท่านั้น)', 'error');
+      fileInput.value = '';
+      return;
+    }
+
+    selectedFile = file;
+    renderSlipPreview(file);
+    submitBtn.disabled = false;
+  });
+
+  // อ่าน 12 bytes แรกของไฟล์เพื่อตรวจ magic signature
+  async function validateImageMagicBytes(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = (e) => {
+        const arr = new Uint8Array(e.target.result);
+        // JPEG: starts with FF D8 FF
+        if (arr[0] === 0xFF && arr[1] === 0xD8 && arr[2] === 0xFF) return resolve(true);
+        // PNG: starts with 89 50 4E 47 0D 0A 1A 0A
+        if (arr[0] === 0x89 && arr[1] === 0x50 && arr[2] === 0x4E && arr[3] === 0x47) return resolve(true);
+        // WEBP: bytes 0-3 = "RIFF", bytes 8-11 = "WEBP"
+        if (arr[0] === 0x52 && arr[1] === 0x49 && arr[2] === 0x46 && arr[3] === 0x46 &&
+            arr[8] === 0x57 && arr[9] === 0x45 && arr[10] === 0x42 && arr[11] === 0x50) return resolve(true);
+        resolve(false);
+      };
+      reader.readAsArrayBuffer(file.slice(0, 12));
+    });
+  }
+
+  function renderSlipPreview(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      uploadZone.className = 'slip-upload-zone has-preview';
+      uploadZone.innerHTML = `
+        <img class="slip-preview-img" src="${e.target.result}" alt="ตัวอย่างสลิป">
+        <button type="button" class="change-img-btn" id="changeImgBtn">เปลี่ยนรูป</button>
+      `;
+      // ผูก click ใหม่เฉพาะปุ่มเปลี่ยนรูป ไม่ใช่ทั้ง zone (กันเปิด file picker ซ้ำตอนกดดูรูป)
+      document.getElementById('changeImgBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.click();
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // (เดิมมี listener ซ้ำซ้อนตรงนี้ — รวม logic เข้า listener เดียวด้านบนแล้ว)
+
+  // ───── Submit slip ─────
+  submitBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'กำลังส่งสลิป...';
+
+    const result = await order.submitSlip(orderId, selectedFile);
+
+    if (!result.success) {
+      showSlipAlert(result.error, 'error');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'ส่งสลิป';
+      return;
+    }
+
+    clearInterval(countdownInterval);
+    renderSuccessStep();
+  });
+}
+
+function showSlipAlert(message, type) {
+  const el = document.getElementById('slipAlert');
+  el.textContent = message;
+  el.className = `form-alert show ${type}`;
+}
+
+// ───────── Countdown ─────────
+function startCountdown(expiresAtMs) {
+  const bannerEl = document.getElementById('countdownBanner');
+
+  function tick() {
+    const remainMs = expiresAtMs - Date.now();
+
+    if (remainMs <= 0) {
+      clearInterval(countdownInterval);
+      bannerEl.className = 'countdown-banner danger';
+      bannerEl.innerHTML = `⏰ หมดเวลาจองสินค้าแล้ว กรุณา <a href="/pages/shop.html" style="color:inherit;font-weight:700;">สั่งซื้อใหม่</a>`;
+      document.getElementById('uploadZone')?.style.setProperty('pointer-events', 'none');
+      document.getElementById('submitSlipBtn')?.setAttribute('disabled', 'true');
+      return;
+    }
+
+    const minutes = Math.floor(remainMs / 60000);
+    const seconds = Math.floor((remainMs % 60000) / 1000);
+    const isUrgent = remainMs < 2 * 60 * 1000; // เหลือน้อยกว่า 2 นาที
+
+    bannerEl.className = isUrgent ? 'countdown-banner danger' : 'countdown-banner';
+    bannerEl.innerHTML = `กรุณาชำระเงินภายใน <span class="time">${minutes}:${String(seconds).padStart(2,'0')}</span> นาที มิฉะนั้นสินค้าจะถูกปล่อยคืนสต็อก`;
+  }
+
+  tick();
+  countdownInterval = setInterval(tick, 1000);
+}
+
+// ───────── Success step ─────────
+function renderSuccessStep() {
+  wrapEl.innerHTML = `
+    <div class="checkout-card">
+      <div class="success-icon">✅</div>
+      <div class="success-title">ส่งสลิปสำเร็จ</div>
+      <div class="success-desc">
+        ระบบได้รับสลิปของคุณแล้ว และกำลังรอการตรวจสอบจากแอดมิน<br>
+        เมื่อตรวจสอบเสร็จสิ้น เราจะดำเนินการส่งไอดีให้คุณทันที
+      </div>
+    </div>
+    <a href="/pages/history.html" class="confirm-btn" style="display:block;text-align:center;text-decoration:none;">ดูประวัติการสั่งซื้อ</a>
+  `;
+}
+
+// ───────── Init ─────────
+
+// ── Global error display helper ──────────────────────────────────────
+function showFatalError(msg) {
+  const wrap = document.getElementById('pageBody') || document.getElementById('orderList')
+             || document.getElementById('productGrid') || document.getElementById('checkoutWrap')
+             || document.getElementById('orderGrid') || document.getElementById('logList')
+             || document.getElementById('tableBody')?.closest('div') || document.body;
+  if (wrap) wrap.innerHTML = `
+    <div style="text-align:center;padding:50px 20px;color:rgba(26,58,82,0.6);">
+      <div style="font-size:32px;margin-bottom:12px;">⚠️</div>
+      <div style="font-size:14px;font-weight:600;">${msg}</div>
+    </div>`;
+}
+async function init() {
+  const session = await requireAuth();
+  if (!session) return; // requireAuth redirect ไป login แล้ว
+
+  if (!productId && !existingOrderId) {
+    wrapEl.innerHTML = `<div class="skeleton">ไม่พบสินค้าที่ระบุ</div>`;
+    return;
+  }
+
+  const profile = await getProfile();
+
+  // กรณี resume order ที่สร้างไว้แล้ว (เช่น refresh หน้าหลังยืนยันแล้ว)
+  if (existingOrderId) {
+    const orderResult = await order.getMyOrderDetail(existingOrderId);
+
+    if (!orderResult.success || !orderResult.data) {
+      wrapEl.innerHTML = `<div class="skeleton">ไม่พบออเดอร์นี้</div>`;
+      return;
+    }
+
+    const o = orderResult.data;
+
+    if (o.status === 'pending') {
+      const item = o.order_items?.[0];
+      const productResult = await shop.getProduct(item?.product_id);
+      renderPaymentStep(o.id, o.reservation_expires_at, productResult.data);
+    } else if (o.status === 'awaiting_slip_review' || o.status !== 'pending') {
+      renderSuccessStep();
+    }
+    return;
+  }
+
+  // กรณีเข้าจากหน้า product.html ครั้งแรก
+  const productResult = await shop.getProduct(productId);
+
+  if (!productResult.success || !productResult.data) {
+    wrapEl.innerHTML = `<div class="skeleton">ไม่พบสินค้านี้</div>`;
+    return;
+  }
+
+  if (productResult.data.stock_count <= 0) {
+    wrapEl.innerHTML = `<div class="skeleton">สินค้าหมดสต็อกแล้ว</div>`;
+    return;
+  }
+
+  renderConfirmStep(productResult.data, profile);
+}
+
+try {
+  init();
+} catch (err) {
+  console.error('Init error:', err);
+  showFatalError('โหลดข้อมูลไม่สำเร็จ กรุณาลองรีเฟรชหน้าเว็บ');
+}
+</script>
+
+</body>
+</html>

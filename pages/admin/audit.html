@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit Log — Admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  :root{ --navy:#1A6BA0; --gold:#D9A330; --ink:#1A3A52; --green-go:#3F8557; --danger:#E04433; --line:rgba(26,106,160,0.15); }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ font-family:'IBM Plex Sans Thai', sans-serif; background:#F0F4F8; color:var(--ink); min-height:100vh; }
+
+  .page-title{ font-family:'Baloo 2',sans-serif; font-size:19px; font-weight:800; margin-bottom:16px; }
+
+  .filter-bar{ margin-bottom:16px; }
+  .filter-select{
+    padding:9px 12px; border:1.5px solid var(--line); border-radius:8px;
+    font-size:13px; font-family:'IBM Plex Sans Thai', sans-serif; background:#fff;
+  }
+
+  .log-list{ display:flex; flex-direction:column; gap:8px; }
+  .log-item{
+    background:#fff; border-radius:10px; padding:12px 14px;
+    box-shadow:0 1px 6px rgba(0,40,80,0.06);
+    display:flex; gap:12px; align-items:flex-start;
+  }
+  .log-icon{ font-size:18px; flex-shrink:0; margin-top:1px; }
+  .log-body{ flex:1; min-width:0; }
+  .log-action{ font-size:13px; font-weight:700; margin-bottom:2px; }
+  .log-meta{ font-size:11.5px; color:rgba(26,58,82,0.55); }
+  .log-target{ font-family:'Space Mono',monospace; font-size:11px; color:rgba(26,58,82,0.5); }
+
+  .empty-state{ text-align:center; padding:60px 20px; color:rgba(26,58,82,0.5); }
+</style>
+</head>
+<body>
+
+<div class="admin-shell" id="adminShell"></div>
+
+<script type="module">
+import { renderAdminSidebar, ADMIN_SIDEBAR_CSS } from '../../js/admin/sidebar.js';
+import { requireAdmin } from '../../js/core/router.js';
+import { setupSessionExpiryHandler } from '../../js/core/auth.js';
+setupSessionExpiryHandler();
+import { admin } from '../../js/core/api.js';
+
+const styleEl = document.createElement('style');
+styleEl.textContent = ADMIN_SIDEBAR_CSS;
+document.head.appendChild(styleEl);
+
+document.getElementById('adminShell').innerHTML = `
+  <div class="sidebar">${renderAdminSidebar('audit')}</div>
+  <div class="main-content">
+    <div class="page-title">Audit Log</div>
+
+    <div class="filter-bar">
+      <select class="filter-select" id="targetFilter">
+        <option value="">ทุกประเภท</option>
+        <option value="order">ออเดอร์</option>
+        <option value="inventory">คลังไอดี</option>
+        <option value="user">สมาชิก</option>
+      </select>
+    </div>
+
+    <div class="log-list" id="logList"><div class="empty-state">กำลังโหลด...</div></div>
+  </div>
+`;
+
+const ACTION_LABEL = {
+  'auth.login': 'เข้าสู่ระบบ',
+  'auth.register': 'สมัครสมาชิก',
+  'auth.logout': 'ออกจากระบบ',
+  'order.create': 'สร้างออเดอร์',
+  'order.submit_slip': 'ส่งสลิป',
+  'admin.add_inventory': 'เพิ่มไอดี',
+  'admin.update_inventory': 'แก้ไขไอดี',
+  'admin.delete_inventory': 'ลบไอดี',
+  'admin.deliver_inventory': 'ส่งไอดี (ยืนยันสลิป)',
+  'admin.reject_slip': 'ปฏิเสธสลิป',
+  'admin.resend_inventory': 'ส่งไอดีใหม่'
+};
+
+const ACTION_ICON = {
+  'admin.add_inventory': '➕', 'admin.update_inventory': '✏️', 'admin.delete_inventory': '🗑️',
+  'admin.deliver_inventory': '📦', 'admin.reject_slip': '❌', 'admin.resend_inventory': '↻',
+  'order.create': '🛒', 'order.submit_slip': '📎',
+  'auth.login': '🔑', 'auth.register': '👤', 'auth.logout': '🚪'
+};
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+async function loadLogs() {
+  const listEl = document.getElementById('logList');
+  listEl.innerHTML = `<div class="empty-state">กำลังโหลด...</div>`;
+
+  const targetType = document.getElementById('targetFilter').value;
+  const result = await admin.getAuditLogs({ targetType: targetType || null, limit: 150 });
+
+  if (!result.success || result.data.length === 0) {
+    listEl.innerHTML = `<div class="empty-state">ยังไม่มีบันทึก</div>`;
+    return;
+  }
+
+  listEl.innerHTML = result.data.map(log => {
+    const actorLabel = log.profiles?.display_name || log.profiles?.email || 'ระบบ';
+    const actionLabel = ACTION_LABEL[log.action] || log.action;
+    const icon = ACTION_ICON[log.action] || '📝';
+    const time = new Date(log.created_at).toLocaleString('th-TH');
+    const targetLabel = log.target_id ? `#${log.target_id.slice(0,8)}` : '';
+
+    return `
+      <div class="log-item">
+        <div class="log-icon">${icon}</div>
+        <div class="log-body">
+          <div class="log-action">${escapeHtml(actionLabel)}</div>
+          <div class="log-meta">${escapeHtml(actorLabel)} • ${time}</div>
+          ${targetLabel ? `<div class="log-target">${log.target_type} ${targetLabel}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+document.getElementById('targetFilter').addEventListener('change', loadLogs);
+
+
+// ── Global error display helper ──────────────────────────────────────
+function showFatalError(msg) {
+  const wrap = document.getElementById('pageBody') || document.getElementById('orderList')
+             || document.getElementById('productGrid') || document.getElementById('checkoutWrap')
+             || document.getElementById('orderGrid') || document.getElementById('logList')
+             || document.getElementById('tableBody')?.closest('div') || document.body;
+  if (wrap) wrap.innerHTML = `
+    <div style="text-align:center;padding:50px 20px;color:rgba(26,58,82,0.6);">
+      <div style="font-size:32px;margin-bottom:12px;">⚠️</div>
+      <div style="font-size:14px;font-weight:600;">${msg}</div>
+    </div>`;
+}
+async function init() {
+  const result = await requireAdmin();
+  if (!result) return;
+  await loadLogs();
+}
+
+try {
+  init();
+} catch (err) {
+  console.error('Init error:', err);
+  showFatalError('โหลดข้อมูลไม่สำเร็จ กรุณาลองรีเฟรชหน้าเว็บ');
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เข้าสู่ระบบ / สมัครสมาชิก</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root{
+    --paper: #FBF8F1;
+    --navy: #1A6BA0;
+    --sky: #2196C9;
+    --gold: #D9A330;
+    --gold-deep: #B9821F;
+    --ink: #1A3A52;
+    --muted: rgba(26,58,82,0.55);
+    --line: rgba(26,106,160,0.18);
+    --green-go: #3F8557;
+    --danger: #E04433;
+    --card: rgba(255,255,255,0.95);
+  }
+
+  *{ box-sizing: border-box; margin:0; padding:0; }
+  html,body{ background:#81CFF0; }
+
+  body{
+    font-family:'IBM Plex Sans Thai', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .auth-card{
+    background: var(--card);
+    border-radius: 18px;
+    width: 100%;
+    max-width: 380px;
+    padding: 28px 24px 24px;
+    box-shadow: 0 16px 40px rgba(0,40,80,0.25);
+  }
+
+  .auth-logo{
+    text-align: center;
+    margin-bottom: 18px;
+  }
+  .auth-logo img{
+    max-width: 160px;
+    width: 60%;
+  }
+
+  .tab-switch{
+    display: flex;
+    background: rgba(26,106,160,0.08);
+    border-radius: 10px;
+    padding: 3px;
+    margin-bottom: 20px;
+  }
+  .tab-btn{
+    flex: 1;
+    text-align: center;
+    padding: 9px 0;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Baloo 2', sans-serif;
+    color: var(--muted);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all .2s ease;
+    user-select: none;
+  }
+  .tab-btn.active{
+    background: var(--navy);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(26,106,160,0.35);
+  }
+
+  .field-group{ margin-bottom: 14px; }
+  .field-label{
+    display:block;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 5px;
+  }
+  .field-input{
+    width: 100%;
+    padding: 11px 13px;
+    border: 1.5px solid var(--line);
+    border-radius: 9px;
+    font-size: 14px;
+    font-family: 'IBM Plex Sans Thai', sans-serif;
+    background: #fff;
+    color: var(--ink);
+    transition: border-color .15s ease;
+  }
+  .field-input:focus{
+    outline: none;
+    border-color: var(--sky);
+  }
+  .field-input.error{
+    border-color: var(--danger);
+    background: rgba(224,68,51,0.04);
+  }
+
+  .field-error-msg{
+    font-size: 11.5px;
+    color: var(--danger);
+    margin-top: 4px;
+    display: none;
+  }
+  .field-error-msg.show{ display: block; }
+
+  .submit-btn{
+    width: 100%;
+    padding: 13px 0;
+    background: linear-gradient(135deg, var(--navy) 0%, #0E4C7A 100%);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Baloo 2', sans-serif;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: opacity .2s ease, transform .1s ease;
+  }
+  .submit-btn:active{ transform: scale(0.98); }
+  .submit-btn:disabled{
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .form-alert{
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 14px;
+    display: none;
+  }
+  .form-alert.show{ display: block; }
+  .form-alert.error{
+    background: rgba(224,68,51,0.1);
+    color: var(--danger);
+    border: 1px solid rgba(224,68,51,0.25);
+  }
+  .form-alert.success{
+    background: rgba(63,133,87,0.1);
+    color: var(--green-go);
+    border: 1px solid rgba(63,133,87,0.25);
+  }
+
+  .form-panel{ display: none; }
+  .form-panel.active{ display: block; }
+
+  .back-link{
+    display: block;
+    text-align: center;
+    margin-top: 16px;
+    font-size: 12.5px;
+    color: var(--muted);
+    text-decoration: none;
+  }
+
+  @media (max-width: 380px){
+    .auth-card{ padding: 20px 16px 18px; }
+    .tab-btn{ font-size: 13px; }
+    .submit-btn{ font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="auth-card">
+  <div class="auth-logo">
+    <img src="../images/logo-main-service1.png" alt="Main Service">
+  </div>
+
+  <div class="tab-switch">
+    <div class="tab-btn active" data-tab="login">เข้าสู่ระบบ</div>
+    <div class="tab-btn" data-tab="register">สมัครสมาชิก</div>
+  </div>
+
+  <div class="form-alert" id="formAlert"></div>
+
+  <!-- ===== LOGIN PANEL ===== -->
+  <form class="form-panel active" id="loginPanel" novalidate>
+    <div class="field-group">
+      <label class="field-label">อีเมล</label>
+      <input type="email" class="field-input" id="loginEmail" placeholder="you@example.com" required>
+      <div class="field-error-msg" id="loginEmailError"></div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">รหัสผ่าน</label>
+      <input type="password" class="field-input" id="loginPassword" placeholder="••••••••" required>
+      <div class="field-error-msg" id="loginPasswordError"></div>
+    </div>
+    <button type="submit" class="submit-btn" id="loginSubmitBtn">เข้าสู่ระบบ</button>
+  </form>
+
+  <!-- ===== REGISTER PANEL ===== -->
+  <form class="form-panel" id="registerPanel" novalidate>
+    <div class="field-group">
+      <label class="field-label">ชื่อที่แสดง</label>
+      <input type="text" class="field-input" id="regDisplayName" placeholder="ชื่อเล่นของคุณ">
+    </div>
+    <div class="field-group">
+      <label class="field-label">อีเมล</label>
+      <input type="email" class="field-input" id="regEmail" placeholder="you@example.com" required>
+      <div class="field-error-msg" id="regEmailError"></div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">รหัสผ่าน</label>
+      <input type="password" class="field-input" id="regPassword" placeholder="อย่างน้อย 8 ตัวอักษร" required>
+      <div class="field-error-msg" id="regPasswordError"></div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">ยืนยันรหัสผ่าน</label>
+      <input type="password" class="field-input" id="regPasswordConfirm" placeholder="••••••••" required>
+      <div class="field-error-msg" id="regPasswordConfirmError"></div>
+    </div>
+    <button type="submit" class="submit-btn" id="registerSubmitBtn">สมัครสมาชิก</button>
+  </form>
+
+  <a href="/" class="back-link">← กลับหน้าแรก</a>
+</div>
+
+<script type="module">
+import { register, login } from '../js/core/auth.js';
+import { redirectIfAuthenticated } from '../js/core/router.js';
+
+// ถ้า login อยู่แล้ว เด้งไปหน้าที่เหมาะสมทันที ไม่ต้องเห็นหน้านี้
+redirectIfAuthenticated();
+
+// แสดงข้อความเมื่อ session หมดอายุแล้วถูก redirect มาจากหน้าอื่น
+if (new URLSearchParams(window.location.search).get('expired') === '1') {
+  const alertEl = document.getElementById('formAlert');
+  alertEl.textContent = 'Session หมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง';
+  alertEl.className = 'form-alert show error';
+}
+
+// ───────── Tab switching ─────────
+const tabBtns = document.querySelectorAll('.tab-btn');
+const panels = {
+  login: document.getElementById('loginPanel'),
+  register: document.getElementById('registerPanel')
+};
+
+tabBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    tabBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    Object.values(panels).forEach(p => p.classList.remove('active'));
+    panels[btn.dataset.tab].classList.add('active');
+    clearAlert();
+  });
+});
+
+// ───────── Alert helper ─────────
+const alertEl = document.getElementById('formAlert');
+function showAlert(message, type = 'error') {
+  alertEl.textContent = message;
+  alertEl.className = `form-alert show ${type}`;
+}
+function clearAlert() {
+  alertEl.className = 'form-alert';
+}
+
+// ───────── Field error helper ─────────
+function setFieldError(inputId, errorId, message) {
+  document.getElementById(inputId).classList.add('error');
+  const errEl = document.getElementById(errorId);
+  errEl.textContent = message;
+  errEl.classList.add('show');
+}
+function clearFieldError(inputId, errorId) {
+  document.getElementById(inputId).classList.remove('error');
+  document.getElementById(errorId).classList.remove('show');
+}
+
+// ───────── LOGIN ─────────
+const loginPanel = document.getElementById('loginPanel');
+const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+
+loginPanel.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearAlert();
+  clearFieldError('loginEmail', 'loginEmailError');
+  clearFieldError('loginPassword', 'loginPasswordError');
+
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+
+  if (!email) {
+    setFieldError('loginEmail', 'loginEmailError', 'กรุณากรอกอีเมล');
+    return;
+  }
+  if (!password) {
+    setFieldError('loginPassword', 'loginPasswordError', 'กรุณากรอกรหัสผ่าน');
+    return;
+  }
+
+  loginSubmitBtn.disabled = true;
+  loginSubmitBtn.textContent = 'กำลังเข้าสู่ระบบ...';
+
+  try {
+    const result = await login(email, password);
+
+    if (!result.success) {
+      showAlert(result.error, 'error');
+      loginSubmitBtn.disabled = false;
+      loginSubmitBtn.textContent = 'เข้าสู่ระบบ';
+      return;
+    }
+
+    showAlert('เข้าสู่ระบบสำเร็จ กำลังเปลี่ยนหน้า...', 'success');
+
+    // redirect ตาม role
+    setTimeout(() => {
+      if (result.profile?.role === 'admin') {
+        window.location.href = '/pages/admin/dashboard.html';
+      } else {
+        window.location.href = '/pages/shop.html';
+      }
+    }, 600);
+  } catch (err) {
+    // ป้องกันปุ่มค้างตลอดไปเมื่อ network/Supabase ล้มเหลวแบบไม่คาดคิด
+    // (เช่น SUPABASE_URL ใน config ยังไม่ได้ตั้งค่าจริง)
+    console.error('Login error:', err);
+    showAlert('เชื่อมต่อระบบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตหรือลองใหม่อีกครั้ง', 'error');
+    loginSubmitBtn.disabled = false;
+    loginSubmitBtn.textContent = 'เข้าสู่ระบบ';
+  }
+});
+
+// ───────── REGISTER ─────────
+const registerPanel = document.getElementById('registerPanel');
+const registerSubmitBtn = document.getElementById('registerSubmitBtn');
+
+registerPanel.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearAlert();
+  ['regEmail', 'regPassword', 'regPasswordConfirm'].forEach(id =>
+    clearFieldError(id, id + 'Error')
+  );
+
+  const displayName = document.getElementById('regDisplayName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+
+  let hasError = false;
+
+  if (!email) {
+    setFieldError('regEmail', 'regEmailError', 'กรุณากรอกอีเมล');
+    hasError = true;
+  }
+  if (!password) {
+    setFieldError('regPassword', 'regPasswordError', 'กรุณากรอกรหัสผ่าน');
+    hasError = true;
+  } else if (password.length < 8) {
+    setFieldError('regPassword', 'regPasswordError', 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
+    hasError = true;
+  }
+  if (password !== passwordConfirm) {
+    setFieldError('regPasswordConfirm', 'regPasswordConfirmError', 'รหัสผ่านไม่ตรงกัน');
+    hasError = true;
+  }
+
+  if (hasError) return;
+
+  registerSubmitBtn.disabled = true;
+  registerSubmitBtn.textContent = 'กำลังสมัครสมาชิก...';
+
+  try {
+    const result = await register(email, password, displayName);
+
+    if (!result.success) {
+      showAlert(result.error, 'error');
+      registerSubmitBtn.disabled = false;
+      registerSubmitBtn.textContent = 'สมัครสมาชิก';
+      return;
+    }
+
+    showAlert('สมัครสมาชิกสำเร็จ! กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ (ถ้าเปิดใช้งาน)', 'success');
+    registerSubmitBtn.disabled = false;
+    registerSubmitBtn.textContent = 'สมัครสมาชิก';
+
+    // เปลี่ยนไป tab login ให้พร้อมเข้าสู่ระบบ
+    setTimeout(() => {
+      document.querySelector('.tab-btn[data-tab="login"]').click();
+      document.getElementById('loginEmail').value = email;
+    }, 1200);
+  } catch (err) {
+    // ป้องกันปุ่มค้างตลอดไปเมื่อ network/Supabase ล้มเหลวแบบไม่คาดคิด
+    // (เช่น SUPABASE_URL ใน config ยังไม่ได้ตั้งค่าจริง)
+    console.error('Register error:', err);
+    showAlert('เชื่อมต่อระบบไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ตหรือลองใหม่อีกครั้ง', 'error');
+    registerSubmitBtn.disabled = false;
+    registerSubmitBtn.textContent = 'สมัครสมาชิก';
+  }
+});
+</script>
+
+</body>
+</html>

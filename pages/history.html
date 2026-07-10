@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ประวัติการสั่งซื้อ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  :root{
+    --navy:#1A6BA0; --sky:#2196C9; --gold:#D9A330; --gold-deep:#B9821F;
+    --ink:#1A3A52; --line:rgba(26,106,160,0.18); --muted:rgba(26,58,82,0.55);
+    --green-go:#3F8557; --danger:#E04433;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ background:#81CFF0; }
+  body{
+    font-family:'IBM Plex Sans Thai',sans-serif;
+    color:var(--ink); min-height:100vh; padding:0 0 40px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px;
+    background:rgba(255,255,255,0.15);
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    position:sticky; top:0; z-index:20;
+  }
+  .topbar img{ height:32px; }
+  .back-link{ font-size:13px; font-weight:600; color:#fff; text-decoration:none; }
+  .page-header{ padding:20px 16px 14px; }
+  .page-title{ font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:800; color:#fff; }
+  .page-sub{ font-size:13px; color:rgba(255,255,255,0.75); margin-top:3px; }
+  .toast{
+    position:fixed; top:70px; left:50%; transform:translateX(-50%) translateY(-20px);
+    background:#1A3A52; color:#fff;
+    padding:12px 20px; border-radius:12px;
+    font-size:13.5px; font-weight:600;
+    box-shadow:0 8px 24px rgba(0,0,0,0.3);
+    z-index:100; white-space:nowrap;
+    opacity:0; transition:opacity .3s ease, transform .3s ease;
+    pointer-events:none;
+    display:flex; align-items:center; gap:8px;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .order-list{ padding:0 14px; }
+  .order-card{
+    background:rgba(255,255,255,0.97); border-radius:14px; padding:15px;
+    margin-bottom:10px; box-shadow:0 3px 12px rgba(0,40,80,0.12);
+    border-left:4px solid transparent;
+  }
+  .order-card.pending      { border-left-color:rgba(26,58,82,0.25); }
+  .order-card.awaiting_slip_review{ border-left-color:var(--gold); }
+  .order-card.paid         { border-left-color:var(--navy); }
+  .order-card.delivered    { border-left-color:var(--green-go); }
+  .order-card.cancelled,
+  .order-card.refunded     { border-left-color:var(--danger); }
+  @keyframes highlight-pulse{
+    0%  { box-shadow:0 0 0 0 rgba(63,133,87,0.5); }
+    60% { box-shadow:0 0 0 10px rgba(63,133,87,0); }
+    100%{ box-shadow:0 0 0 0 rgba(63,133,87,0); }
+  }
+  .order-card.pulse{ animation:highlight-pulse .9s ease-out; }
+  .order-top{
+    display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;
+  }
+  .order-meta{ flex:1; min-width:0; }
+  .order-id  { font-size:11px; color:var(--muted); font-family:'Space Mono',monospace; margin-bottom:2px; }
+  .order-date{ font-size:11px; color:var(--muted); }
+  .status-badge{
+    font-size:10.5px; font-weight:700; padding:4px 10px; border-radius:12px;
+    display:inline-flex; align-items:center; gap:3px; white-space:nowrap; flex-shrink:0; margin-left:8px;
+  }
+  .status-badge.pending             { background:rgba(26,58,82,0.08); color:var(--muted); }
+  .status-badge.awaiting_slip_review{ background:rgba(217,163,48,0.15); color:var(--gold-deep); }
+  .status-badge.paid                { background:rgba(26,106,160,0.12); color:var(--navy); }
+  .status-badge.delivered           { background:rgba(63,133,87,0.12); color:var(--green-go); }
+  .status-badge.cancelled,
+  .status-badge.refunded            { background:rgba(224,68,51,0.1); color:var(--danger); }
+  .order-product{ font-size:14px; font-weight:700; margin-bottom:4px; }
+  .order-amount{
+    font-family:'Baloo 2',sans-serif; font-weight:800; color:var(--gold); font-size:18px; margin-bottom:12px;
+  }
+  .detail-btn{
+    display:block; width:100%; padding:10px 0;
+    background:var(--navy); color:#fff; border:none; border-radius:9px;
+    font-size:13px; font-weight:700; font-family:'Baloo 2',sans-serif;
+    text-align:center; text-decoration:none; cursor:pointer;
+  }
+  .detail-btn.ghost{
+    background:rgba(26,106,160,0.08); color:var(--navy); border:1.5px solid rgba(26,106,160,0.2);
+  }
+  .empty-state{ text-align:center; padding:70px 20px; color:rgba(255,255,255,0.8); font-size:14px; }
+  .loading-state{ text-align:center; padding:50px 20px; color:rgba(255,255,255,0.8); }
+
+  @media (max-width: 360px){
+    .status-badge{ font-size: 9.5px; padding: 3px 7px; }
+    .order-amount{ font-size: 16px; }
+    .detail-btn{ font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/pages/shop.html" class="back-link">← หน้าสินค้า</a>
+  <img src="../images/logo-main-service1.png" alt="logo">
+</div>
+
+<div class="page-header">
+  <div class="page-title">ประวัติการสั่งซื้อ</div>
+  <div class="page-sub" id="countLabel">กำลังโหลด...</div>
+</div>
+
+<div class="toast" id="toastEl">
+  <span>🎉</span><span id="toastMsg"></span>
+</div>
+
+<div class="order-list" id="orderList">
+  <div class="loading-state">กำลังโหลด...</div>
+</div>
+
+<script type="module">
+import { requireAuth } from '../js/core/router.js';
+import { setupSessionExpiryHandler } from '../js/core/auth.js';
+setupSessionExpiryHandler();
+import { order } from '../js/core/api.js';
+import { supabase } from '../js/config/supabase.js';
+
+const STATUS = {
+  pending:               { label:'รอชำระเงิน',       dot:'⏳' },
+  awaiting_slip_review:  { label:'รอตรวจสอบสลิป',   dot:'🔍' },
+  paid:                  { label:'รอส่งไอดี',         dot:'⏱' },
+  delivered:             { label:'ส่งข้อมูลแล้ว',    dot:'✅' },
+  processing:            { label:'กำลังจัดส่ง',       dot:'📦' },
+  completed:             { label:'สำเร็จ',            dot:'✅' },
+  cancelled:             { label:'ยกเลิก',            dot:'❌' },
+  refunded:              { label:'คืนเงินแล้ว',       dot:'↩' }
+};
+
+function esc(str){ const d=document.createElement('div'); d.textContent=str??''; return d.innerHTML; }
+function fmtDate(iso){ return iso ? new Date(iso).toLocaleDateString('th-TH',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '-'; }
+
+let toastTimer = null;
+function showToast(msg){
+  const el=document.getElementById('toastEl');
+  document.getElementById('toastMsg').textContent=msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),5000);
+}
+
+function renderCards(orders){
+  document.getElementById('countLabel').textContent=`ทั้งหมด ${orders.length} รายการ • เรียงจากล่าสุด`;
+  const listEl=document.getElementById('orderList');
+  if(orders.length===0){ listEl.innerHTML=`<div class="empty-state">ยังไม่มีประวัติการสั่งซื้อ</div>`; return; }
+
+  listEl.innerHTML=orders.map(o=>{
+    const name=o.order_items?.[0]?.products?.name||'-';
+    const s=STATUS[o.status]||{label:o.status,dot:'•'};
+    let cta='';
+    if(o.status==='pending'){
+      cta=`<a href="/pages/checkout.html?order_id=${o.id}" class="detail-btn">ชำระเงิน →</a>`;
+    } else {
+      const ghost=o.status==='awaiting_slip_review'?' ghost':'';
+      cta=`<a href="/pages/order-detail.html?id=${o.id}" class="detail-btn${ghost}">ดูรายละเอียด →</a>`;
+    }
+    return `
+      <div class="order-card ${o.status}" id="card-${o.id}">
+        <div class="order-top">
+          <div class="order-meta">
+            <div class="order-id">#${o.id.slice(0,8).toUpperCase()}</div>
+            <div class="order-date">${fmtDate(o.created_at)}</div>
+          </div>
+          <span class="status-badge ${o.status}">${esc(s.dot)} ${esc(s.label)}</span>
+        </div>
+        <div class="order-product">${esc(name)}</div>
+        <div class="order-amount">฿${Number(o.total_amount).toLocaleString()}</div>
+        ${cta}
+      </div>`;
+  }).join('');
+}
+
+function applyRealtimeUpdate(updated){
+  const card=document.getElementById(`card-${updated.id}`);
+  if(card){
+    const s=STATUS[updated.status]||{label:updated.status,dot:'•'};
+    card.querySelector('.status-badge').className=`status-badge ${updated.status}`;
+    card.querySelector('.status-badge').textContent=`${s.dot} ${s.label}`;
+    Object.keys(STATUS).forEach(k=>card.classList.remove(k));
+    card.classList.add(updated.status);
+    card.classList.remove('pulse');
+    void card.offsetWidth;
+    card.classList.add('pulse');
+  }
+  if(updated.status==='delivered'){
+    showToast('ออเดอร์ของคุณได้รับการดำเนินการเรียบร้อยแล้ว');
+  }
+}
+
+let realtimeChannel=null;
+function subscribeRealtime(userId){
+  realtimeChannel=supabase
+    .channel(`history-orders-${userId}`)
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'orders',filter:`user_id=eq.${userId}`},
+      (payload)=>applyRealtimeUpdate(payload.new))
+    .subscribe();
+}
+window.addEventListener('beforeunload',()=>{ if(realtimeChannel) supabase.removeChannel(realtimeChannel); });
+
+
+// ── Global error display helper ──────────────────────────────────────
+function showFatalError(msg) {
+  const wrap = document.getElementById('pageBody') || document.getElementById('orderList')
+             || document.getElementById('productGrid') || document.getElementById('checkoutWrap')
+             || document.getElementById('orderGrid') || document.getElementById('logList')
+             || document.getElementById('tableBody')?.closest('div') || document.body;
+  if (wrap) wrap.innerHTML = `
+    <div style="text-align:center;padding:50px 20px;color:rgba(26,58,82,0.6);">
+      <div style="font-size:32px;margin-bottom:12px;">⚠️</div>
+      <div style="font-size:14px;font-weight:600;">${msg}</div>
+    </div>`;
+}
+async function init(){
+  const session=await requireAuth();
+  if(!session) return;
+  const result=await order.getMyOrders();
+  if(!result.success){ document.getElementById('orderList').innerHTML=`<div class="empty-state">โหลดข้อมูลไม่สำเร็จ</div>`; return; }
+  renderCards(result.data);
+  subscribeRealtime(session.user.id);
+}
+try {
+  init();
+} catch (err) {
+  console.error('Init error:', err);
+  showFatalError('โหลดข้อมูลไม่สำเร็จ กรุณาลองรีเฟรชหน้าเว็บ');
+}
+</script>
+
+</body>
+</html>
