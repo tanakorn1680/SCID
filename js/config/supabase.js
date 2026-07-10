@@ -5,10 +5,24 @@
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-// TODO: แทนที่ด้วยค่าจริงจาก Supabase Dashboard > Settings > API
+// ค่าจริงถูก inject เข้ามาตอน Vercel build โดย scripts/inject-env.sh
+// (แทนที่ token __SUPABASE_URL__ / __SUPABASE_ANON_KEY__ ด้วยค่าจาก
+// Vercel Environment Variables — ดูรายละเอียดใน SETUP.md)
 // ใช้ ANON KEY เท่านั้น — ห้ามใช้ SERVICE_ROLE key ใน frontend เด็ดขาด
-const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_ANON_PUBLIC_KEY';
+//
+// เมื่อรันบนเครื่อง local โดยไม่ผ่าน build script ตัวแปรนี้จะยังเป็น
+// placeholder ตรงๆ — ทำให้ createClient() พังแบบ error ชัดเจนทันที
+// แทนที่จะไปหลอกต่อว่าเชื่อมต่อ Supabase จริง (fail fast โดยตั้งใจ)
+const SUPABASE_URL = '__SUPABASE_URL__';
+const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
+
+if (SUPABASE_URL.startsWith('__') || SUPABASE_ANON_KEY.startsWith('__')) {
+  throw new Error(
+    'Supabase config ยังไม่ถูก inject ค่าจริง — ' +
+    'ตรวจสอบว่า Vercel Build Command รัน scripts/inject-env.sh ' +
+    'และตั้งค่า SUPABASE_URL / SUPABASE_ANON_KEY ใน Vercel Environment Variables แล้ว'
+  );
+}
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
