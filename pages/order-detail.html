@@ -363,42 +363,14 @@ async function renderPage(o) {
          <div class="sub">เมื่อได้รับการยืนยัน ไอดีจะปรากฏที่นี่ทันที</div>
        </div>`;
 
-  // ── generate signed URL สดใหม่จาก raw path ──────────────────────────────
-  // slip_url ใน DB เป็น path ดิบ เช่น "{user_id}/{order_id}.jpg"
-  // สร้าง signed URL ใหม่ทุกครั้งที่ renderPage ถูกเรียก (อายุ 10 นาที)
-  // รองรับทั้งข้อมูลใหม่ (raw path) และข้อมูลเก่า (signed URL เดิมที่บันทึกก่อน fix)
-  let freshSlipUrl = null;
-  if (o.slip_url) {
-    const isRawPath = !o.slip_url.startsWith('http');
-    if (isRawPath) {
-      // กรณีใหม่: raw path → สร้าง signed URL ใหม่
-      const { data: signedData, error: signedError } = await supabase.storage
-        .from('payment-slips')
-        .createSignedUrl(o.slip_url, 60 * 10); // 10 นาที
-      if (!signedError && signedData?.signedUrl) {
-        freshSlipUrl = signedData.signedUrl;
-      }
-    } else {
-      // กรณีเก่า (legacy): ใช้ URL เดิม — อาจหมดอายุแล้ว แต่ไม่มี raw path ให้ re-sign
-      // error handler ด้านล่างจะจัดการกรณีนี้
-      freshSlipUrl = o.slip_url;
-    }
-  }
-
-  const slipHtml = freshSlipUrl
+  const slipHtml = o.slip_url
     ? `<div class="slip-wrap">
-         <img class="slip-img" src="${freshSlipUrl}" alt="สลิปการโอนเงิน" id="slipImg">
+         <img class="slip-img" src="${o.slip_url}" alt="สลิปการโอนเงิน" id="slipImg">
          ${o.slip_submitted_at
            ? `<div class="slip-time">ส่งสลิปเมื่อ ${fmtDate(o.slip_submitted_at)}</div>`
            : ''}
        </div>`
-    : o.slip_url
-      ? `<div class="slip-wrap">
-           <div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">
-             ไม่สามารถโหลดรูปสลิปได้ชั่วคราว กรุณาลองรีเฟรชหน้า
-           </div>
-         </div>`
-      : `<div class="slip-wrap"><div class="no-slip">ยังไม่มีสลิป</div></div>`;
+    : `<div class="slip-wrap"><div class="no-slip">ยังไม่มีสลิป</div></div>`;
 
   pageBody.innerHTML = `
     <!-- สถานะ -->
@@ -454,13 +426,13 @@ async function renderPage(o) {
   // ── ผูก listeners ──
   const slipImgEl2 = document.getElementById('slipImg');
   slipImgEl2?.addEventListener('click', () => {
-    document.getElementById('lightboxImg').src = freshSlipUrl || '';
+    document.getElementById('lightboxImg').src = o.slip_url;
     document.getElementById('lightbox').classList.add('show');
   });
-  // ลิงก์รูปสลิปโหลดไม่ขึ้น (เช่น legacy signed URL หมดอายุก่อน fix) — แจ้งชัดเจน
+  // ลิงก์รูปสลิปหมดอายุ/เสียหาย (เช่น signed URL เกิน 30 วัน) — แจ้งชัดเจนแทนรูปพัง
   slipImgEl2?.addEventListener('error', () => {
     slipImgEl2.outerHTML = `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;">
-      โหลดรูปสลิปไม่สำเร็จ — ติดต่อแอดมินหากต้องใช้เป็นหลักฐาน
+      โหลดรูปสลิปไม่สำเร็จ ลิงก์อาจหมดอายุ — ติดต่อแอดมินหากต้องใช้เป็นหลักฐาน
     </div>`;
   }, { once: true });
 

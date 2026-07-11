@@ -276,19 +276,9 @@ async function openOrderModal(orderId, allOrders) {
     ? new Date(order.slip_submitted_at).toLocaleString('th-TH')
     : '-';
 
-  // generate fresh signed URL ทุกครั้งที่เปิด modal
-  // ไม่ใช้ order.slip_url โดยตรงเพราะอาจเป็น URL เก่าที่หมดอายุแล้ว
-  let freshSlipUrl = null;
-  if (order.slip_url) {
-    const signResult = await admin.getSlipUrl(order.slip_url, order);
-    freshSlipUrl = signResult.url;
-  }
-
-  const slipImageHtml = freshSlipUrl
-    ? `<img class="slip-full-img" src="${freshSlipUrl}" alt="สลิปการโอนเงิน" id="slipImg">`
-    : order.slip_url
-      ? `<div style="text-align:center;padding:26px 16px;color:#B9821F;background:rgba(217,163,48,0.1);border-radius:10px;font-size:13px;line-height:1.6;">⚠️ โหลดรูปสลิปไม่สำเร็จ<br>ให้ลูกค้ากดส่งสลิปใหม่อีกครั้งที่หน้าออเดอร์ของเขา</div>`
-      : `<div style="text-align:center;padding:30px;color:rgba(26,58,82,0.5);">ยังไม่มีสลิป</div>`;
+  const slipImageHtml = order.slip_url
+    ? `<img class="slip-full-img" src="${order.slip_url}" alt="สลิปการโอนเงิน" id="slipImg">`
+    : `<div style="text-align:center;padding:30px;color:rgba(26,58,82,0.5);">ยังไม่มีสลิป</div>`;
 
   // ปุ่ม action เปลี่ยนตามสถานะ:
   // awaiting_slip_review → ยืนยัน/ปฏิเสธ
@@ -334,12 +324,19 @@ async function openOrderModal(orderId, allOrders) {
 
   overlay.querySelector('#closeModalBtn').addEventListener('click', () => overlay.remove());
 
-  // คลิกรูปสลิป → เปิด lightbox ซูมเต็มจอ (ใช้ freshSlipUrl ที่ generate ใหม่แล้ว)
+  // คลิกรูปสลิป → เปิด lightbox ซูมเต็มจอ
   const slipImgEl = overlay.querySelector('#slipImg');
   slipImgEl?.addEventListener('click', () => {
-    document.getElementById('lightboxImg').src = freshSlipUrl;
+    document.getElementById('lightboxImg').src = order.slip_url;
     document.getElementById('lightbox').classList.add('show');
   });
+  // โหลดรูปไม่สำเร็จ (เช่น signed URL หมดอายุ หรือเป็นออเดอร์เก่าก่อนแก้บั๊กที่บันทึก
+  // path ดิบไว้แทนลิงก์จริง) แจ้งชัดเจนแทนไอคอนรูปพักที่ดูไม่ออกว่าเกิดอะไรขึ้น
+  slipImgEl?.addEventListener('error', () => {
+    slipImgEl.outerHTML = `<div style="text-align:center;padding:26px 16px;color:#B9821F;background:rgba(217,163,48,0.1);border-radius:10px;font-size:13px;line-height:1.6;">
+      ⚠️ โหลดรูปสลิปไม่สำเร็จ (ลิงก์อาจหมดอายุหรือเสียหาย)<br>ให้ลูกค้ากดส่งสลิปใหม่อีกครั้งที่หน้าออเดอร์ของเขา
+    </div>`;
+  }, { once: true });
 
   // โหลดประวัติการส่งไอดี (ถ้าเคยส่งแล้ว — แสดงทุกครั้งที่เคยส่ง ไม่ใช่แค่ล่าสุด)
   if (order.status === 'delivered') {
