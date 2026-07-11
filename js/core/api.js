@@ -201,27 +201,15 @@ export const order = {
       return { success: false, error: 'อัปโหลดรูปไม่สำเร็จ กรุณาลองใหม่' };
     }
 
-    // ดึง signed URL อายุยาว (ใช้แสดงรูปตอน admin ตรวจสอบใน Phase 4)
-    const { data: signedData, error: signedError } = await supabase.storage
-      .from('payment-slips')
-      .createSignedUrl(path, 60 * 60 * 24 * 30); // 30 วัน
-
-    // ถ้า sign ไม่สำเร็จ ห้าม fallback เป็น path ดิบ เพราะ path เฉยๆ ใช้เป็น <img src>
-    // ไม่ได้จริง (bucket เป็น private) ผลคือ slip_url ที่บันทึกลง DB จะเป็นรูปที่โหลดไม่ขึ้น
-    // ตลอดไป — ทั้งฝั่ง admin ตรวจสอบและฝั่งลูกค้าดูประวัติออเดอร์ตัวเอง
-    // ถือว่าเคสนี้ล้มเหลวไปเลยดีกว่า ลูกค้ากดส่งสลิปใหม่ได้ทันที (ไฟล์ใน storage ไม่หาย
-    // เพราะ upload สำเร็จแล้วและ path เดิมใช้ upsert:true อยู่แล้ว)
-    if (signedError || !signedData?.signedUrl) {
-      console.error('createSignedUrl failed:', signedError);
-      return { success: false, error: 'สร้างลิงก์รูปสลิปไม่สำเร็จ กรุณากดส่งสลิปอีกครั้ง' };
-    }
-
-    const slipUrl = signedData.signedUrl;
-
-    // อัปเดตสถานะ order ผ่าน function (ตรวจสิทธิ์ + validate state ฝั่ง DB)
+    // เก็บ "path ดิบ" ลง DB แทน signed URL — ไม่ generate signed URL ตรงนี้
+    // เหตุผล: signed URL มีอายุจำกัด (เช่น 30 วัน) ถ้า generate ตอนอัปโหลดแล้ว
+    // เก็บ URL นั้นถาวร พอ token หมดอายุ รูปจะโหลดไม่ขึ้นทั้งฝั่งแอดมินและลูกค้า
+    // แก้โดยเก็บแค่ path ดิบ แล้ว sign URL ใหม่สดๆ ทุกครั้งที่มีคนเปิดดู
+    // (ดู api.getSlipSignedUrl) — เก็บใน slip_url column เดิม (ชื่อคอลัมน์เก่า
+    // แต่ตอนนี้ความหมายคือ "storage path" ไม่ใช่ URL เต็ม)
     const { data: submitData, error: submitError } = await supabase.rpc('submit_order_slip', {
       p_order_id: orderId,
-      p_slip_url: slipUrl
+      p_slip_url: path
     });
 
     if (submitError) {
@@ -244,6 +232,26 @@ export const order = {
     }
 
     return { success: true };
+  },
+
+  // sign URL สดสำหรับลูกค้าดูสลิปตัวเอง (RLS: slip_select_own_folder อนุญาตเฉพาะ
+  // ไฟล์ใน folder ตัวเอง — path เริ่มด้วย auth.uid() อยู่แล้วตอน submitSlip)
+  // อายุ 10 นาที ใช้ครั้งเดียวตอนเปิดหน้า ไม่เก็บถาวร
+  // หมายเหตุ: ถ้า order status เป็น delivered/pending (ถูกปฏิเสธ) ไฟล์อาจถูกลบไปแล้ว
+  // ตามนโยบาย "ตรวจสอบเสร็จแล้วลบทิ้ง" — เคสนี้จะได้ error กลับมา ให้ handle เป็น
+  // ข้อความปกติ ไม่ใช่ error จริง
+  async getSlipSignedUrl(slipPath) {
+    if (!slipPath) return { success: false, error: 'ไม่พบไฟล์สลิป' };
+
+    const { data, error } = await supabase.storage
+      .from('payment-slips')
+      .createSignedUrl(slipPath, 60 * 10);
+
+    if (error || !data?.signedUrl) {
+      return { success: false, error: 'ไม่พบรูปสลิป (ไฟล์ถูกลบหลังแอดมินตรวจสอบเสร็จแล้วตามนโยบาย)' };
+    }
+
+    return { success: true, url: data.signedUrl };
   }
 };
 
@@ -348,7 +356,9 @@ export const admin = {
   // ───── ตรวจสอบสลิป (Phase 4) ─────
   // ยืนยันสลิป + ส่งไอดี เป็น atomic เดียวกันที่ DB (migration 009)
   // ห้ามแยกเป็น 2 ขั้นตอนจาก JS เพราะมี race condition ถ้าแอดมิน 2 คนกดพร้อมกัน
-  async approveSlipAndDeliver(orderId) {
+  // slipPath: path ดิบใน storage (order.slip_url ที่ query มา) — ใช้ลบไฟล์ทิ้ง
+  // หลังยืนยันสำเร็จ ตามนโยบาย "ตรวจสลิปเสร็จแล้วลบทิ้ง ไม่เก็บสลิปไว้ถาวร"
+  async approveSlipAndDeliver(orderId, slipPath) {
     const { data, error } = await supabase.rpc('admin_approve_slip_and_deliver', {
       p_order_id: orderId
     });
@@ -357,10 +367,26 @@ export const admin = {
 
     const row = data?.[0];
     if (!row?.success) return { success: false, error: row?.error || 'ไม่สำเร็จ' };
+
+    // ลบไฟล์สลิปทิ้งหลังยืนยันสำเร็จ — ทำหลัง DB update เสร็จเท่านั้น
+    // (เรียงลำดับตั้งใจ: ถ้าลบไฟล์ก่อนแล้ว DB update ล้มเหลว จะเสียหลักฐานฟรีๆ
+    // โดยที่ order ยังไม่ถูกยืนยันจริง กลับกัน ถ้า DB สำเร็จแล้วลบไฟล์พลาด
+    // แค่เหลือไฟล์ค้าง ไม่กระทบสถานะ order — ความเสี่ยงน้อยกว่ามาก)
+    // ไม่ block ผลลัพธ์ที่คืนให้ผู้ใช้ด้วย error ตรงนี้ เพราะ order ยืนยันสำเร็จแล้ว
+    // จริงๆ การลบไฟล์ไม่สำเร็จไม่ควรทำให้ทั้ง action ดูเหมือนล้มเหลว
+    if (slipPath) {
+      const { error: removeError } = await supabase.storage
+        .from('payment-slips')
+        .remove([slipPath]);
+      if (removeError) {
+        console.error('ลบไฟล์สลิปไม่สำเร็จ (order ยืนยันสำเร็จแล้ว):', removeError);
+      }
+    }
+
     return { success: true };
   },
 
-  async rejectSlip(orderId, reason) {
+  async rejectSlip(orderId, reason, slipPath) {
     const { data, error } = await supabase.rpc('admin_reject_slip', {
       p_order_id: orderId,
       p_reason: reason
@@ -370,7 +396,36 @@ export const admin = {
 
     const row = data?.[0];
     if (!row?.success) return { success: false, error: row?.error || 'ไม่สำเร็จ' };
+
+    // ปฏิเสธ = ลบไฟล์เดิมทิ้งเหมือนกัน — ลูกค้าอัปโหลดใหม่จะ upsert ทับ path เดิมอยู่แล้ว
+    // (path คำนวณจาก {user_id}/{order_id}.{ext} คงที่ ไม่ต้องกังวลชนกับไฟล์ใหม่)
+    if (slipPath) {
+      const { error: removeError } = await supabase.storage
+        .from('payment-slips')
+        .remove([slipPath]);
+      if (removeError) {
+        console.error('ลบไฟล์สลิปไม่สำเร็จ (order ปฏิเสธสำเร็จแล้ว):', removeError);
+      }
+    }
+
     return { success: true };
+  },
+
+  // สร้าง signed URL สดใหม่จาก path ดิบที่เก็บใน order.slip_url
+  // อายุ 10 นาทีพอ เพราะใช้แค่ตอนแอดมินเปิด modal ตรวจสลิปครั้งเดียว
+  // ไม่เก็บ URL นี้ถาวรที่ไหน — generate ใหม่ทุกครั้งที่เปิดดู
+  async getSlipSignedUrl(slipPath) {
+    if (!slipPath) return { success: false, error: 'ไม่พบไฟล์สลิป' };
+
+    const { data, error } = await supabase.storage
+      .from('payment-slips')
+      .createSignedUrl(slipPath, 60 * 10);
+
+    if (error || !data?.signedUrl) {
+      return { success: false, error: 'ไม่สามารถโหลดรูปสลิปได้ (ไฟล์อาจถูกลบไปแล้วหลังตรวจสอบเสร็จ)' };
+    }
+
+    return { success: true, url: data.signedUrl };
   },
 
   // ───── ส่งใหม่ (Phase 4) — ตามข้อกำหนด "บันทึกประวัติทุกครั้ง ไม่ลบประวัติเดิม" ─────
