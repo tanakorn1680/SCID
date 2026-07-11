@@ -198,6 +198,23 @@ export const order = {
       .upload(path, file, { upsert: true }); // upsert: true รองรับ "เปลี่ยนรูปได้ก่อนส่ง"
 
     if (uploadError) {
+      // log error จริงไว้ debug — ข้อความที่ผู้ใช้เห็นเป็น generic ตั้งใจ
+      // (ไม่โชว์ raw error ให้ผู้ใช้ปลายทาง แต่ต้องหาสาเหตุได้จาก console)
+      console.error('Slip upload failed:', uploadError);
+
+      const msg = (uploadError.message || '').toLowerCase();
+      if (msg.includes('bucket not found')) {
+        return { success: false, error: 'ระบบยังไม่พร้อมรับไฟล์ กรุณาติดต่อแอดมิน (bucket ไม่พบ)' };
+      }
+      if (msg.includes('mime type') || msg.includes('not allowed')) {
+        return { success: false, error: 'รองรับเฉพาะไฟล์ JPG, PNG, WEBP เท่านั้น' };
+      }
+      if (msg.includes('exceeded') || msg.includes('size limit') || msg.includes('too large')) {
+        return { success: false, error: 'ไฟล์รูปใหญ่เกิน 5MB กรุณาเลือกรูปที่เล็กกว่านี้' };
+      }
+      if (msg.includes('row-level security') || msg.includes('policy') || msg.includes('permission')) {
+        return { success: false, error: 'ไม่มีสิทธิ์อัปโหลด กรุณาเข้าสู่ระบบใหม่อีกครั้ง' };
+      }
       return { success: false, error: 'อัปโหลดรูปไม่สำเร็จ กรุณาลองใหม่' };
     }
 
