@@ -207,8 +207,16 @@ async function loadOrders(page = 0) {
     pbar.style.display = 'none';
   }
 
-  if (!result.success || result.data.length === 0) {
-    gridEl.innerHTML = `<div class="empty-state">ไม่พบออเดอร์ที่ตรงเงื่อนไข</div>`;
+  if (!result.success) {
+    gridEl.innerHTML = `<div class="empty-state" style="color:red;font-size:12px;text-align:left;padding:16px;word-break:break-all;">ERROR: ${result.error || 'unknown'}<br>session: <span id="dbgUid">...</span></div>`;
+    supabase.auth.getSession().then(({data})=>{ const e=document.getElementById('dbgUid'); if(e) e.textContent=data.session?data.session.user.id:'NULL-no-session'; });
+    return;
+  }
+  if (result.data.length === 0) {
+    supabase.auth.getSession().then(({data})=>{
+      const uid = data.session ? data.session.user.id : 'NULL-no-session';
+      gridEl.innerHTML = `<div class="empty-state" style="font-size:11px;text-align:left;padding:16px;word-break:break-all;">ไม่พบออเดอร์<br>uid:${uid}<br>status:${currentFilters.status||'null'}<br>total:${result.total}</div>`;
+    });
     return;
   }
 
