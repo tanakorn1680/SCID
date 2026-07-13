@@ -275,7 +275,7 @@ async function renderProducts(categoryId = null) {
   const result = await shop.getProducts(categoryId);
 
   if (!result.success) {
-    gridEl.innerHTML = `<div class="empty-state">เกิดข้อผิดพลาดในการโหลดสินค้า</div>`;
+    gridEl.innerHTML = `<div class="empty-state" style="color:red;font-size:12px;text-align:left;padding:16px;word-break:break-all;">ERROR: ${result.error || "unknown"}</div>`;
     return;
   }
 
