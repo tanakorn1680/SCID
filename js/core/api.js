@@ -246,7 +246,7 @@ export const admin = {
   async getOrders(filters = {}) {
     let query = supabase
       .from('orders')
-      .select('*, profiles(email, display_name), order_items(*, products(name))')
+      .select('*, profiles!orders_user_id_fkey(email, display_name), order_items(*, products(name))')
       .order('created_at', { ascending: false });
 
     if (filters.status) {
@@ -491,7 +491,7 @@ export const admin = {
       .from('orders')
       // [FIX] เพิ่ม slip_url, slip_storage_path, slip_submitted_at ใน select
       // เดิมไม่มีฟิลด์เหล่านี้ → modal แสดง "ยังไม่มีสลิป" แม้ลูกค้าส่งมาแล้ว
-      .select('*, slip_url, slip_storage_path, slip_submitted_at, profiles(email, display_name), order_items(*, products(name, category_id))', { count: 'exact' })
+      .select('*, slip_url, slip_storage_path, slip_submitted_at, profiles!orders_user_id_fkey(email, display_name), order_items(*, products(name, category_id))', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, to);
 
@@ -522,7 +522,7 @@ export const admin = {
   async getAuditLogs({ targetType = null, limit = 100 } = {}) {
     let query = supabase
       .from('audit_logs')
-      .select('*, profiles(email, display_name)')
+      .select('*, profiles!orders_user_id_fkey(email, display_name)')
       .order('created_at', { ascending: false })
       .limit(limit);
 
@@ -568,49 +568,4 @@ export const exportUtil = {
   async exportOrders() {
     const result = await admin.searchOrders({ pageSize: 9999 });
     if (!result.success) return { success: false, error: result.error };
-    const flat = result.data.map(o => ({
-      id: o.id,
-      user_email: o.profiles?.email || '',
-      status: o.status,
-      total_amount: o.total_amount,
-      created_at: o.created_at,
-      slip_submitted_at: o.slip_submitted_at || '',
-      reviewed_at: o.reviewed_at || '',
-      reject_reason: o.reject_reason || ''
-    }));
-    this._download(this._toCSV(flat), `orders_${Date.now()}.csv`);
-    return { success: true };
-  },
-
-  async exportInventory() {
-    const result = await admin.getInventoryList({ pageSize: 9999 });
-    if (!result.success) return { success: false, error: result.error };
-    // ไม่ export password ออกมา — เหตุผลด้านความปลอดภัย
-    // ถ้าต้องการจริงให้ทำผ่าน Supabase Dashboard โดยตรง
-    const flat = result.data.map(i => ({
-      id: i.id,
-      product: i.products?.name || '',
-      gmail: i.gmail_address || '',
-      status: i.status,
-      created_at: i.created_at,
-      delivered_at: i.delivered_at || ''
-    }));
-    this._download(this._toCSV(flat), `inventory_${Date.now()}.csv`);
-    return { success: true };
-  },
-
-  async exportAuditLogs() {
-    const result = await admin.getAuditLogs({ limit: 9999 });
-    if (!result.success) return { success: false, error: result.error };
-    const flat = result.data.map(l => ({
-      id: l.id,
-      action: l.action,
-      actor: l.profiles?.email || '',
-      target_type: l.target_type || '',
-      target_id: l.target_id || '',
-      created_at: l.created_at
-    }));
-    this._download(this._toCSV(flat), `audit_logs_${Date.now()}.csv`);
-    return { success: true };
-  }
-};
+    const flat = result.data.map(o
