@@ -272,16 +272,10 @@ async function renderProducts(categoryId = null) {
   const gridEl = document.getElementById('productGrid');
   gridEl.innerHTML = `<div class="loading-state">กำลังโหลดสินค้า...</div>`;
 
-  let result;
-  try {
-    result = await shop.getProducts(categoryId);
-  } catch(e) {
-    gridEl.innerHTML = `<div class="empty-state" style="color:red;font-size:12px;padding:16px;word-break:break-all;">EXCEPTION: ${e.message}</div>`;
-    return;
-  }
+  const result = await shop.getProducts(categoryId);
 
   if (!result.success) {
-    gridEl.innerHTML = `<div class="empty-state" style="color:red;font-size:12px;padding:16px;word-break:break-all;">ERROR: ${result.error || 'unknown'}</div>`;
+    gridEl.innerHTML = `<div class="empty-state">เกิดข้อผิดพลาดในการโหลดสินค้า</div>`;
     return;
   }
 
