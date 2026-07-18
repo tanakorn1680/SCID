@@ -3,328 +3,206 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>สินค้าทั้งหมด</title>
+<title>ร้านค้า — Mayor Service</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',sans-serif;background:#0f1923;color:#fff;min-height:100vh}
+  nav{background:#1a2a3a;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100;border-bottom:1px solid #1e3a5f}
+  .nav-logo{font-size:18px;font-weight:700;letter-spacing:1px}
+  .nav-logo span{color:#f59e0b}
+  .nav-right{display:flex;gap:10px;align-items:center}
+  .nav-link{color:#9ca3af;text-decoration:none;font-size:14px;padding:6px 12px;border-radius:8px;transition:.2s}
+  .nav-link:hover,.nav-link.active{color:#fff;background:#1e3a5f}
+  .btn-sm{padding:7px 16px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;transition:.2s}
+  .btn-sm:hover{background:#1e40af}
+  .hero{background:linear-gradient(135deg,#1a2a3a 0%,#0f2744 100%);padding:32px 20px 24px;border-bottom:1px solid #1e3a5f}
+  .hero h1{font-size:26px;font-weight:700;margin-bottom:6px}
+  .hero p{color:#9ca3af;font-size:14px}
+  .cats{padding:16px 20px;display:flex;gap:8px;overflow-x:auto;border-bottom:1px solid #1e3a5f;scrollbar-width:none}
+  .cats::-webkit-scrollbar{display:none}
+  .cat-btn{padding:8px 18px;border-radius:20px;border:1.5px solid #374151;background:transparent;color:#9ca3af;cursor:pointer;white-space:nowrap;font-size:13px;transition:.2s}
+  .cat-btn.active,.cat-btn:hover{border-color:#1d4ed8;color:#fff;background:#1d4ed8}
+  .grid{padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px}
+  .card{background:#1a2a3a;border-radius:14px;padding:16px;cursor:pointer;transition:.2s;border:1.5px solid transparent}
+  .card:hover{border-color:#1d4ed8;transform:translateY(-2px)}
+  .card-cat{font-size:11px;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+  .card-name{font-size:15px;font-weight:600;margin-bottom:8px}
+  .card-price{font-size:20px;font-weight:700;color:#f59e0b}
+  .card-price span{font-size:12px;color:#9ca3af;font-weight:400}
+  .badge{display:inline-block;padding:3px 8px;border-radius:10px;font-size:11px;font-weight:600;margin-top:8px}
+  .badge.in-stock{background:#052e16;color:#86efac}
+  .badge.out{background:#450a0a;color:#fca5a5}
+  .empty{text-align:center;color:#6b7280;padding:60px 20px;font-size:15px}
+  .loading{text-align:center;color:#6b7280;padding:60px 20px}
+  .spinner{width:32px;height:32px;border:3px solid #374151;border-top-color:#1d4ed8;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+  @keyframes spin{to{transform:rotate(360deg)}}
 
-  :root{
-    --paper:#FBF8F1; --navy:#1A6BA0; --sky:#2196C9;
-    --gold:#D9A330; --gold-deep:#B9821F; --ink:#1A3A52;
-    --line:rgba(26,106,160,0.18); --muted:rgba(26,58,82,0.55);
-    --green-go:#3F8557; --danger:#E04433;
-  }
-
-  *{ box-sizing:border-box; margin:0; padding:0; }
-  html,body{ background:#81CFF0; }
-
-  body{
-    font-family:'IBM Plex Sans Thai', sans-serif;
-    color:var(--ink);
-    min-height:100vh;
-    padding-bottom:30px;
-    -webkit-font-smoothing:antialiased;
-  }
-
-  /* ===== TOPBAR ===== */
-  .topbar{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:14px 16px;
-  }
-  .topbar img{ height:34px; }
-  .nav-actions{ display:flex; gap:14px; align-items:center; font-size:13px; }
-  .nav-actions a{ color:var(--navy); text-decoration:none; font-weight:600; }
-
-  /* ===== HERO BANNER ===== */
-  .hero-banner{
-    margin:0 16px 18px;
-    background:linear-gradient(135deg, #1A6BA0 0%, #0E4C7A 100%);
-    border-radius:18px;
-    padding:26px 22px;
-    color:#fff;
-    box-shadow:0 10px 28px rgba(0,40,80,0.28);
-    position:relative;
-    overflow:hidden;
-  }
-  .hero-title{
-    font-family:'Baloo 2', sans-serif;
-    font-size:20px;
-    font-weight:800;
-    margin-bottom:6px;
-    position:relative; z-index:1;
-  }
-  .hero-sub{
-    font-size:13px;
-    color:rgba(255,255,255,0.85);
-    position:relative; z-index:1;
-  }
-  .hero-banner::after{
-    content:'';
-    position:absolute;
-    right:-30px; top:-30px;
-    width:140px; height:140px;
-    background:rgba(217,163,48,0.18);
-    border-radius:50%;
-  }
-
-  /* ===== CATEGORY TABS ===== */
-  .category-section{ padding:0 16px; margin-bottom:14px; }
-  .category-label{
-    font-size:12.5px; font-weight:700; color:var(--muted);
-    margin-bottom:8px;
-  }
-  .category-tabs{
-    display:flex; gap:8px; overflow-x:auto;
-    padding-bottom:4px;
-    scrollbar-width:none;
-  }
-  .category-tabs::-webkit-scrollbar{ display:none; }
-  .cat-tab{
-    flex-shrink:0; padding:8px 16px;
-    background:rgba(255,255,255,0.85);
-    border-radius:20px; font-size:13px; font-weight:600;
-    border:1.5px solid var(--line);
-    cursor:pointer; white-space:nowrap;
-    transition:all .15s ease;
-  }
-  .cat-tab.active{ background:var(--navy); color:#fff; border-color:var(--navy); }
-
-  .divider{
-    height:1px; background:rgba(255,255,255,0.3);
-    margin:0 16px 16px;
-  }
-
-  /* ===== PRODUCT GRID ===== */
-  .product-grid{
-    display:grid; grid-template-columns:repeat(2,1fr); gap:12px;
-    padding:0 16px;
-  }
-  @media (min-width:640px){
-    .product-grid{ grid-template-columns:repeat(3,1fr); }
-  }
-  @media (min-width:960px){
-    .product-grid{ grid-template-columns:repeat(4,1fr); }
-  }
-
-  .product-card{
-    background:rgba(255,255,255,0.97);
-    border-radius:14px;
-    overflow:hidden;
-    box-shadow:0 4px 14px rgba(0,40,80,0.14);
-    display:flex; flex-direction:column;
-  }
-  .product-img-wrap{
-    width:100%; aspect-ratio:1;
-    background:linear-gradient(135deg, #E8F2FA, #D4E9F7);
-    display:flex; align-items:center; justify-content:center;
-    overflow:hidden;
-    position:relative;
-  }
-  .product-img-wrap img{
-    width:100%; height:100%; object-fit:cover;
-  }
-  .stock-badge-overlay{
-    position:absolute; top:8px; right:8px;
-    font-size:10.5px; font-weight:700;
-    padding:3px 8px; border-radius:10px;
-  }
-  .stock-badge-overlay.in-stock{
-    background:rgba(63,133,87,0.92); color:#fff;
-  }
-  .stock-badge-overlay.out-of-stock{
-    background:rgba(224,68,51,0.92); color:#fff;
-  }
-
-  .product-info{
-    padding:10px 11px 12px;
-    display:flex; flex-direction:column; flex:1;
-  }
-  .product-name{
-    font-size:13.5px; font-weight:700;
-    margin-bottom:4px;
-    line-height:1.3;
-  }
-  .product-rating{
-    font-size:12px; color:var(--gold-deep);
-    margin-bottom:5px;
-    letter-spacing:1px;
-  }
-  .product-price{
-    font-family:'Baloo 2', sans-serif;
-    font-weight:800; color:var(--gold);
-    font-size:17px;
-    margin-bottom:3px;
-  }
-  .product-stock-text{
-    font-size:11px; color:var(--muted);
-    margin-bottom:10px;
-  }
-  .product-stock-text.zero{ color:var(--danger); font-weight:600; }
-
-  .detail-btn{
-    margin-top:auto;
-    width:100%; padding:9px 0;
-    background:var(--navy); color:#fff;
-    border:none; border-radius:9px;
-    font-size:12.5px; font-weight:700;
-    font-family:'Baloo 2', sans-serif;
-    text-align:center; text-decoration:none;
-    display:block;
-  }
-
-  .empty-state, .loading-state{
-    grid-column:1 / -1;
-    text-align:center; padding:50px 20px;
-    color:rgba(255,255,255,0.75); font-size:14px;
-  }
+  /* Modal */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center;z-index:200;padding:0}
+  .overlay.hidden{display:none}
+  .modal{background:#1a2a3a;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px 40px;max-height:90vh;overflow-y:auto}
+  .modal-handle{width:40px;height:4px;background:#374151;border-radius:2px;margin:0 auto 20px}
+  .modal h2{font-size:18px;font-weight:700;margin-bottom:6px}
+  .modal-price{font-size:28px;font-weight:700;color:#f59e0b;margin-bottom:16px}
+  .modal-price span{font-size:14px;color:#9ca3af;font-weight:400}
+  .stock-info{padding:10px 14px;background:#0f2744;border-radius:10px;font-size:13px;color:#60a5fa;margin-bottom:20px}
+  .btn-buy{width:100%;padding:16px;background:#1d4ed8;color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:700;cursor:pointer;transition:.2s}
+  .btn-buy:hover{background:#1e40af}
+  .btn-buy:disabled{background:#374151;cursor:not-allowed}
+  .btn-close{width:100%;padding:12px;background:transparent;color:#9ca3af;border:1.5px solid #374151;border-radius:12px;font-size:15px;cursor:pointer;margin-top:10px;transition:.2s}
+  .btn-close:hover{border-color:#6b7280;color:#fff}
+  .msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:12px;display:none}
+  .msg.error{background:#450a0a;color:#fca5a5;display:block}
+  .msg.success{background:#052e16;color:#86efac;display:block}
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <img src="../images/logo-main-service1.png" alt="logo">
-  <div class="nav-actions" id="navActions"></div>
+<nav>
+  <div class="nav-logo">MAYOR <span>SERVICE</span></div>
+  <div class="nav-right">
+    <a href="/pages/shop.html" class="nav-link active">ร้านค้า</a>
+    <a href="/pages/history.html" class="nav-link">ประวัติ</a>
+    <button class="btn-sm" id="navBtn" onclick="handleNavBtn()">เข้าสู่ระบบ</button>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>ซื้อไอดี SimCity BuildIt</h1>
+  <p>พร้อมเล่น ส่งรวดเร็ว ปลอดภัย 100%</p>
 </div>
 
-<div class="hero-banner">
-  <div class="hero-title">ซื้อไอดี SimCity BuildIt</div>
-  <div class="hero-sub">พร้อมเล่น ส่งรวดเร็ว ปลอดภัย 100%</div>
+<div class="cats" id="catBar">
+  <button class="cat-btn active" onclick="filterCat(null, this)">ทั้งหมด</button>
 </div>
 
-<div class="category-section">
-  <div class="category-label">หมวดหมู่</div>
-  <div class="category-tabs" id="categoryTabs">
-    <div class="cat-tab active" data-cat="">ทั้งหมด</div>
+<div id="productGrid" class="grid">
+  <div class="loading"><div class="spinner"></div>กำลังโหลดสินค้า...</div>
+</div>
+
+<!-- Product Modal -->
+<div class="overlay hidden" id="overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div id="modalContent"></div>
   </div>
 </div>
 
-<div class="divider"></div>
-
-<div class="product-grid" id="productGrid">
-  <div class="loading-state">กำลังโหลดสินค้า...</div>
-</div>
-
 <script type="module">
-import { shop } from '../js/core/api.js';
-import { getProfile, logout, setupSessionExpiryHandler } from '../js/core/auth.js';
-setupSessionExpiryHandler();
+import { shop, order } from '../js/core/api.js';
+import { getProfile, logout } from '../js/core/auth.js';
 
-// ───────── Render nav ตาม auth state ─────────
-async function renderNav() {
-  const profile = await getProfile();
-  const navEl = document.getElementById('navActions');
+let currentProfile = null;
 
-  if (!profile) {
-    navEl.innerHTML = `<a href="/pages/login.html">เข้าสู่ระบบ</a>`;
+// Nav
+getProfile().then(p => {
+  currentProfile = p;
+  if (p) {
+    document.getElementById('navBtn').textContent = 'ออกจากระบบ';
+  }
+});
+
+window.handleNavBtn = () => {
+  if (currentProfile) logout();
+  else window.location.href = '/pages/login.html';
+};
+
+// Categories
+shop.getCategories().then(res => {
+  if (!res.success) return;
+  const bar = document.getElementById('catBar');
+  res.data.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn';
+    btn.textContent = cat.name;
+    btn.onclick = () => filterCat(cat.id, btn);
+    bar.appendChild(btn);
+  });
+});
+
+// Products
+let allProducts = [];
+
+async function loadProducts(categoryId = null) {
+  document.getElementById('productGrid').innerHTML = '<div class="loading"><div class="spinner"></div>กำลังโหลดสินค้า...</div>';
+  const res = await shop.getProducts(categoryId);
+  if (!res.success) {
+    document.getElementById('productGrid').innerHTML = '<div class="empty">เกิดข้อผิดพลาด: ' + res.error + '</div>';
     return;
   }
+  allProducts = res.data;
+  renderProducts(res.data);
+}
 
-  const adminLink = profile.role === 'admin'
-    ? `<a href="/pages/admin/dashboard.html">แอดมิน</a>`
-    : '';
+function renderProducts(products) {
+  const grid = document.getElementById('productGrid');
+  if (products.length === 0) {
+    grid.innerHTML = '<div class="empty">ไม่มีสินค้าในหมวดนี้</div>';
+    return;
+  }
+  grid.innerHTML = products.map(p => `
+    <div class="card" onclick="openProduct('${p.id}')">
+      <div class="card-cat">${p.product_categories?.name || ''}</div>
+      <div class="card-name">${p.name}</div>
+      <div class="card-price">${Number(p.price).toLocaleString('th-TH')} <span>บาท</span></div>
+      <span class="badge ${p.stock > 0 ? 'in-stock' : 'out'}">${p.stock > 0 ? `มีสินค้า ${p.stock} ชิ้น` : 'สินค้าหมด'}</span>
+    </div>
+  `).join('');
+}
 
-  navEl.innerHTML = `
-    ${adminLink}
-    <a href="/pages/history.html">ประวัติ</a>
-    <a href="#" id="logoutBtn">ออกจากระบบ</a>
+window.filterCat = (catId, btn) => {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadProducts(catId);
+};
+
+// Modal
+window.openProduct = (productId) => {
+  const p = allProducts.find(x => x.id === productId);
+  if (!p) return;
+  document.getElementById('modalContent').innerHTML = `
+    <h2>${p.name}</h2>
+    <div class="modal-price">${Number(p.price).toLocaleString('th-TH')} <span>บาท</span></div>
+    ${p.description ? `<p style="color:#9ca3af;font-size:14px;margin-bottom:12px">${p.description}</p>` : ''}
+    <div class="stock-info">📦 สินค้าคงเหลือ: <strong>${p.stock} ชิ้น</strong></div>
+    <button class="btn-buy" id="btnBuy" onclick="doBuy('${p.id}')" ${p.stock === 0 ? 'disabled' : ''}>
+      ${p.stock === 0 ? 'สินค้าหมด' : 'สั่งซื้อเลย'}
+    </button>
+    <button class="btn-close" onclick="closeModal()">ยกเลิก</button>
+    <div class="msg" id="modalMsg"></div>
   `;
+  document.getElementById('overlay').classList.remove('hidden');
+};
 
-  document.getElementById('logoutBtn')?.addEventListener('click', async (e) => {
-    e.preventDefault();
-    await logout();
-    window.location.reload();
-  });
-}
+window.closeModal = (e) => {
+  if (!e || e.target === document.getElementById('overlay')) {
+    document.getElementById('overlay').classList.add('hidden');
+  }
+};
 
-// ───────── Render categories ─────────
-async function renderCategories() {
-  const result = await shop.getCategories();
-  if (!result.success || result.data.length === 0) return;
-
-  const tabsEl = document.getElementById('categoryTabs');
-
-  result.data.forEach(cat => {
-    const tab = document.createElement('div');
-    tab.className = 'cat-tab';
-    tab.dataset.cat = cat.id;
-    tab.textContent = cat.name;
-    tab.addEventListener('click', () => selectTab(tab, cat.id));
-    tabsEl.appendChild(tab);
-  });
-
-  document.querySelector('.cat-tab[data-cat=""]')
-    .addEventListener('click', (e) => selectTab(e.target, null));
-}
-
-function selectTab(tabEl, categoryId) {
-  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-  tabEl.classList.add('active');
-  renderProducts(categoryId);
-}
-
-// ───────── Render star rating ─────────
-function renderStars(rating) {
-  const full = Math.round(rating);
-  return '★'.repeat(full) + '☆'.repeat(5 - full);
-}
-
-// ───────── Render products (ดึงจาก DB เท่านั้น ไม่มี hardcode) ─────────
-async function renderProducts(categoryId = null) {
-  const gridEl = document.getElementById('productGrid');
-  gridEl.innerHTML = `<div class="loading-state">กำลังโหลดสินค้า...</div>`;
-
-  const result = await shop.getProducts(categoryId);
-
-  if (!result.success) {
-    gridEl.innerHTML = `<div class="empty-state">เกิดข้อผิดพลาดในการโหลดสินค้า</div>`;
+window.doBuy = async (productId) => {
+  if (!currentProfile) {
+    window.location.href = '/pages/login.html';
     return;
   }
+  const btn = document.getElementById('btnBuy');
+  const msg = document.getElementById('modalMsg');
+  btn.disabled = true;
+  btn.textContent = 'กำลังสั่งซื้อ...';
+  msg.className = 'msg';
 
-  if (result.data.length === 0) {
-    gridEl.innerHTML = `<div class="empty-state">ยังไม่มีสินค้าในหมวดนี้</div>`;
+  const res = await order.create(productId);
+  if (!res.success) {
+    msg.textContent = res.error;
+    msg.className = 'msg error';
+    btn.disabled = false;
+    btn.textContent = 'สั่งซื้อเลย';
     return;
   }
+  window.location.href = '/pages/checkout.html?order=' + res.orderId;
+};
 
-  gridEl.innerHTML = result.data.map(p => {
-    const inStock = p.stock_count > 0;
-    const stockBadgeClass = inStock ? 'in-stock' : 'out-of-stock';
-    const stockBadgeText = inStock ? 'พร้อมขาย' : 'สินค้าหมด';
-    const stockTextClass = inStock ? '' : 'zero';
-    const stockText = inStock ? `เหลือ ${p.stock_count} ไอดี` : 'สินค้าหมด';
-    // escape ทุก field ที่มาจาก DB ก่อนใส่ใน HTML attribute หรือ text
-    const safeName = escapeHtml(p.name);
-    const safeImg  = p.image_url ? escapeHtml(p.image_url) : '../images/placeholder.png';
-
-    return `
-      <div class="product-card">
-        <div class="product-img-wrap">
-          <img src="${safeImg}" alt="${safeName}" loading="lazy"
-               onerror="this.style.display='none'">
-          <span class="stock-badge-overlay ${stockBadgeClass}">${stockBadgeText}</span>
-        </div>
-        <div class="product-info">
-          <div class="product-name">${safeName}</div>
-          <div class="product-rating">${renderStars(p.rating)}</div>
-          <div class="product-price">฿${Number(p.price).toLocaleString()}</div>
-          <div class="product-stock-text ${stockTextClass}">${stockText}</div>
-          <a href="/pages/product.html?id=${p.id}" class="detail-btn">ดูรายละเอียด</a>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-// ป้องกัน XSS จากชื่อสินค้า/ข้อมูลที่มาจาก DB
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-// ───────── Init ─────────
-renderNav();
-renderCategories();
-renderProducts();
+loadProducts();
 </script>
-
 </body>
 </html>

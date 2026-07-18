@@ -3,238 +3,133 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ประวัติการสั่งซื้อ</title>
+<title>ประวัติออเดอร์ — Mayor Service</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
-  :root{
-    --navy:#1A6BA0; --sky:#2196C9; --gold:#D9A330; --gold-deep:#B9821F;
-    --ink:#1A3A52; --line:rgba(26,106,160,0.18); --muted:rgba(26,58,82,0.55);
-    --green-go:#3F8557; --danger:#E04433;
-  }
-  *{ box-sizing:border-box; margin:0; padding:0; }
-  html,body{ background:#81CFF0; }
-  body{
-    font-family:'IBM Plex Sans Thai',sans-serif;
-    color:var(--ink); min-height:100vh; padding:0 0 40px;
-    -webkit-font-smoothing:antialiased;
-  }
-  .topbar{
-    display:flex; align-items:center; justify-content:space-between;
-    padding:14px 16px;
-    background:rgba(255,255,255,0.15);
-    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
-    position:sticky; top:0; z-index:20;
-  }
-  .topbar img{ height:32px; }
-  .back-link{ font-size:13px; font-weight:600; color:#fff; text-decoration:none; }
-  .page-header{ padding:20px 16px 14px; }
-  .page-title{ font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:800; color:#fff; }
-  .page-sub{ font-size:13px; color:rgba(255,255,255,0.75); margin-top:3px; }
-  .toast{
-    position:fixed; top:70px; left:50%; transform:translateX(-50%) translateY(-20px);
-    background:#1A3A52; color:#fff;
-    padding:12px 20px; border-radius:12px;
-    font-size:13.5px; font-weight:600;
-    box-shadow:0 8px 24px rgba(0,0,0,0.3);
-    z-index:100; white-space:nowrap;
-    opacity:0; transition:opacity .3s ease, transform .3s ease;
-    pointer-events:none;
-    display:flex; align-items:center; gap:8px;
-  }
-  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
-  .order-list{ padding:0 14px; }
-  .order-card{
-    background:rgba(255,255,255,0.97); border-radius:14px; padding:15px;
-    margin-bottom:10px; box-shadow:0 3px 12px rgba(0,40,80,0.12);
-    border-left:4px solid transparent;
-  }
-  .order-card.pending      { border-left-color:rgba(26,58,82,0.25); }
-  .order-card.awaiting_slip_review{ border-left-color:var(--gold); }
-  .order-card.paid         { border-left-color:var(--navy); }
-  .order-card.delivered    { border-left-color:var(--green-go); }
-  .order-card.cancelled,
-  .order-card.refunded     { border-left-color:var(--danger); }
-  @keyframes highlight-pulse{
-    0%  { box-shadow:0 0 0 0 rgba(63,133,87,0.5); }
-    60% { box-shadow:0 0 0 10px rgba(63,133,87,0); }
-    100%{ box-shadow:0 0 0 0 rgba(63,133,87,0); }
-  }
-  .order-card.pulse{ animation:highlight-pulse .9s ease-out; }
-  .order-top{
-    display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;
-  }
-  .order-meta{ flex:1; min-width:0; }
-  .order-id  { font-size:11px; color:var(--muted); font-family:'Space Mono',monospace; margin-bottom:2px; }
-  .order-date{ font-size:11px; color:var(--muted); }
-  .status-badge{
-    font-size:10.5px; font-weight:700; padding:4px 10px; border-radius:12px;
-    display:inline-flex; align-items:center; gap:3px; white-space:nowrap; flex-shrink:0; margin-left:8px;
-  }
-  .status-badge.pending             { background:rgba(26,58,82,0.08); color:var(--muted); }
-  .status-badge.awaiting_slip_review{ background:rgba(217,163,48,0.15); color:var(--gold-deep); }
-  .status-badge.paid                { background:rgba(26,106,160,0.12); color:var(--navy); }
-  .status-badge.delivered           { background:rgba(63,133,87,0.12); color:var(--green-go); }
-  .status-badge.cancelled,
-  .status-badge.refunded            { background:rgba(224,68,51,0.1); color:var(--danger); }
-  .order-product{ font-size:14px; font-weight:700; margin-bottom:4px; }
-  .order-amount{
-    font-family:'Baloo 2',sans-serif; font-weight:800; color:var(--gold); font-size:18px; margin-bottom:12px;
-  }
-  .detail-btn{
-    display:block; width:100%; padding:10px 0;
-    background:var(--navy); color:#fff; border:none; border-radius:9px;
-    font-size:13px; font-weight:700; font-family:'Baloo 2',sans-serif;
-    text-align:center; text-decoration:none; cursor:pointer;
-  }
-  .detail-btn.ghost{
-    background:rgba(26,106,160,0.08); color:var(--navy); border:1.5px solid rgba(26,106,160,0.2);
-  }
-  .empty-state{ text-align:center; padding:70px 20px; color:rgba(255,255,255,0.8); font-size:14px; }
-  .loading-state{ text-align:center; padding:50px 20px; color:rgba(255,255,255,0.8); }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',sans-serif;background:#0f1923;color:#fff;min-height:100vh}
+  nav{background:#1a2a3a;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e3a5f}
+  .nav-logo{font-size:18px;font-weight:700}
+  .nav-logo span{color:#f59e0b}
+  .nav-right{display:flex;gap:10px}
+  .nav-link{color:#9ca3af;text-decoration:none;font-size:14px;padding:6px 12px;border-radius:8px}
+  .nav-link:hover,.nav-link.active{color:#fff;background:#1e3a5f}
+  .btn-sm{padding:7px 16px;background:#374151;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer}
+  main{padding:20px}
+  h1{font-size:20px;font-weight:700;margin-bottom:16px}
+  .order-card{background:#1a2a3a;border-radius:14px;padding:16px;margin-bottom:12px;cursor:pointer;transition:.2s;border:1.5px solid transparent}
+  .order-card:hover{border-color:#1e3a5f}
+  .order-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .order-id{font-size:12px;color:#6b7280}
+  .badge{padding:4px 10px;border-radius:10px;font-size:12px;font-weight:600}
+  .badge.pending{background:#1e3a5f;color:#60a5fa}
+  .badge.awaiting{background:#451a03;color:#fb923c}
+  .badge.delivered{background:#052e16;color:#86efac}
+  .badge.cancelled{background:#1c1917;color:#78716c}
+  .order-name{font-size:15px;font-weight:600;margin-bottom:4px}
+  .order-price{font-size:18px;font-weight:700;color:#f59e0b}
+  .order-date{font-size:12px;color:#6b7280;margin-top:4px}
+  .empty{text-align:center;color:#6b7280;padding:60px 20px;font-size:15px}
+  .loading{text-align:center;color:#6b7280;padding:60px 20px}
+  .spinner{width:32px;height:32px;border:3px solid #374151;border-top-color:#1d4ed8;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+  @keyframes spin{to{transform:rotate(360deg)}}
 
-  @media (max-width: 360px){
-    .status-badge{ font-size: 9.5px; padding: 3px 7px; }
-    .order-amount{ font-size: 16px; }
-    .detail-btn{ font-size: 12px; }
-  }
+  /* Credential modal */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:flex-end;justify-content:center;z-index:200}
+  .overlay.hidden{display:none}
+  .modal{background:#1a2a3a;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px 20px 40px}
+  .modal-handle{width:40px;height:4px;background:#374151;border-radius:2px;margin:0 auto 20px}
+  .cred-box{background:#0f1923;border-radius:10px;padding:16px;font-family:monospace;font-size:14px;word-break:break-all;color:#86efac;margin:12px 0}
+  .btn{width:100%;padding:14px;background:#1d4ed8;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px}
+  .btn-close{width:100%;padding:12px;background:transparent;color:#9ca3af;border:1.5px solid #374151;border-radius:12px;font-size:14px;cursor:pointer;margin-top:8px}
 </style>
 </head>
 <body>
+<nav>
+  <div class="nav-logo">MAYOR <span>SERVICE</span></div>
+  <div class="nav-right">
+    <a href="/pages/shop.html" class="nav-link">ร้านค้า</a>
+    <a href="/pages/history.html" class="nav-link active">ประวัติ</a>
+    <button class="btn-sm" onclick="import('../js/core/auth.js').then(m=>m.logout())">ออก</button>
+  </div>
+</nav>
+<main>
+  <h1>ประวัติการสั่งซื้อ</h1>
+  <div id="content"><div class="loading"><div class="spinner"></div>กำลังโหลด...</div></div>
+</main>
 
-<div class="topbar">
-  <a href="/pages/shop.html" class="back-link">← หน้าสินค้า</a>
-  <img src="../images/logo-main-service1.png" alt="logo">
-</div>
-
-<div class="page-header">
-  <div class="page-title">ประวัติการสั่งซื้อ</div>
-  <div class="page-sub" id="countLabel">กำลังโหลด...</div>
-</div>
-
-<div class="toast" id="toastEl">
-  <span>🎉</span><span id="toastMsg"></span>
-</div>
-
-<div class="order-list" id="orderList">
-  <div class="loading-state">กำลังโหลด...</div>
+<!-- Credential modal -->
+<div class="overlay hidden" id="credOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div id="credContent"></div>
+  </div>
 </div>
 
 <script type="module">
-import { requireAuth } from '../js/core/router.js';
-import { setupSessionExpiryHandler } from '../js/core/auth.js';
-setupSessionExpiryHandler();
 import { order } from '../js/core/api.js';
-import { supabase } from '../js/config/supabase.js';
+import { requireAuth } from '../js/core/auth.js';
 
-const STATUS = {
-  pending:               { label:'รอชำระเงิน',       dot:'⏳' },
-  awaiting_slip_review:  { label:'รอตรวจสอบสลิป',   dot:'🔍' },
-  paid:                  { label:'รอส่งไอดี',         dot:'⏱' },
-  delivered:             { label:'ส่งข้อมูลแล้ว',    dot:'✅' },
-  processing:            { label:'กำลังจัดส่ง',       dot:'📦' },
-  completed:             { label:'สำเร็จ',            dot:'✅' },
-  cancelled:             { label:'ยกเลิก',            dot:'❌' },
-  refunded:              { label:'คืนเงินแล้ว',       dot:'↩' }
+await requireAuth();
+
+const ENCRYPT_KEY = '__ENCRYPT_KEY__'; // inject ผ่าน env เหมือนกัน
+
+const statusLabel = {
+  pending:              { text: 'รอชำระเงิน',      cls: 'pending' },
+  awaiting_slip_review: { text: 'รอตรวจสลิป',      cls: 'awaiting' },
+  paid:                 { text: 'ชำระแล้ว',         cls: 'awaiting' },
+  delivered:            { text: 'ส่งไอดีแล้ว',     cls: 'delivered' },
+  cancelled:            { text: 'ยกเลิก',           cls: 'cancelled' }
 };
 
-function esc(str){ const d=document.createElement('div'); d.textContent=str??''; return d.innerHTML; }
-function fmtDate(iso){ return iso ? new Date(iso).toLocaleDateString('th-TH',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '-'; }
+const res = await order.getMyOrders();
+const content = document.getElementById('content');
 
-let toastTimer = null;
-function showToast(msg){
-  const el=document.getElementById('toastEl');
-  document.getElementById('toastMsg').textContent=msg;
-  el.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>el.classList.remove('show'),5000);
-}
-
-function renderCards(orders){
-  document.getElementById('countLabel').textContent=`ทั้งหมด ${orders.length} รายการ • เรียงจากล่าสุด`;
-  const listEl=document.getElementById('orderList');
-  if(orders.length===0){ listEl.innerHTML=`<div class="empty-state">ยังไม่มีประวัติการสั่งซื้อ</div>`; return; }
-
-  listEl.innerHTML=orders.map(o=>{
-    const name=o.order_items?.[0]?.products?.name||'-';
-    const s=STATUS[o.status]||{label:o.status,dot:'•'};
-    let cta='';
-    if(o.status==='pending'){
-      cta=`<a href="/pages/checkout.html?order_id=${o.id}" class="detail-btn">ชำระเงิน →</a>`;
-    } else {
-      const ghost=o.status==='awaiting_slip_review'?' ghost':'';
-      cta=`<a href="/pages/order-detail.html?id=${o.id}" class="detail-btn${ghost}">ดูรายละเอียด →</a>`;
-    }
+if (!res.success) {
+  content.innerHTML = '<div class="empty">เกิดข้อผิดพลาด: ' + res.error + '</div>';
+} else if (res.data.length === 0) {
+  content.innerHTML = '<div class="empty">ยังไม่มีออเดอร์ <br><br><a href="/pages/shop.html" style="color:#60a5fa">ไปเลือกสินค้า →</a></div>';
+} else {
+  const s = statusLabel;
+  content.innerHTML = res.data.map(o => {
+    const st = s[o.status] || { text: o.status, cls: 'pending' };
+    const item = o.order_items?.[0];
+    const date = new Date(o.created_at).toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
     return `
-      <div class="order-card ${o.status}" id="card-${o.id}">
+      <div class="order-card" onclick="openOrder('${o.id}','${o.status}')">
         <div class="order-top">
-          <div class="order-meta">
-            <div class="order-id">#${o.id.slice(0,8).toUpperCase()}</div>
-            <div class="order-date">${fmtDate(o.created_at)}</div>
-          </div>
-          <span class="status-badge ${o.status}">${esc(s.dot)} ${esc(s.label)}</span>
+          <span class="order-id">#${o.id.slice(0,8).toUpperCase()}</span>
+          <span class="badge ${st.cls}">${st.text}</span>
         </div>
-        <div class="order-product">${esc(name)}</div>
-        <div class="order-amount">฿${Number(o.total_amount).toLocaleString()}</div>
-        ${cta}
-      </div>`;
+        <div class="order-name">${item?.product_name || 'สินค้า'}</div>
+        <div class="order-price">${Number(o.total_amount).toLocaleString('th-TH')} บาท</div>
+        <div class="order-date">${date}</div>
+        ${o.status === 'pending' ? `<a href="/pages/checkout.html?order=${o.id}" style="display:block;margin-top:10px;text-align:center;padding:8px;background:#1d4ed8;border-radius:8px;font-size:13px;color:#fff;text-decoration:none" onclick="event.stopPropagation()">อัปโหลดสลิป</a>` : ''}
+        ${o.reject_reason ? `<div style="margin-top:8px;font-size:12px;color:#fca5a5">เหตุผล: ${o.reject_reason}</div>` : ''}
+      </div>
+    `;
   }).join('');
 }
 
-function applyRealtimeUpdate(updated){
-  const card=document.getElementById(`card-${updated.id}`);
-  if(card){
-    const s=STATUS[updated.status]||{label:updated.status,dot:'•'};
-    card.querySelector('.status-badge').className=`status-badge ${updated.status}`;
-    card.querySelector('.status-badge').textContent=`${s.dot} ${s.label}`;
-    Object.keys(STATUS).forEach(k=>card.classList.remove(k));
-    card.classList.add(updated.status);
-    card.classList.remove('pulse');
-    void card.offsetWidth;
-    card.classList.add('pulse');
+window.openOrder = async (orderId, status) => {
+  if (status !== 'delivered') return;
+  const overlay = document.getElementById('credOverlay');
+  const credContent = document.getElementById('credContent');
+  credContent.innerHTML = '<div style="text-align:center;color:#6b7280;padding:20px">กำลังโหลด...</div>';
+  overlay.classList.remove('hidden');
+
+  const res = await order.getMyCredential(orderId, ENCRYPT_KEY);
+  if (!res.success || !res.credential) {
+    credContent.innerHTML = `<p style="color:#fca5a5">โหลดข้อมูลไม่สำเร็จ</p><button class="btn-close" onclick="document.getElementById('credOverlay').classList.add('hidden')">ปิด</button>`;
+    return;
   }
-  if(updated.status==='delivered'){
-    showToast('ออเดอร์ของคุณได้รับการดำเนินการเรียบร้อยแล้ว');
-  }
-}
-
-let realtimeChannel=null;
-function subscribeRealtime(userId){
-  realtimeChannel=supabase
-    .channel(`history-orders-${userId}`)
-    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'orders',filter:`user_id=eq.${userId}`},
-      (payload)=>applyRealtimeUpdate(payload.new))
-    .subscribe();
-}
-window.addEventListener('beforeunload',()=>{ if(realtimeChannel) supabase.removeChannel(realtimeChannel); });
-
-
-// ── Global error display helper ──────────────────────────────────────
-function showFatalError(msg) {
-  const wrap = document.getElementById('pageBody') || document.getElementById('orderList')
-             || document.getElementById('productGrid') || document.getElementById('checkoutWrap')
-             || document.getElementById('orderGrid') || document.getElementById('logList')
-             || document.getElementById('tableBody')?.closest('div') || document.body;
-  if (wrap) wrap.innerHTML = `
-    <div style="text-align:center;padding:50px 20px;color:rgba(26,58,82,0.6);">
-      <div style="font-size:32px;margin-bottom:12px;">⚠️</div>
-      <div style="font-size:14px;font-weight:600;">${msg}</div>
-    </div>`;
-}
-async function init(){
-  const session=await requireAuth();
-  if(!session) return;
-  const result=await order.getMyOrders();
-  if(!result.success){ document.getElementById('orderList').innerHTML=`<div class="empty-state">โหลดข้อมูลไม่สำเร็จ</div>`; return; }
-  renderCards(result.data);
-  subscribeRealtime(session.user.id);
-}
-try {
-  init();
-} catch (err) {
-  console.error('Init error:', err);
-  showFatalError('โหลดข้อมูลไม่สำเร็จ กรุณาลองรีเฟรชหน้าเว็บ');
-}
+  credContent.innerHTML = `
+    <h2 style="margin-bottom:8px">ข้อมูลไอดีของคุณ</h2>
+    <p style="font-size:13px;color:#9ca3af;margin-bottom:12px">คัดลอกข้อมูลด้านล่างไปใช้เข้าเกม</p>
+    <div class="cred-box">${res.credential}</div>
+    <button class="btn" onclick="navigator.clipboard.writeText('${res.credential}').then(()=>alert('คัดลอกแล้ว'))">คัดลอก</button>
+    <button class="btn-close" onclick="document.getElementById('credOverlay').classList.add('hidden')">ปิด</button>
+  `;
+};
 </script>
-
 </body>
 </html>

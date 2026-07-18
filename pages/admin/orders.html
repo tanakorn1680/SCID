@@ -3,536 +3,281 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ออเดอร์ & ตรวจสลิป — Admin</title>
+<title>ออเดอร์ — Admin</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
-  :root{ --navy:#1A6BA0; --gold:#D9A330; --ink:#1A3A52; --green-go:#3F8557; --danger:#E04433; --line:rgba(26,106,160,0.15); }
-  *{ box-sizing:border-box; margin:0; padding:0; }
-  body{ font-family:'IBM Plex Sans Thai', sans-serif; background:#F0F4F8; color:var(--ink); min-height:100vh; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',sans-serif;background:#0a0f1a;color:#fff;min-height:100vh}
+  nav{background:#111827;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1f2937}
+  .nav-logo{font-size:16px;font-weight:700;color:#9ca3af}
+  .nav-logo strong{color:#fff}
+  .nav-right{display:flex;gap:8px}
+  .nav-link{color:#6b7280;text-decoration:none;font-size:13px;padding:6px 12px;border-radius:8px}
+  .nav-link:hover,.nav-link.active{color:#fff;background:#1f2937}
+  .btn-sm{padding:6px 14px;background:#374151;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer}
+  main{padding:20px}
+  h1{font-size:20px;font-weight:700;margin-bottom:16px}
+  .filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .filter-btn{padding:8px 16px;border-radius:20px;border:1.5px solid #374151;background:transparent;color:#9ca3af;cursor:pointer;font-size:13px;transition:.2s}
+  .filter-btn.active,.filter-btn:hover{border-color:#1d4ed8;color:#fff;background:#1d4ed8}
+  input.search{background:#111827;border:1.5px solid #374151;border-radius:10px;color:#fff;padding:10px 14px;font-size:14px;outline:none;width:100%;margin-bottom:12px}
+  input.search:focus{border-color:#1d4ed8}
+  .order-card{background:#111827;border-radius:14px;padding:16px;margin-bottom:10px;border:1.5px solid transparent;cursor:pointer;transition:.2s}
+  .order-card:hover{border-color:#1f2937}
+  .order-top{display:flex;justify-content:space-between;margin-bottom:6px}
+  .order-id{font-size:11px;color:#6b7280}
+  .badge{padding:3px 10px;border-radius:10px;font-size:12px;font-weight:600}
+  .badge.pending{background:#1e3a5f;color:#60a5fa}
+  .badge.awaiting{background:#451a03;color:#fb923c}
+  .badge.delivered{background:#052e16;color:#86efac}
+  .badge.cancelled{background:#1c1917;color:#78716c}
+  .order-name{font-size:15px;font-weight:600;margin-bottom:4px}
+  .order-meta{display:flex;justify-content:space-between;font-size:13px;color:#6b7280;margin-top:4px}
+  .order-price{font-size:18px;font-weight:700;color:#f59e0b}
+  .empty{text-align:center;color:#6b7280;padding:60px 20px}
+  .loading{text-align:center;color:#6b7280;padding:60px 20px}
+  .spinner{width:32px;height:32px;border:3px solid #374151;border-top-color:#1d4ed8;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+  @keyframes spin{to{transform:rotate(360deg)}}
 
-  .page-title{ font-family:'Baloo 2',sans-serif; font-size:19px; font-weight:800; margin-bottom:16px; }
+  /* Modal */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:flex-end;justify-content:center;z-index:200}
+  .overlay.hidden{display:none}
+  .modal{background:#111827;border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:24px 20px 40px;max-height:92vh;overflow-y:auto}
+  .modal-handle{width:40px;height:4px;background:#374151;border-radius:2px;margin:0 auto 20px}
+  .info-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1f2937;font-size:14px}
+  .info-row:last-child{border:none}
+  .slip-wrap{margin:16px 0;text-align:center}
+  .slip-img{width:100%;border-radius:10px;max-height:280px;object-fit:contain;background:#0a0f1a;cursor:zoom-in}
+  .slip-loading{padding:40px;color:#6b7280;font-size:14px}
+  .slip-error{padding:20px;background:#450a0a;border-radius:10px;color:#fca5a5;font-size:13px;text-align:center}
+  .action-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+  .btn-approve{padding:14px;background:#166534;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer}
+  .btn-approve:hover{background:#15803d}
+  .btn-reject{padding:14px;background:#7f1d1d;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer}
+  .btn-reject:hover{background:#991b1b}
+  .btn-close-modal{width:100%;padding:12px;background:transparent;color:#9ca3af;border:1.5px solid #374151;border-radius:12px;font-size:14px;cursor:pointer;margin-top:10px}
+  .msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:10px;display:none}
+  .msg.error{background:#450a0a;color:#fca5a5;display:block}
+  .msg.success{background:#052e16;color:#86efac;display:block}
+  textarea.reject-input{width:100%;background:#0a0f1a;border:1.5px solid #374151;border-radius:10px;color:#fff;padding:10px;font-size:14px;outline:none;margin-top:8px;resize:none;min-height:70px}
+  textarea.reject-input:focus{border-color:#ef4444}
 
-  .filter-bar{ display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
-  .filter-input, .filter-select{
-    padding:9px 12px; border:1.5px solid var(--line); border-radius:8px;
-    font-size:13px; font-family:'IBM Plex Sans Thai', sans-serif; background:#fff;
-  }
-  .filter-input{ flex:1; min-width:160px; }
-
-  .order-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:14px; }
-
-  .order-card{
-    background:#fff; border-radius:13px; padding:14px;
-    box-shadow:0 2px 10px rgba(0,40,80,0.08);
-    border-left:4px solid transparent;
-  }
-  .order-card.awaiting_slip_review{ border-left-color:var(--gold); }
-  .order-card.paid{ border-left-color:var(--navy); }
-  .order-card.delivered{ border-left-color:var(--green-go); }
-
-  .order-top{ display:flex; justify-content:space-between; margin-bottom:8px; }
-  .order-id{ font-size:11px; color:rgba(26,58,82,0.5); font-family:'Space Mono',monospace; }
-  .status-pill{ font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:11px; }
-  .status-pill.awaiting_slip_review{ background:rgba(217,163,48,0.15); color:#B9821F; }
-  .status-pill.paid{ background:rgba(26,106,160,0.12); color:var(--navy); }
-  .status-pill.delivered{ background:rgba(63,133,87,0.12); color:var(--green-go); }
-  .status-pill.pending{ background:rgba(26,58,82,0.08); color:rgba(26,58,82,0.6); }
-
-  .order-customer{ font-size:13px; font-weight:600; margin-bottom:3px; }
-  .order-product{ font-size:12.5px; color:rgba(26,58,82,0.6); margin-bottom:8px; }
-  .order-amount{ font-family:'Baloo 2',sans-serif; font-weight:800; color:var(--gold); font-size:17px; margin-bottom:10px; }
-
-  .view-detail-btn{
-    width:100%; padding:9px 0; background:var(--navy); color:#fff; border:none; border-radius:8px;
-    font-size:12.5px; font-weight:700; font-family:'Baloo 2',sans-serif; cursor:pointer;
-  }
-
-  .empty-state{ grid-column:1/-1; text-align:center; padding:60px 20px; color:rgba(26,58,82,0.5); }
-  .pagination-bar{
-    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
-    padding:14px 0; margin-top:8px; font-size:12.5px; gap:8px;
-  }
-  .page-btn{
-    padding:7px 16px; border:1.5px solid var(--line); border-radius:8px;
-    background:#fff; cursor:pointer; font-size:12.5px; font-weight:600;
-    box-shadow:0 1px 4px rgba(0,40,80,0.06);
-  }
-  .page-btn:disabled{ opacity:0.4; cursor:not-allowed; }
-
-  /* ───── Modal — รายละเอียดออเดอร์ + สลิป ───── */
-  .modal-overlay{
-    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55);
-    align-items:flex-start; justify-content:center; z-index:50; padding:20px 16px; overflow-y:auto;
-  }
-  .modal-overlay.show{ display:flex; }
-  .modal-box{ background:#fff; border-radius:14px; padding:20px; width:100%; max-width:480px; margin-top:20px; }
-  .modal-title{ font-size:16px; font-weight:700; margin-bottom:14px; }
-
-  .slip-full-img{ width:100%; border-radius:10px; margin-bottom:14px; cursor:zoom-in; }
-
-  .detail-row{ display:flex; justify-content:space-between; padding:7px 0; font-size:13px; border-bottom:1px dotted var(--line); }
-  .detail-row:last-child{ border-bottom:none; }
-  .detail-row .label{ color:rgba(26,58,82,0.55); }
-  .detail-row .value{ font-weight:600; }
-
-  .action-row{ display:flex; gap:8px; margin-top:16px; }
-  .modal-action-btn{
-    flex:1; padding:11px 0; border:none; border-radius:9px; font-size:13px; font-weight:700;
-    font-family:'Baloo 2',sans-serif; cursor:pointer;
-  }
-  .modal-action-btn.approve{ background:var(--green-go); color:#fff; }
-  .modal-action-btn.reject{ background:rgba(224,68,51,0.1); color:var(--danger); }
-  .modal-action-btn.resend{ background:var(--navy); color:#fff; }
-  .modal-action-btn.close{ background:rgba(26,58,82,0.08); color:var(--ink); }
-  .modal-action-btn:disabled{ opacity:0.5; cursor:not-allowed; }
-
-  .reject-reason-box{ margin-top:12px; }
-  .reject-reason-box textarea{
-    width:100%; padding:10px; border:1.5px solid var(--line); border-radius:8px;
-    font-family:'IBM Plex Sans Thai', sans-serif; font-size:13px; resize:vertical; min-height:60px;
-  }
-
-  .form-alert{ padding:9px 11px; border-radius:8px; font-size:12.5px; margin-top:10px; display:none; }
-  .form-alert.show{ display:block; }
-  .form-alert.error{ background:rgba(224,68,51,0.1); color:var(--danger); }
-  .form-alert.success{ background:rgba(63,133,87,0.1); color:var(--green-go); }
-
-  .delivery-history-box{ margin-top:14px; background:rgba(26,106,160,0.04); border-radius:9px; padding:10px 12px; }
-  .delivery-history-title{ font-size:12px; font-weight:700; margin-bottom:8px; }
-  .delivery-history-item{ font-size:11.5px; color:rgba(26,58,82,0.7); padding:4px 0; }
-
-  /* Lightbox สำหรับซูมรูปสลิป */
-  .lightbox{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:100; align-items:center; justify-content:center; padding:20px; }
-  .lightbox.show{ display:flex; }
-  .lightbox img{ max-width:100%; max-height:100%; border-radius:8px; }
+  /* Lightbox */
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:300}
+  .lightbox.hidden{display:none}
+  .lightbox img{max-width:95vw;max-height:90vh;object-fit:contain;border-radius:8px}
+  .lightbox-close{position:absolute;top:20px;right:20px;background:#374151;color:#fff;border:none;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer}
 </style>
 </head>
 <body>
+<nav>
+  <div class="nav-logo"><strong>Admin</strong> — Mayor Service</div>
+  <div class="nav-right">
+    <a href="/pages/admin/orders.html" class="nav-link active">ออเดอร์</a>
+    <a href="/pages/admin/inventory.html" class="nav-link">คลังไอดี</a>
+    <a href="/pages/admin/audit.html" class="nav-link">Log</a>
+    <button class="btn-sm" onclick="import('../../js/core/auth.js').then(m=>m.logout())">ออก</button>
+  </div>
+</nav>
+<main>
+  <h1>ออเดอร์ทั้งหมด</h1>
+  <input class="search" id="searchInput" placeholder="ค้นหา Order ID หรืออีเมล..." oninput="onSearch()">
+  <div class="filters">
+    <button class="filter-btn active" onclick="setFilter(null,this)">ทั้งหมด</button>
+    <button class="filter-btn" onclick="setFilter('awaiting_slip_review',this)">รอตรวจสลิป</button>
+    <button class="filter-btn" onclick="setFilter('delivered',this)">ส่งแล้ว</button>
+    <button class="filter-btn" onclick="setFilter('cancelled',this)">ยกเลิก</button>
+    <button class="filter-btn" onclick="setFilter('pending',this)">รอชำระ</button>
+  </div>
+  <div id="content"><div class="loading"><div class="spinner"></div>กำลังโหลด...</div></div>
+</main>
 
-<div class="admin-shell" id="adminShell"></div>
-<div class="lightbox" id="lightbox"><img id="lightboxImg" src=""></div>
+<!-- Order Modal -->
+<div class="overlay hidden" id="overlay" onclick="handleOverlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-handle"></div>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox hidden" id="lightbox" onclick="document.getElementById('lightbox').classList.add('hidden')">
+  <button class="lightbox-close" onclick="document.getElementById('lightbox').classList.add('hidden')">×</button>
+  <img id="lightboxImg" src="">
+</div>
 
 <script type="module">
-import { renderAdminSidebar, ADMIN_SIDEBAR_CSS } from '../../js/admin/sidebar.js';
-import { requireAdmin } from '../../js/core/router.js';
-import { setupSessionExpiryHandler } from '../../js/core/auth.js';
-setupSessionExpiryHandler();
 import { admin } from '../../js/core/api.js';
+import { requireAdmin } from '../../js/core/auth.js';
 
-const styleEl = document.createElement('style');
-styleEl.textContent = ADMIN_SIDEBAR_CSS;
-document.head.appendChild(styleEl);
+await requireAdmin();
 
-document.getElementById('adminShell').innerHTML = `
-  <div class="sidebar">${renderAdminSidebar('orders')}</div>
-  <div class="main-content">
-    <div class="page-title">ออเดอร์ & ตรวจสอบสลิป</div>
+const ENCRYPT_KEY = '__ENCRYPT_KEY__';
 
-    <div class="filter-bar">
-      <input type="text" class="filter-input" id="searchOrderId" placeholder="ค้นหา Order ID...">
-      <input type="text" class="filter-input" id="searchEmail" placeholder="ค้นหาอีเมลลูกค้า...">
-      <select class="filter-select" id="productFilter"><option value="">ทุกประเภทสินค้า</option></select>
-      <select class="filter-select" id="statusFilter">
-        <option value="">ทุกสถานะ</option>
-        <option value="awaiting_slip_review" selected>รอตรวจสอบสลิป</option>
-        <option value="paid">ยืนยันแล้ว รอส่งไอดี</option>
-        <option value="delivered">ส่งไอดีแล้ว</option>
-        <option value="pending">รอชำระเงิน</option>
-      </select>
-    </div>
+let allOrders = [];
+let currentFilter = null;
 
-    <div class="order-grid" id="orderGrid"><div class="empty-state">กำลังโหลด...</div></div>
-    <div class="pagination-bar" id="paginationBar" style="display:none;">
-      <button class="page-btn" id="prevPageBtn">← ก่อนหน้า</button>
-      <span id="pageInfo" style="color:var(--muted);">-</span>
-      <button class="page-btn" id="nextPageBtn">ถัดไป →</button>
-    </div>
-  </div>
-`;
-
-const STATUS_LABEL = {
-  pending: 'รอชำระเงิน', awaiting_slip_review: 'รอตรวจสอบสลิป',
-  paid: 'ยืนยันแล้ว', delivered: 'ส่งไอดีแล้ว',
-  processing: 'กำลังจัดส่ง', completed: 'สำเร็จ', cancelled: 'ยกเลิก', refunded: 'คืนเงิน'
+const statusLabel = {
+  pending:              { text: 'รอชำระ',       cls: 'pending'   },
+  awaiting_slip_review: { text: 'รอตรวจสลิป',   cls: 'awaiting'  },
+  paid:                 { text: 'ชำระแล้ว',     cls: 'awaiting'  },
+  delivered:            { text: 'ส่งแล้ว',      cls: 'delivered' },
+  cancelled:            { text: 'ยกเลิก',       cls: 'cancelled' }
 };
 
-let currentFilters = { orderId: '', email: '', productId: '', status: 'awaiting_slip_review' };
-let currentPage  = 0;
-const PAGE_SIZE  = 30;
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str ?? '';
-  return div.innerHTML;
-}
-
-// ───────── โหลด product list สำหรับ dropdown กรอง (ตามข้อกำหนด "ค้นหาตามประเภทสินค้า") ─────────
-async function loadProductFilterOptions() {
-  const result = await admin.getProducts();
-  if (!result.success) return;
-
-  const select = document.getElementById('productFilter');
-  result.data.forEach(p => {
-    const opt = document.createElement('option');
-    opt.value = p.id;
-    opt.textContent = p.name;
-    select.appendChild(opt);
-  });
-}
-
-// ───────── โหลดรายการออเดอร์ ─────────
-async function loadOrders(page = 0) {
-  currentPage = page;
-  const gridEl = document.getElementById('orderGrid');
-  gridEl.innerHTML = `<div class="empty-state">กำลังโหลด...</div>`;
-
-  const result = await admin.searchOrders({
-    orderId: currentFilters.orderId,
-    email: currentFilters.email,
-    productId: currentFilters.productId || null,
-    status: currentFilters.status || null,
-    page, pageSize: PAGE_SIZE
-  });
-
-  // อัปเดต pagination controls
-  const pbar   = document.getElementById('paginationBar');
-  const total  = result.total || 0;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-  if (total > PAGE_SIZE) {
-    pbar.style.display = 'flex';
-    document.getElementById('pageInfo').textContent = `หน้า ${page+1} / ${totalPages} (${total} รายการ)`;
-    document.getElementById('prevPageBtn').disabled = page === 0;
-    document.getElementById('nextPageBtn').disabled = page >= totalPages - 1;
-  } else {
-    pbar.style.display = 'none';
-  }
-
-  if (!result.success) {
-    gridEl.innerHTML = `<div class="empty-state" style="color:red;font-size:12px;text-align:left;padding:16px;word-break:break-all;">ERROR: ${result.error || 'unknown'}<br>session: <span id="dbgUid">...</span></div>`;
-    supabase.auth.getSession().then(({data})=>{ const e=document.getElementById('dbgUid'); if(e) e.textContent=data.session?data.session.user.id:'NULL-no-session'; });
+async function loadOrders() {
+  document.getElementById('content').innerHTML = '<div class="loading"><div class="spinner"></div>กำลังโหลด...</div>';
+  const res = await admin.getOrders(currentFilter, '');
+  if (!res.success) {
+    document.getElementById('content').innerHTML = '<div class="empty">เกิดข้อผิดพลาด: ' + res.error + '</div>';
     return;
   }
-  if (result.data.length === 0) {
-    supabase.auth.getSession().then(({data})=>{
-      const uid = data.session ? data.session.user.id : 'NULL-no-session';
-      gridEl.innerHTML = `<div class="empty-state" style="font-size:11px;text-align:left;padding:16px;word-break:break-all;">ไม่พบออเดอร์<br>uid:${uid}<br>status:${currentFilters.status||'null'}<br>total:${result.total}</div>`;
-    });
+  allOrders = res.data;
+  renderOrders(allOrders);
+}
+
+function renderOrders(orders) {
+  const content = document.getElementById('content');
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  let filtered = orders;
+  if (search) {
+    filtered = orders.filter(o =>
+      o.id.toLowerCase().includes(search) ||
+      (o.profiles?.email || '').toLowerCase().includes(search)
+    );
+  }
+  if (filtered.length === 0) {
+    content.innerHTML = '<div class="empty">ไม่พบออเดอร์</div>';
     return;
   }
-
-  gridEl.innerHTML = result.data.map(o => {
-    const productName = o.order_items?.[0]?.products?.name || '-';
-    const customerLabel = o.profiles?.display_name || o.profiles?.email || '-';
+  content.innerHTML = filtered.map(o => {
+    const st = statusLabel[o.status] || { text: o.status, cls: 'pending' };
+    const item = o.order_items?.[0];
+    const date = new Date(o.created_at).toLocaleDateString('th-TH', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
     return `
-      <div class="order-card ${o.status}">
+      <div class="order-card" onclick="openOrder('${o.id}')">
         <div class="order-top">
-          <span class="order-id">#${o.id.slice(0,8)}</span>
-          <span class="status-pill ${o.status}">${STATUS_LABEL[o.status] || o.status}</span>
+          <span class="order-id">#${o.id.slice(0,8).toUpperCase()}</span>
+          <span class="badge ${st.cls}">${st.text}</span>
         </div>
-        <div class="order-customer">${escapeHtml(customerLabel)}</div>
-        <div class="order-product">${escapeHtml(productName)}</div>
-        <div class="order-amount">฿${Number(o.total_amount).toLocaleString()}</div>
-        <button class="view-detail-btn" data-order-id="${o.id}">ดูรายละเอียด</button>
+        <div class="order-name">${item?.product_name || 'สินค้า'}</div>
+        <div class="order-meta">
+          <span>${o.profiles?.email || '-'}</span>
+          <span>${date}</span>
+        </div>
+        <div class="order-price">${Number(o.total_amount).toLocaleString('th-TH')} บาท</div>
       </div>
     `;
   }).join('');
-
-  gridEl.querySelectorAll('[data-order-id]').forEach(btn =>
-    btn.addEventListener('click', () => openOrderModal(btn.dataset.orderId, result.data))
-  );
 }
 
-// ───────── Filters ─────────
-let debounceTimer = null;
-function debouncedReload() {
-  clearTimeout(debounceTimer);
-  debounceTimer = setTimeout(() => loadOrders(0), 350);
-}
+window.setFilter = (status, btn) => {
+  currentFilter = status;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadOrders();
+};
 
-document.getElementById('searchOrderId').addEventListener('input', (e) => {
-  currentFilters.orderId = e.target.value.trim();
-  currentPage = 0;
-  debouncedReload();
-});
-document.getElementById('searchEmail').addEventListener('input', (e) => {
-  currentFilters.email = e.target.value.trim();
-  currentPage = 0;
-  debouncedReload();
-});
-document.getElementById('productFilter').addEventListener('change', (e) => {
-  currentFilters.productId = e.target.value;
-  loadOrders(0);
-});
-document.getElementById('statusFilter').addEventListener('change', (e) => {
-  currentFilters.status = e.target.value;
-  loadOrders(0);
-});
+window.onSearch = () => renderOrders(allOrders);
 
-// ───────── Modal: รายละเอียดออเดอร์ + ตรวจสลิป ─────────
-async function openOrderModal(orderId, allOrders) {
-  const order = allOrders.find(o => o.id === orderId);
-  if (!order) return;
+window.openOrder = async (orderId) => {
+  const o = allOrders.find(x => x.id === orderId);
+  if (!o) return;
+  const st = statusLabel[o.status] || { text: o.status, cls: 'pending' };
+  const item = o.order_items?.[0];
+  const date = new Date(o.created_at).toLocaleString('th-TH');
+  const slipDate = o.slip_submitted_at ? new Date(o.slip_submitted_at).toLocaleString('th-TH') : '-';
 
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay show';
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-  document.body.appendChild(overlay);
+  document.getElementById('modalContent').innerHTML = `
+    <h2 style="margin-bottom:16px">รายละเอียดออเดอร์</h2>
+    <div class="info-row"><span>Order ID</span><span style="font-size:11px;color:#6b7280">${o.id}</span></div>
+    <div class="info-row"><span>ลูกค้า</span><span>${o.profiles?.email || '-'}</span></div>
+    <div class="info-row"><span>สินค้า</span><span>${item?.product_name || '-'}</span></div>
+    <div class="info-row"><span>ราคา</span><span style="color:#f59e0b;font-weight:700">${Number(o.total_amount).toLocaleString('th-TH')} บาท</span></div>
+    <div class="info-row"><span>สถานะ</span><span class="badge ${st.cls}">${st.text}</span></div>
+    <div class="info-row"><span>สั่งเมื่อ</span><span>${date}</span></div>
+    ${o.status === 'awaiting_slip_review' || o.slip_storage_path ? `<div class="info-row"><span>ส่งสลิปเมื่อ</span><span>${slipDate}</span></div>` : ''}
+    ${o.reject_reason ? `<div class="info-row"><span>เหตุผลปฏิเสธ</span><span style="color:#fca5a5">${o.reject_reason}</span></div>` : ''}
 
-  const productName = order.order_items?.[0]?.products?.name || '-';
-  const customerLabel = order.profiles?.display_name || order.profiles?.email || '-';
-  const slipTime = order.slip_submitted_at
-    ? new Date(order.slip_submitted_at).toLocaleString('th-TH')
-    : '-';
-
-  // [FIX] สร้าง signed URL ใหม่ทุกครั้งที่เปิด modal (ไม่ใช้ URL ที่เก็บใน DB อีกต่อไป)
-  // กรณีไม่มีสลิปเลย → hasSlip = false
-  const hasSlip = !!(order.slip_storage_path || order.slip_url);
-  let slipImageHtml;
-
-  if (!hasSlip) {
-    slipImageHtml = `<div style="text-align:center;padding:30px;color:rgba(26,58,82,0.5);">ยังไม่มีสลิป</div>`;
-  } else {
-    // แสดง loading placeholder ก่อน แล้วค่อย inject รูปจริงหลัง signed URL พร้อม
-    slipImageHtml = `<div id="slipPlaceholder" style="text-align:center;padding:30px;color:rgba(26,58,82,0.5);">⏳ กำลังโหลดรูปสลิป...</div>`;
-  }
-
-  // ปุ่ม action เปลี่ยนตามสถานะ:
-  // awaiting_slip_review → ยืนยัน/ปฏิเสธ
-  // delivered → ส่งใหม่ (กรณีส่งผิด)
-  let actionButtonsHtml = '';
-  if (order.status === 'awaiting_slip_review') {
-    actionButtonsHtml = `
-      <div class="action-row">
-        <button class="modal-action-btn approve" id="approveBtn">✓ ยืนยันการชำระเงิน</button>
-        <button class="modal-action-btn reject" id="rejectBtn">✕ ปฏิเสธ</button>
+    ${o.slip_storage_path ? `
+      <div class="slip-wrap">
+        <div id="slipArea" class="slip-loading">⏳ กำลังโหลดรูปสลิป...</div>
       </div>
-    `;
-  } else if (order.status === 'delivered') {
-    actionButtonsHtml = `
-      <div class="action-row">
-        <button class="modal-action-btn resend" id="resendBtn">↻ ส่งใหม่ (กรณีส่งผิด)</button>
+    ` : '<div style="padding:12px 0;color:#6b7280;font-size:13px;text-align:center">ยังไม่มีสลิป</div>'}
+
+    ${o.status === 'awaiting_slip_review' ? `
+      <div class="action-btns">
+        <button class="btn-approve" id="btnApprove" onclick="doApprove('${o.id}')">✓ อนุมัติ</button>
+        <button class="btn-reject" id="btnReject" onclick="showRejectForm('${o.id}')">✗ ปฏิเสธ</button>
       </div>
-    `;
-  }
+      <div id="rejectForm" style="display:none;margin-top:12px">
+        <textarea class="reject-input" id="rejectReason" placeholder="ระบุเหตุผล..."></textarea>
+        <button style="width:100%;padding:12px;background:#7f1d1d;color:#fff;border:none;border-radius:10px;font-size:14px;cursor:pointer;margin-top:8px" onclick="doReject('${o.id}')">ยืนยันปฏิเสธ</button>
+      </div>
+    ` : ''}
 
-  overlay.innerHTML = `
-    <div class="modal-box">
-      <div class="modal-title">รายละเอียดออเดอร์ #${orderId.slice(0,8)}</div>
-
-      ${slipImageHtml}
-
-      <div class="detail-row"><span class="label">สินค้า</span><span class="value">${escapeHtml(productName)}</span></div>
-      <div class="detail-row"><span class="label">ลูกค้า</span><span class="value">${escapeHtml(customerLabel)}</span></div>
-      <div class="detail-row"><span class="label">อีเมล</span><span class="value">${escapeHtml(order.profiles?.email || '-')}</span></div>
-      <div class="detail-row"><span class="label">ยอดเงิน</span><span class="value">฿${Number(order.total_amount).toLocaleString()}</span></div>
-      <div class="detail-row"><span class="label">เวลาที่ส่งสลิป</span><span class="value">${slipTime}</span></div>
-      <div class="detail-row"><span class="label">สถานะ</span><span class="value">${STATUS_LABEL[order.status]}</span></div>
-
-      <div id="deliveryHistorySlot"></div>
-
-      ${actionButtonsHtml}
-
-      <div class="form-alert" id="modalAlert"></div>
-
-      <button class="modal-action-btn close" id="closeModalBtn" style="margin-top:10px;width:100%;">ปิด</button>
-    </div>
+    <button class="btn-close-modal" onclick="document.getElementById('overlay').classList.add('hidden')">ปิด</button>
+    <div class="msg" id="modalMsg"></div>
   `;
 
-  overlay.querySelector('#closeModalBtn').addEventListener('click', () => overlay.remove());
+  document.getElementById('overlay').classList.remove('hidden');
 
-  // [FIX] โหลด signed URL ใหม่แล้ว inject รูปจริงลงใน placeholder
-  if (hasSlip) {
-    (async () => {
-      const { success, url } = await admin.getSlipSignedUrl(order);
-      const placeholder = overlay.querySelector('#slipPlaceholder');
-      if (!placeholder) return; // modal ถูกปิดก่อน URL พร้อม
-
-      if (!success || !url) {
-        placeholder.outerHTML = `<div style="text-align:center;padding:26px 16px;color:#B9821F;background:rgba(217,163,48,0.1);border-radius:10px;font-size:13px;line-height:1.6;">
-          ⚠️ โหลดรูปสลิปไม่สำเร็จ<br>กรุณาตรวจสอบ Storage RLS (migration 007) หรือให้ลูกค้าส่งสลิปใหม่
-        </div>`;
-        return;
-      }
-
-      placeholder.outerHTML = `<img class="slip-full-img" src="${url}" alt="สลิปการโอนเงิน" id="slipImg">`;
-
-      // ผูก event หลัง img ถูก inject เข้า DOM แล้ว
-      const slipImgEl = overlay.querySelector('#slipImg');
-
-      // คลิกรูปสลิป → เปิด lightbox ซูมเต็มจอ
-      slipImgEl?.addEventListener('click', () => {
-        document.getElementById('lightboxImg').src = url;
-        document.getElementById('lightbox').classList.add('show');
-      });
-
-      // โหลดรูปไม่ขึ้นแม้ URL พร้อมแล้ว (เช่น ไฟล์ถูกลบจาก storage)
-      slipImgEl?.addEventListener('error', () => {
-        slipImgEl.outerHTML = `<div style="text-align:center;padding:26px 16px;color:#B9821F;background:rgba(217,163,48,0.1);border-radius:10px;font-size:13px;line-height:1.6;">
-          ⚠️ โหลดรูปสลิปไม่สำเร็จ (ไฟล์อาจถูกลบหรือเสียหาย)<br>ให้ลูกค้ากดส่งสลิปใหม่อีกครั้งที่หน้าออเดอร์ของเขา
-        </div>`;
-      }, { once: true });
-    })();
-  }
-
-  // โหลดประวัติการส่งไอดี (ถ้าเคยส่งแล้ว — แสดงทุกครั้งที่เคยส่ง ไม่ใช่แค่ล่าสุด)
-  if (order.status === 'delivered') {
-    loadDeliveryHistory(orderId, overlay);
-  }
-
-  // ───── ยืนยันการชำระเงิน + ส่งไอดี ─────
-  overlay.querySelector('#approveBtn')?.addEventListener('click', async (e) => {
-    const btn = e.currentTarget;
-    btn.disabled = true;
-    btn.textContent = 'กำลังดำเนินการ...';
-
-    const result = await admin.approveSlipAndDeliver(orderId);
-
-    const alertEl = overlay.querySelector('#modalAlert');
-    if (!result.success) {
-      // ตามข้อกำหนด: "หากไม่มีสต็อก ให้แจ้งเตือนและไม่สามารถดำเนินการต่อได้"
-      alertEl.textContent = result.error;
-      alertEl.className = 'form-alert show error';
-      btn.disabled = false;
-      btn.textContent = '✓ ยืนยันการชำระเงิน';
+  // โหลดรูปสลิป
+  if (o.slip_storage_path) {
+    const slipRes = await admin.getSlipSignedUrl(o.slip_storage_path);
+    const slipArea = document.getElementById('slipArea');
+    if (!slipArea) return;
+    if (!slipRes.success) {
+      slipArea.className = 'slip-error';
+      slipArea.textContent = '⚠️ โหลดรูปสลิปไม่สำเร็จ';
       return;
     }
-
-    alertEl.textContent = 'ยืนยันสำเร็จ ส่งไอดีให้ลูกค้าเรียบร้อย';
-    alertEl.className = 'form-alert show success';
-    setTimeout(() => { overlay.remove(); loadOrders(); }, 1000);
-  });
-
-  // ───── ปฏิเสธสลิป ─────
-  overlay.querySelector('#rejectBtn')?.addEventListener('click', () => {
-    const actionRow = overlay.querySelector('.action-row');
-    actionRow.insertAdjacentHTML('afterend', `
-      <div class="reject-reason-box" id="rejectReasonBox">
-        <textarea id="rejectReasonInput" placeholder="ระบุเหตุผลที่ปฏิเสธ (เช่น สลิปไม่ชัด, ยอดเงินไม่ตรง)"></textarea>
-        <div class="action-row" style="margin-top:8px;">
-          <button class="modal-action-btn reject" id="confirmRejectBtn">ยืนยันการปฏิเสธ</button>
-        </div>
-      </div>
-    `);
-    overlay.querySelector('#rejectBtn').remove();
-    overlay.querySelector('#approveBtn').remove();
-
-    overlay.querySelector('#confirmRejectBtn').addEventListener('click', async (e) => {
-      const reason = overlay.querySelector('#rejectReasonInput').value.trim();
-      if (!reason) {
-        alert('กรุณาระบุเหตุผล');
-        return;
-      }
-
-      const btn = e.currentTarget;
-      btn.disabled = true;
-      btn.textContent = 'กำลังดำเนินการ...';
-
-      const result = await admin.rejectSlip(orderId, reason);
-
-      if (!result.success) {
-        alert(result.error);
-        btn.disabled = false;
-        btn.textContent = 'ยืนยันการปฏิเสธ';
-        return;
-      }
-
-      overlay.remove();
-      loadOrders();
-    });
-  });
-
-  // ───── ส่งใหม่ ─────
-  overlay.querySelector('#resendBtn')?.addEventListener('click', () => {
-    if (!confirm('ยืนยันการส่งไอดีใหม่ให้ลูกค้า? ระบบจะเลือกไอดีตัวใหม่และบันทึกประวัติเพิ่ม (ไม่ลบของเดิม)')) return;
-
-    const reason = prompt('ระบุเหตุผลที่ส่งใหม่ (เช่น ส่งไอดีผิด, ลูกค้าแจ้งเข้าไม่ได้):');
-    if (!reason) return;
-
-    handleResend(orderId, reason, overlay);
-  });
-
-  async function handleResend(orderId, reason, overlay) {
-    const btn = overlay.querySelector('#resendBtn');
-    btn.disabled = true;
-    btn.textContent = 'กำลังส่งใหม่...';
-
-    const result = await admin.resendInventory(orderId, reason);
-
-    const alertEl = overlay.querySelector('#modalAlert');
-    if (!result.success) {
-      alertEl.textContent = result.error;
-      alertEl.className = 'form-alert show error';
-      btn.disabled = false;
-      btn.textContent = '↻ ส่งใหม่ (กรณีส่งผิด)';
-      return;
-    }
-
-    alertEl.textContent = 'ส่งไอดีใหม่สำเร็จ';
-    alertEl.className = 'form-alert show success';
-    loadDeliveryHistory(orderId, overlay); // refresh ประวัติให้เห็นรายการใหม่ทันที
+    slipArea.outerHTML = `<img class="slip-img" src="${slipRes.url}" alt="สลิป"
+      onclick="document.getElementById('lightboxImg').src='${slipRes.url}';document.getElementById('lightbox').classList.remove('hidden')"
+      onerror="this.outerHTML='<div class=slip-error>⚠️ โหลดรูปไม่สำเร็จ</div>'">`;
   }
-}
+};
 
-// ───────── โหลดประวัติการส่งไอดีทั้งหมด (รวมทุกครั้งที่เคยส่ง) ─────────
-async function loadDeliveryHistory(orderId, overlay) {
-  const result = await admin.getDeliveryHistory(orderId);
-  const slot = overlay.querySelector('#deliveryHistorySlot');
+window.handleOverlayClick = (e) => {
+  if (e.target === document.getElementById('overlay')) {
+    document.getElementById('overlay').classList.add('hidden');
+  }
+};
 
-  if (!result.success || result.data.length === 0) {
-    slot.innerHTML = '';
+window.showRejectForm = () => {
+  document.getElementById('rejectForm').style.display = '';
+  document.getElementById('btnReject').style.display = 'none';
+};
+
+window.doApprove = async (orderId) => {
+  const btn = document.getElementById('btnApprove');
+  btn.disabled = true; btn.textContent = 'กำลังดำเนินการ...';
+  const res = await admin.approve(orderId, ENCRYPT_KEY);
+  if (!res.success) {
+    showModalMsg(res.error, 'error');
+    btn.disabled = false; btn.textContent = '✓ อนุมัติ';
     return;
   }
+  showModalMsg('อนุมัติสำเร็จ! ส่ง credential ให้ลูกค้าแล้ว', 'success');
+  setTimeout(() => { document.getElementById('overlay').classList.add('hidden'); loadOrders(); }, 1500);
+};
 
-  slot.innerHTML = `
-    <div class="delivery-history-box">
-      <div class="delivery-history-title">ประวัติการส่งไอดี (${result.data.length} ครั้ง)</div>
-      ${result.data.map((d, idx) => `
-        <div class="delivery-history-item">
-          ${idx === 0 ? '🟢 ล่าสุด' : '⚪'} ${escapeHtml(d.inventory?.gmail_address || '-')}
-          — ${new Date(d.delivered_at).toLocaleString('th-TH')}
-        </div>
-      `).join('')}
-    </div>
-  `;
+window.doReject = async (orderId) => {
+  const reason = document.getElementById('rejectReason').value.trim();
+  if (!reason) { showModalMsg('กรุณาระบุเหตุผล', 'error'); return; }
+  const res = await admin.reject(orderId, reason);
+  if (!res.success) { showModalMsg(res.error, 'error'); return; }
+  showModalMsg('ปฏิเสธเรียบร้อย', 'success');
+  setTimeout(() => { document.getElementById('overlay').classList.add('hidden'); loadOrders(); }, 1500);
+};
+
+function showModalMsg(text, type) {
+  const el = document.getElementById('modalMsg');
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'msg ' + type;
 }
 
-// ───────── Lightbox close ─────────
-document.getElementById('lightbox').addEventListener('click', () => {
-  document.getElementById('lightbox').classList.remove('show');
-});
-
-// ───────── Init ─────────
-
-// ── Global error display helper ──────────────────────────────────────
-function showFatalError(msg) {
-  const wrap = document.getElementById('pageBody') || document.getElementById('orderList')
-             || document.getElementById('productGrid') || document.getElementById('checkoutWrap')
-             || document.getElementById('orderGrid') || document.getElementById('logList')
-             || document.getElementById('tableBody')?.closest('div') || document.body;
-  if (wrap) wrap.innerHTML = `
-    <div style="text-align:center;padding:50px 20px;color:rgba(26,58,82,0.6);">
-      <div style="font-size:32px;margin-bottom:12px;">⚠️</div>
-      <div style="font-size:14px;font-weight:600;">${msg}</div>
-    </div>`;
-}
-async function init() {
-  const result = await requireAdmin();
-  if (!result) return;
-
-  await loadProductFilterOptions();
-  await loadOrders(0);
-
-  document.getElementById('prevPageBtn')?.addEventListener('click', () => loadOrders(currentPage - 1));
-  document.getElementById('nextPageBtn')?.addEventListener('click', () => loadOrders(currentPage + 1));
-}
-
-try {
-  init();
-} catch (err) {
-  console.error('Init error:', err);
-  showFatalError('โหลดข้อมูลไม่สำเร็จ กรุณาลองรีเฟรชหน้าเว็บ');
-}
+loadOrders();
 </script>
-
 </body>
 </html>

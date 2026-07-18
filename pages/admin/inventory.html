@@ -5,443 +5,117 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>คลังไอดี — Admin</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
-  :root{ --navy:#1A6BA0; --gold:#D9A330; --ink:#1A3A52; --green-go:#3F8557; --danger:#E04433; --line:rgba(26,106,160,0.15); }
-  *{ box-sizing:border-box; margin:0; padding:0; }
-  body{ font-family:'IBM Plex Sans Thai', sans-serif; background:#F0F4F8; color:var(--ink); min-height:100vh; }
-
-  .page-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px; }
-  .page-title{ font-family:'Baloo 2',sans-serif; font-size:19px; font-weight:800; }
-  .add-btn{
-    padding:10px 18px; background:var(--navy); color:#fff; border:none; border-radius:9px;
-    font-size:13.5px; font-weight:700; font-family:'Baloo 2',sans-serif; cursor:pointer;
-  }
-
-  .filter-bar{
-    display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;
-  }
-  .filter-input, .filter-select{
-    padding:9px 12px; border:1.5px solid var(--line); border-radius:8px;
-    font-size:13px; font-family:'IBM Plex Sans Thai', sans-serif; background:#fff;
-  }
-  .filter-input{ flex:1; min-width:180px; }
-
-  .table-wrap{ background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 10px rgba(0,40,80,0.08); }
-  table{ width:100%; border-collapse:collapse; font-size:13px; }
-  th{ text-align:left; padding:11px 14px; background:rgba(26,106,160,0.06); font-weight:700; color:var(--navy); }
-  td{ padding:11px 14px; border-top:1px solid var(--line); }
-  tr:hover td{ background:rgba(26,106,160,0.02); }
-
-  .status-pill{ font-size:11px; font-weight:700; padding:3px 10px; border-radius:12px; display:inline-block; }
-  .status-pill.available{ background:rgba(63,133,87,0.12); color:var(--green-go); }
-  .status-pill.reserved{ background:rgba(217,163,48,0.12); color:#B9821F; }
-  .status-pill.sold{ background:rgba(224,68,51,0.1); color:var(--danger); }
-
-  .row-actions{ display:flex; gap:6px; }
-  .action-btn{
-    padding:5px 10px; border:none; border-radius:6px; font-size:11.5px; font-weight:600; cursor:pointer;
-  }
-  .action-btn.view{ background:rgba(26,106,160,0.1); color:var(--navy); }
-  .action-btn.edit{ background:rgba(217,163,48,0.12); color:#B9821F; }
-  .action-btn.delete{ background:rgba(224,68,51,0.1); color:var(--danger); }
-  .action-btn:disabled{ opacity:0.4; cursor:not-allowed; }
-
-  .empty-row td{ text-align:center; padding:40px; color:rgba(26,58,82,0.5); }
-  .pagination-bar{
-    display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
-    padding:12px 16px; border-top:1px solid var(--line); font-size:12.5px; gap:8px;
-  }
-  .page-btn{
-    padding:6px 14px; border:1.5px solid var(--line); border-radius:7px;
-    background:#fff; cursor:pointer; font-size:12.5px; font-weight:600;
-  }
-  .page-btn:disabled{ opacity:0.4; cursor:not-allowed; }
-
-  /* ───── Modal ───── */
-  .modal-overlay{
-    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
-    align-items:center; justify-content:center; z-index:50; padding:16px;
-  }
-  .modal-overlay.show{ display:flex; }
-  .modal-box{
-    background:#fff; border-radius:14px; padding:22px; width:100%; max-width:420px;
-    max-height:90vh; overflow-y:auto;
-  }
-  .modal-title{ font-size:16px; font-weight:700; margin-bottom:16px; }
-  .field-group{ margin-bottom:14px; }
-  .field-label{ display:block; font-size:12.5px; font-weight:600; margin-bottom:5px; }
-  .field-input, .field-select{
-    width:100%; padding:10px 12px; border:1.5px solid var(--line); border-radius:8px;
-    font-size:13.5px; font-family:'IBM Plex Sans Thai', sans-serif;
-  }
-  .field-hint{ font-size:11px; color:rgba(26,58,82,0.5); margin-top:4px; }
-  .modal-actions{ display:flex; gap:10px; margin-top:18px; }
-  .modal-btn{
-    flex:1; padding:11px 0; border:none; border-radius:9px; font-size:13.5px; font-weight:700;
-    font-family:'Baloo 2',sans-serif; cursor:pointer;
-  }
-  .modal-btn.primary{ background:var(--navy); color:#fff; }
-  .modal-btn.secondary{ background:rgba(26,58,82,0.08); color:var(--ink); }
-  .modal-btn:disabled{ opacity:0.5; cursor:not-allowed; }
-
-  .credential-display{
-    background:rgba(26,106,160,0.05); border-radius:8px; padding:12px; margin-top:6px;
-  }
-  .credential-row{ display:flex; justify-content:space-between; padding:6px 0; font-size:13px; }
-  .credential-val{ font-family:'Space Mono',monospace; font-weight:700; }
-
-  .form-alert{ padding:9px 11px; border-radius:8px; font-size:12.5px; margin-bottom:12px; display:none; }
-  .form-alert.show{ display:block; }
-  .form-alert.error{ background:rgba(224,68,51,0.1); color:var(--danger); }
-  .form-alert.success{ background:rgba(63,133,87,0.1); color:var(--green-go); }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',sans-serif;background:#0a0f1a;color:#fff;min-height:100vh}
+  nav{background:#111827;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1f2937}
+  .nav-logo{font-size:16px;font-weight:700;color:#9ca3af}
+  .nav-logo strong{color:#fff}
+  .nav-right{display:flex;gap:8px}
+  .nav-link{color:#6b7280;text-decoration:none;font-size:13px;padding:6px 12px;border-radius:8px}
+  .nav-link:hover,.nav-link.active{color:#fff;background:#1f2937}
+  .btn-sm{padding:6px 14px;background:#374151;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer}
+  main{padding:20px}
+  h1{font-size:20px;font-weight:700;margin-bottom:16px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+  .stat{background:#111827;border-radius:12px;padding:14px;text-align:center}
+  .stat-num{font-size:28px;font-weight:700;color:#f59e0b}
+  .stat-label{font-size:12px;color:#6b7280;margin-top:2px}
+  .add-box{background:#111827;border-radius:14px;padding:16px;margin-bottom:20px}
+  .add-box h2{font-size:15px;font-weight:600;margin-bottom:12px}
+  select{width:100%;background:#0a0f1a;border:1.5px solid #374151;border-radius:10px;color:#fff;padding:10px 14px;font-size:14px;outline:none;margin-bottom:10px}
+  select:focus{border-color:#1d4ed8}
+  textarea{width:100%;background:#0a0f1a;border:1.5px solid #374151;border-radius:10px;color:#fff;padding:10px 14px;font-size:13px;outline:none;resize:none;min-height:100px;font-family:monospace}
+  textarea:focus{border-color:#1d4ed8}
+  .hint{font-size:12px;color:#6b7280;margin:6px 0 10px}
+  .btn{width:100%;padding:12px;background:#1d4ed8;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer}
+  .btn:disabled{background:#374151;cursor:not-allowed}
+  .msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:10px;display:none}
+  .msg.error{background:#450a0a;color:#fca5a5;display:block}
+  .msg.success{background:#052e16;color:#86efac;display:block}
+  .item-card{background:#111827;border-radius:12px;padding:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+  .item-name{font-size:14px;font-weight:600}
+  .item-id{font-size:11px;color:#6b7280;margin-top:2px}
+  .item-badges{display:flex;gap:6px}
+  .badge{padding:3px 8px;border-radius:8px;font-size:11px;font-weight:600}
+  .badge.avail{background:#052e16;color:#86efac}
+  .badge.reserved{background:#451a03;color:#fb923c}
+  .badge.sold{background:#1c1917;color:#78716c}
+  .empty{text-align:center;color:#6b7280;padding:40px 20px}
+  .loading{text-align:center;color:#6b7280;padding:40px 20px}
+  .spinner{width:28px;height:28px;border:3px solid #374151;border-top-color:#1d4ed8;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+  @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
+<nav>
+  <div class="nav-logo"><strong>Admin</strong> — Mayor Service</div>
+  <div class="nav-right">
+    <a href="/pages/admin/orders.html" class="nav-link">ออเดอร์</a>
+    <a href="/pages/admin/inventory.html" class="nav-link active">คลังไอดี</a>
+    <a href="/pages/admin/audit.html" class="nav-link">Log</a>
+    <button class="btn-sm" onclick="import('../../js/core/auth.js').then(m=>m.logout())">ออก</button>
+  </div>
+</nav>
+<main>
+  <h1>คลังไอดี</h1>
 
-<div class="admin-shell" id="adminShell"></div>
+  <div class="stats" id="statsRow">
+    <div class="stat"><div class="stat-num" id="statAvail">-</div><div class="stat-label">พร้อมขาย</div></div>
+    <div class="stat"><div class="stat-num" id="statReserved">-</div><div class="stat-label">ถูกจอง</div></div>
+    <div class="stat"><div class="stat-num" id="statSold">-</div><div class="stat-label">ขายแล้ว</div></div>
+  </div>
+
+  <!-- Add inventory via SQL note -->
+  <div class="add-box">
+    <h2>เพิ่มไอดีในคลัง</h2>
+    <p style="font-size:13px;color:#9ca3af;margin-bottom:12px">เพิ่มไอดีผ่าน Supabase SQL Editor เพื่อความปลอดภัย (เข้ารหัสฝั่ง server)</p>
+    <div style="background:#0a0f1a;border-radius:10px;padding:12px;font-family:monospace;font-size:12px;color:#86efac;white-space:pre-wrap">INSERT INTO inventory_items (product_id, credential_data)
+VALUES (
+  '&lt;product_id&gt;',
+  pgp_sym_encrypt('email:password', '&lt;ENCRYPT_KEY&gt;')
+);</div>
+  </div>
+
+  <div id="inventoryList"><div class="loading"><div class="spinner"></div>กำลังโหลด...</div></div>
+</main>
 
 <script type="module">
-import { renderAdminSidebar, ADMIN_SIDEBAR_CSS } from '../../js/admin/sidebar.js';
-import { requireAdmin } from '../../js/core/router.js';
-import { setupSessionExpiryHandler } from '../../js/core/auth.js';
-setupSessionExpiryHandler();
-import { admin, shop } from '../../js/core/api.js';
+import { admin } from '../../js/core/api.js';
+import { requireAdmin } from '../../js/core/auth.js';
 
-const styleEl = document.createElement('style');
-styleEl.textContent = ADMIN_SIDEBAR_CSS;
-document.head.appendChild(styleEl);
+await requireAdmin();
 
-document.getElementById('adminShell').innerHTML = `
-  <div class="sidebar">${renderAdminSidebar('inventory')}</div>
-  <div class="main-content">
-    <div class="page-header">
-      <div class="page-title">คลังไอดี</div>
-      <button class="add-btn" id="openAddBtn">+ เพิ่มไอดี</button>
-    </div>
+const res = await admin.getInventory();
+if (!res.success) {
+  document.getElementById('inventoryList').innerHTML = '<div class="empty">เกิดข้อผิดพลาด: ' + res.error + '</div>';
+} else {
+  const items = res.data;
+  const avail    = items.filter(i => !i.is_sold && !i.is_reserved).length;
+  const reserved = items.filter(i => !i.is_sold && i.is_reserved).length;
+  const sold     = items.filter(i => i.is_sold).length;
+  document.getElementById('statAvail').textContent    = avail;
+  document.getElementById('statReserved').textContent = reserved;
+  document.getElementById('statSold').textContent     = sold;
 
-    <div class="filter-bar">
-      <input type="text" class="filter-input" id="searchInput" placeholder="ค้นหาด้วย Gmail...">
-      <select class="filter-select" id="productFilter"><option value="">ทุกประเภทสินค้า</option></select>
-      <select class="filter-select" id="statusFilter">
-        <option value="">ทุกสถานะ</option>
-        <option value="available">พร้อมขาย</option>
-        <option value="reserved">จองแล้ว</option>
-        <option value="sold">ขายแล้ว</option>
-      </select>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>ประเภทสินค้า</th><th>Gmail</th><th>สถานะ</th><th>วันที่เพิ่ม</th><th>จัดการ</th></tr>
-        </thead>
-        <tbody id="tableBody"><tr class="empty-row"><td colspan="5">กำลังโหลด...</td></tr></tbody>
-      </table>
-    </div>
-    <div class="pagination-bar" id="paginationBar" style="display:none;">
-      <button class="page-btn" id="prevPageBtn">← ก่อนหน้า</button>
-      <span id="pageInfo" style="color:var(--muted);">-</span>
-      <button class="page-btn" id="nextPageBtn">ถัดไป →</button>
-    </div>
-  </div>
-`;
-
-const STATUS_LABEL = { available: 'พร้อมขาย', reserved: 'จองแล้ว', sold: 'ขายแล้ว' };
-let allProducts = [];
-let currentFilters = { search: '', productId: '', status: '' };
-let currentPage  = 0;
-const PAGE_SIZE  = 50;
-
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str ?? '';
-  return div.innerHTML;
-}
-
-// ───────── โหลด product list สำหรับ dropdown ─────────
-async function loadProductOptions() {
-  const result = await admin.getProducts();
-  if (!result.success) return;
-  allProducts = result.data;
-
-  const filterSelect = document.getElementById('productFilter');
-  allProducts.forEach(p => {
-    const opt = document.createElement('option');
-    opt.value = p.id;
-    opt.textContent = p.name;
-    filterSelect.appendChild(opt);
-  });
-}
-
-// ───────── โหลดตาราง ─────────
-async function loadTable(page = 0) {
-  currentPage = page;
-  const tbody = document.getElementById('tableBody');
-  tbody.innerHTML = `<tr class="empty-row"><td colspan="5">กำลังโหลด...</td></tr>`;
-
-  const result = await admin.getInventoryList({
-    productId: currentFilters.productId || null,
-    status: currentFilters.status || null,
-    search: currentFilters.search,
-    page, pageSize: PAGE_SIZE
-  });
-
-  // อัปเดต pagination
-  const pbar = document.getElementById('paginationBar');
-  const total = result.total || 0;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-  if (total > PAGE_SIZE) {
-    pbar.style.display = 'flex';
-    document.getElementById('pageInfo').textContent = `หน้า ${page+1} / ${totalPages} (${total} รายการ)`;
-    document.getElementById('prevPageBtn').disabled = page === 0;
-    document.getElementById('nextPageBtn').disabled = page >= totalPages - 1;
-  } else {
-    pbar.style.display = 'none';
-  }
-
-  if (!result.success || result.data.length === 0) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="5">ไม่พบรายการ</td></tr>`;
+  if (items.length === 0) {
+    document.getElementById('inventoryList').innerHTML = '<div class="empty">ยังไม่มีไอดีในคลัง</div>';
     return;
   }
-
-  tbody.innerHTML = result.data.map(item => `
-    <tr>
-      <td>${escapeHtml(item.products?.name || '-')}</td>
-      <td>${escapeHtml(item.gmail_address || item.id.slice(0,8))}</td>
-      <td><span class="status-pill ${item.status}">${STATUS_LABEL[item.status]}</span></td>
-      <td>${new Date(item.created_at).toLocaleDateString('th-TH')}</td>
-      <td>
-        <div class="row-actions">
-          <button class="action-btn view" data-action="view" data-id="${item.id}">ดู</button>
-          <button class="action-btn edit" data-action="edit" data-id="${item.id}"
-                  data-gmail="${escapeHtml(item.gmail_address || '')}"
-                  ${item.status === 'sold' ? 'disabled' : ''}>แก้ไข</button>
-          <button class="action-btn delete" data-action="delete" data-id="${item.id}"
-                  ${item.status === 'sold' ? 'disabled' : ''}>ลบ</button>
+  document.getElementById('inventoryList').innerHTML = items.map(i => {
+    const cls  = i.is_sold ? 'sold' : i.is_reserved ? 'reserved' : 'avail';
+    const text = i.is_sold ? 'ขายแล้ว' : i.is_reserved ? 'ถูกจอง' : 'พร้อมขาย';
+    const date = new Date(i.created_at).toLocaleDateString('th-TH');
+    return `
+      <div class="item-card">
+        <div>
+          <div class="item-name">${i.products?.name || 'สินค้า'}</div>
+          <div class="item-id">${i.id.slice(0,8).toUpperCase()} · ${date}</div>
         </div>
-      </td>
-    </tr>
-  `).join('');
-
-  // ผูก event ทีเดียวหลัง render (event delegation จะดีกว่า แต่ขนาดตารางนี้เล็กพอใช้แบบตรงได้)
-  tbody.querySelectorAll('[data-action="view"]').forEach(btn =>
-    btn.addEventListener('click', () => openViewModal(btn.dataset.id))
-  );
-  tbody.querySelectorAll('[data-action="edit"]').forEach(btn =>
-    btn.addEventListener('click', () => openEditModal(btn.dataset.id, btn.dataset.gmail))
-  );
-  tbody.querySelectorAll('[data-action="delete"]').forEach(btn =>
-    btn.addEventListener('click', () => handleDelete(btn.dataset.id))
-  );
-}
-
-// ───────── Filters ─────────
-let searchDebounce = null;
-document.getElementById('searchInput').addEventListener('input', (e) => {
-  clearTimeout(searchDebounce);
-  searchDebounce = setTimeout(() => {
-    currentFilters.search = e.target.value.trim();
-    loadTable(0);
-  }, 350); // debounce กันยิง query ทุก keystroke
-});
-
-document.getElementById('productFilter').addEventListener('change', (e) => {
-  currentFilters.productId = e.target.value;
-  loadTable();
-});
-
-document.getElementById('statusFilter').addEventListener('change', (e) => {
-  currentFilters.status = e.target.value;
-  loadTable();
-});
-
-// ───────── Modal: Add ─────────
-function buildProductOptionsHtml(selectedId = '') {
-  return allProducts.map(p =>
-    `<option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>${escapeHtml(p.name)}</option>`
-  ).join('');
-}
-
-function openModal(html) {
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay show';
-  overlay.innerHTML = `<div class="modal-box">${html}</div>`;
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-  document.body.appendChild(overlay);
-  return overlay;
-}
-
-document.getElementById('openAddBtn').addEventListener('click', () => {
-  const overlay = openModal(`
-    <div class="modal-title">เพิ่มไอดีใหม่</div>
-    <div class="form-alert" id="addAlert"></div>
-    <div class="field-group">
-      <label class="field-label">ประเภทสินค้า</label>
-      <select class="field-select" id="addProductId">${buildProductOptionsHtml()}</select>
-    </div>
-    <div class="field-group">
-      <label class="field-label">Gmail</label>
-      <input type="email" class="field-input" id="addGmail" placeholder="example@gmail.com">
-    </div>
-    <div class="field-group">
-      <label class="field-label">รหัสผ่าน Gmail</label>
-      <input type="text" class="field-input" id="addPassword" placeholder="รหัสผ่าน">
-      <div class="field-hint">🔒 จะถูกเข้ารหัสก่อนบันทึกลงฐานข้อมูล</div>
-    </div>
-    <div class="modal-actions">
-      <button class="modal-btn secondary" id="cancelAddBtn">ยกเลิก</button>
-      <button class="modal-btn primary" id="confirmAddBtn">บันทึก</button>
-    </div>
-  `);
-
-  overlay.querySelector('#cancelAddBtn').addEventListener('click', () => overlay.remove());
-  overlay.querySelector('#confirmAddBtn').addEventListener('click', async () => {
-    const productId = overlay.querySelector('#addProductId').value;
-    const gmail = overlay.querySelector('#addGmail').value.trim();
-    const password = overlay.querySelector('#addPassword').value;
-    const alertEl = overlay.querySelector('#addAlert');
-    const btn = overlay.querySelector('#confirmAddBtn');
-
-    if (!gmail || !password) {
-      alertEl.textContent = 'กรุณากรอก Gmail และรหัสผ่านให้ครบ';
-      alertEl.className = 'form-alert show error';
-      return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = 'กำลังบันทึก...';
-
-    const result = await admin.addInventory(productId, gmail, password);
-
-    if (!result.success) {
-      alertEl.textContent = result.error;
-      alertEl.className = 'form-alert show error';
-      btn.disabled = false;
-      btn.textContent = 'บันทึก';
-      return;
-    }
-
-    overlay.remove();
-    loadTable();
-  });
-});
-
-// ───────── Modal: View (decrypt + แสดง) ─────────
-async function openViewModal(id) {
-  const overlay = openModal(`<div class="modal-title">รายละเอียดไอดี</div><div style="text-align:center;padding:20px;">กำลังถอดรหัส...</div>`);
-
-  const result = await admin.getInventoryCredential(id);
-
-  if (!result.success) {
-    overlay.querySelector('.modal-box').innerHTML = `
-      <div class="modal-title">รายละเอียดไอดี</div>
-      <div class="form-alert show error">${result.error}</div>
-      <button class="modal-btn secondary" onclick="this.closest('.modal-overlay').remove()">ปิด</button>
+        <span class="badge ${cls}">${text}</span>
+      </div>
     `;
-    return;
-  }
-
-  overlay.querySelector('.modal-box').innerHTML = `
-    <div class="modal-title">รายละเอียดไอดี</div>
-    <div class="credential-display">
-      <div class="credential-row"><span>Gmail</span><span class="credential-val">${escapeHtml(result.data.gmail)}</span></div>
-      <div class="credential-row"><span>รหัสผ่าน</span><span class="credential-val">${escapeHtml(result.data.password)}</span></div>
-    </div>
-    <button class="modal-btn secondary" style="margin-top:16px;width:100%;" id="closeViewBtn">ปิด</button>
-  `;
-  overlay.querySelector('#closeViewBtn').addEventListener('click', () => overlay.remove());
-}
-
-// ───────── Modal: Edit ─────────
-function openEditModal(id, currentGmail) {
-  const overlay = openModal(`
-    <div class="modal-title">แก้ไขไอดี</div>
-    <div class="form-alert" id="editAlert"></div>
-    <div class="field-group">
-      <label class="field-label">Gmail</label>
-      <input type="email" class="field-input" id="editGmail" value="${escapeHtml(currentGmail)}">
-    </div>
-    <div class="field-group">
-      <label class="field-label">รหัสผ่านใหม่ (เว้นว่างถ้าไม่เปลี่ยน)</label>
-      <input type="text" class="field-input" id="editPassword" placeholder="ปล่อยว่างถ้าไม่เปลี่ยนรหัส">
-    </div>
-    <div class="modal-actions">
-      <button class="modal-btn secondary" id="cancelEditBtn">ยกเลิก</button>
-      <button class="modal-btn primary" id="confirmEditBtn">บันทึก</button>
-    </div>
-  `);
-
-  overlay.querySelector('#cancelEditBtn').addEventListener('click', () => overlay.remove());
-  overlay.querySelector('#confirmEditBtn').addEventListener('click', async () => {
-    const gmail = overlay.querySelector('#editGmail').value.trim();
-    const password = overlay.querySelector('#editPassword').value || null;
-    const btn = overlay.querySelector('#confirmEditBtn');
-
-    btn.disabled = true;
-    btn.textContent = 'กำลังบันทึก...';
-
-    const result = await admin.updateInventory(id, gmail, password);
-
-    if (!result.success) {
-      const alertEl = overlay.querySelector('#editAlert');
-      alertEl.textContent = result.error;
-      alertEl.className = 'form-alert show error';
-      btn.disabled = false;
-      btn.textContent = 'บันทึก';
-      return;
-    }
-
-    overlay.remove();
-    loadTable();
-  });
-}
-
-// ───────── Delete ─────────
-async function handleDelete(id) {
-  if (!confirm('ยืนยันการลบไอดีนี้? การกระทำนี้ไม่สามารถย้อนกลับได้')) return;
-
-  const result = await admin.deleteInventory(id);
-
-  if (!result.success) {
-    alert(result.error);
-    return;
-  }
-
-  loadTable();
-}
-
-// ───────── Init ─────────
-
-// ── Global error display helper ──────────────────────────────────────
-function showFatalError(msg) {
-  const wrap = document.getElementById('pageBody') || document.getElementById('orderList')
-             || document.getElementById('productGrid') || document.getElementById('checkoutWrap')
-             || document.getElementById('orderGrid') || document.getElementById('logList')
-             || document.getElementById('tableBody')?.closest('div') || document.body;
-  if (wrap) wrap.innerHTML = `
-    <div style="text-align:center;padding:50px 20px;color:rgba(26,58,82,0.6);">
-      <div style="font-size:32px;margin-bottom:12px;">⚠️</div>
-      <div style="font-size:14px;font-weight:600;">${msg}</div>
-    </div>`;
-}
-async function init() {
-  const result = await requireAdmin();
-  if (!result) return;
-
-  await loadProductOptions();
-  await loadTable(0);
-
-  document.getElementById('prevPageBtn')?.addEventListener('click', () => loadTable(currentPage - 1));
-  document.getElementById('nextPageBtn')?.addEventListener('click', () => loadTable(currentPage + 1));
-}
-
-try {
-  init();
-} catch (err) {
-  console.error('Init error:', err);
-  showFatalError('โหลดข้อมูลไม่สำเร็จ กรุณาลองรีเฟรชหน้าเว็บ');
+  }).join('');
 }
 </script>
-
 </body>
 </html>
