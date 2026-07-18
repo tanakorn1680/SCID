@@ -5,6 +5,7 @@
 
 import { requireAdmin, errorResponse } from '../_lib/auth.js';
 import { supabaseAdmin }               from '../_lib/supabase.js';
+import { encrypt }                     from '../_lib/crypto.js';
 
 export default async function handler(req) {
   if (req.method !== 'POST') {
@@ -44,11 +45,8 @@ export default async function handler(req) {
       );
     }
 
-    // encrypt password
-    const { data: encData, error: encErr } = await supabaseAdmin
-      .rpc('encrypt_password', { plain: password });
-
-    if (encErr || !encData) throw encErr ?? new Error('encrypt failed');
+    // encrypt password ด้วย Node.js crypto (AES-256-GCM)
+    const encData = encrypt(password);
 
     // บันทึก credential
     const { error: credErr } = await supabaseAdmin

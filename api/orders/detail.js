@@ -3,6 +3,7 @@
 
 import { requireAuth, errorResponse } from '../_lib/auth.js';
 import { supabaseAdmin }              from '../_lib/supabase.js';
+import { decrypt }                    from '../_lib/crypto.js';
 
 export default async function handler(req) {
   if (req.method !== 'GET') {
@@ -54,13 +55,13 @@ export default async function handler(req) {
         .single();
 
       if (!credErr && cred) {
-        // decrypt password
-        const { data: decrypted, error: decErr } = await supabaseAdmin
-          .rpc('decrypt_password', { enc: cred.password_enc });
+        // decrypt password ด้วย Node.js crypto
+        let password = null;
+        try { password = decrypt(cred.password_enc); } catch (_) {}
 
         credential = {
           gmail:        cred.gmail,
-          password:     decErr ? null : decrypted,
+          password,
           delivered_at: cred.delivered_at,
         };
       }
