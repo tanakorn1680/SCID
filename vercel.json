@@ -1,0 +1,18 @@
+{
+  "buildCommand": "chmod +x scripts/inject-env.sh && bash scripts/inject-env.sh",
+  "outputDirectory": ".",
+  "headers": [
+    {
+      "source": "/js/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/pages/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    }
+  ]
+}
