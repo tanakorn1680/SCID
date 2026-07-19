@@ -1,8 +1,0 @@
-{
-  "name": "mayor-service-v2",
-  "version": "2.0.0",
-  "type": "module",
-  "dependencies": {
-    "@supabase/supabase-js": "^2.45.0"
-  }
-}

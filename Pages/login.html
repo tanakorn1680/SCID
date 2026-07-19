@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เข้าสู่ระบบ / สมัครสมาชิก</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+  :root{--paper:#FBF8F1;--navy:#1A6BA0;--sky:#2196C9;--gold:#D9A330;--ink:#1A3A52;--muted:rgba(26,58,82,0.55);--line:rgba(26,106,160,0.18);--green-go:#3F8557;--danger:#E04433;--card:rgba(255,255,255,0.95);}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#81CFF0;}
+  body{font-family:'IBM Plex Sans Thai',sans-serif;color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px 14px;-webkit-font-smoothing:antialiased;}
+  .auth-card{background:var(--card);border-radius:18px;width:100%;max-width:380px;padding:28px 24px 24px;box-shadow:0 16px 40px rgba(0,40,80,0.25);}
+  .auth-logo{text-align:center;margin-bottom:18px;}
+  .auth-logo img{max-width:160px;width:60%;}
+  .tab-switch{display:flex;background:rgba(26,106,160,0.08);border-radius:10px;padding:3px;margin-bottom:20px;}
+  .tab-btn{flex:1;text-align:center;padding:9px 0;font-size:14px;font-weight:600;font-family:'Baloo 2',sans-serif;color:var(--muted);border-radius:8px;cursor:pointer;transition:all .2s ease;user-select:none;}
+  .tab-btn.active{background:var(--navy);color:#fff;box-shadow:0 3px 10px rgba(26,106,160,0.35);}
+  .field-group{margin-bottom:14px;}
+  .field-label{display:block;font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:5px;}
+  .field-input{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:9px;font-size:14px;font-family:'IBM Plex Sans Thai',sans-serif;background:#fff;color:var(--ink);transition:border-color .15s ease;}
+  .field-input:focus{outline:none;border-color:var(--sky);}
+  .submit-btn{width:100%;padding:13px 0;background:linear-gradient(135deg,var(--navy) 0%,#0E4C7A 100%);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;margin-top:6px;transition:opacity .2s ease,transform .1s ease;}
+  .submit-btn:active{transform:scale(0.98);}
+  .submit-btn:disabled{opacity:0.55;cursor:not-allowed;}
+  .form-alert{padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none;}
+  .form-alert.show{display:block;}
+  .form-alert.error{background:rgba(224,68,51,0.1);color:var(--danger);border:1px solid rgba(224,68,51,0.25);}
+  .form-alert.success{background:rgba(63,133,87,0.1);color:var(--green-go);border:1px solid rgba(63,133,87,0.25);}
+  .form-panel{display:none;}
+  .form-panel.active{display:block;}
+  .back-link{display:block;text-align:center;margin-top:16px;font-size:12.5px;color:var(--muted);text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="auth-card">
+  <div class="auth-logo"><img src="../images/logo-main-service1.png" alt="Mayor Service"></div>
+  <div class="tab-switch">
+    <div class="tab-btn active" data-tab="login">เข้าสู่ระบบ</div>
+    <div class="tab-btn" data-tab="register">สมัครสมาชิก</div>
+  </div>
+  <div class="form-alert" id="formAlert"></div>
+
+  <!-- LOGIN -->
+  <div class="form-panel active" id="loginPanel">
+    <div class="field-group">
+      <label class="field-label">อีเมล</label>
+      <input type="email" class="field-input" id="loginEmail" placeholder="you@example.com">
+    </div>
+    <div class="field-group">
+      <label class="field-label">รหัสผ่าน</label>
+      <input type="password" class="field-input" id="loginPassword" placeholder="••••••••">
+    </div>
+    <button class="submit-btn" id="loginBtn">เข้าสู่ระบบ</button>
+  </div>
+
+  <!-- REGISTER -->
+  <div class="form-panel" id="registerPanel">
+    <div class="field-group">
+      <label class="field-label">อีเมล</label>
+      <input type="email" class="field-input" id="regEmail" placeholder="you@example.com">
+    </div>
+    <div class="field-group">
+      <label class="field-label">รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)</label>
+      <input type="password" class="field-input" id="regPassword" placeholder="••••••••">
+    </div>
+    <div class="field-group">
+      <label class="field-label">ยืนยันรหัสผ่าน</label>
+      <input type="password" class="field-input" id="regPasswordConfirm" placeholder="••••••••">
+    </div>
+    <button class="submit-btn" id="registerBtn">สมัครสมาชิก</button>
+  </div>
+
+  <a href="/" class="back-link">← กลับหน้าแรก</a>
+</div>
+
+<script type="module">
+import { auth } from '../js/api.js';
+
+// redirect ถ้า login แล้ว
+auth.getSession().then(session => {
+  if (session) window.location.href = '/pages/shop.html';
+});
+
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab + 'Panel').classList.add('active');
+    hideAlert();
+  });
+});
+
+const alertEl = document.getElementById('formAlert');
+function showAlert(msg, type='error') { alertEl.textContent = msg; alertEl.className = `form-alert show ${type}`; }
+function hideAlert() { alertEl.className = 'form-alert'; }
+
+// LOGIN
+document.getElementById('loginBtn').addEventListener('click', async () => {
+  hideAlert();
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!email || !password) return showAlert('กรุณากรอกข้อมูลให้ครบ');
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...';
+  try {
+    const { data } = await auth.login(email, password);
+    showAlert('เข้าสู่ระบบสำเร็จ', 'success');
+    // redirect ตาม role
+    setTimeout(async () => {
+      try {
+        const profileRes = await fetch('/api/auth/profile', {
+          headers: { Authorization: `Bearer ${data.session.access_token}` }
+        });
+        const profileJson = await profileRes.json();
+        if (profileJson.data?.role === 'admin') {
+          window.location.href = '/pages/admin/dashboard.html';
+        } else {
+          window.location.href = '/pages/shop.html';
+        }
+      } catch {
+        window.location.href = '/pages/shop.html';
+      }
+    }, 400);
+  } catch (e) {
+    showAlert(e.message);
+    btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
+  }
+});
+
+// REGISTER
+document.getElementById('registerBtn').addEventListener('click', async () => {
+  hideAlert();
+  const email    = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  const confirm  = document.getElementById('regPasswordConfirm').value;
+  if (!email || !password) return showAlert('กรุณากรอกข้อมูลให้ครบ');
+  if (password.length < 8)  return showAlert('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
+  if (password !== confirm)  return showAlert('รหัสผ่านไม่ตรงกัน');
+  const btn = document.getElementById('registerBtn');
+  btn.disabled = true; btn.textContent = 'กำลังสมัคร...';
+  try {
+    await auth.register(email, password);
+    showAlert('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ', 'success');
+    btn.disabled = false; btn.textContent = 'สมัครสมาชิก';
+    setTimeout(() => {
+      document.querySelector('.tab-btn[data-tab="login"]').click();
+      document.getElementById('loginEmail').value = email;
+    }, 1200);
+  } catch (e) {
+    showAlert(e.message);
+    btn.disabled = false; btn.textContent = 'สมัครสมาชิก';
+  }
+});
+</script>
+</body>
+</html>

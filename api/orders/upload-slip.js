@@ -122,3 +122,7 @@ export default async function handler(req) {
     return errorResponse(err);
   }
 }
+
+
+// บอก Vercel ให้ใช้ Node.js runtime (รองรับ formData + crypto)
+export const config = { runtime: "nodejs" };
