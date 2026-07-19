@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+  :root{--navy:#1A6BA0;--gold:#D9A330;--ink:#1A3A52;--green-go:#3F8557;--danger:#E04433;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'IBM Plex Sans Thai',sans-serif;background:#F0F4F8;color:var(--ink);min-height:100vh;padding:20px 16px 40px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  .page-title{font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;}
+  .logout-btn{background:none;border:none;color:rgba(26,58,82,0.5);font-size:13px;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;}
+  .nav-links{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+  .nav-link{padding:9px 16px;background:var(--navy);color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;}
+  .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;}
+  @media(min-width:600px){.stat-grid{grid-template-columns:repeat(4,1fr);}}
+  .stat-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 10px rgba(0,40,80,0.08);}
+  .stat-card.urgent::before{content:'';display:block;width:4px;height:100%;position:absolute;left:0;top:0;background:var(--danger);border-radius:12px 0 0 12px;}
+  .stat-card{position:relative;overflow:hidden;}
+  .stat-label{font-size:12px;color:rgba(26,58,82,0.55);margin-bottom:6px;}
+  .stat-value{font-family:'Baloo 2',sans-serif;font-size:26px;font-weight:800;}
+  .stat-value.go{color:var(--green-go);}
+  .stat-value.urgent{color:var(--danger);}
+  .loading{color:rgba(26,58,82,0.4);font-size:13px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="page-title">Admin Dashboard</div>
+  <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
+</div>
+
+<div class="nav-links">
+  <a href="/pages/admin/orders.html" class="nav-link">📋 ตรวจสอบออเดอร์</a>
+</div>
+
+<div class="stat-grid" id="statGrid">
+  <div class="stat-card"><div class="stat-label">กำลังโหลด...</div></div>
+</div>
+
+<script type="module">
+import { auth, admin } from '../../js/api.js';
+
+const session = await auth.getSession();
+if (!session) { window.location.href = '/pages/login.html'; }
+
+// ตรวจ admin role
+const res = await fetch('/api/auth/profile', { headers: { Authorization: `Bearer ${session.access_token}` } });
+const { data: profile } = await res.json();
+if (profile?.role !== 'admin') { window.location.href = '/pages/shop.html'; }
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await auth.logout();
+  window.location.href = '/pages/login.html';
+});
+
+// โหลด stats
+try {
+  const { data: s } = await admin.stats();
+  document.getElementById('statGrid').innerHTML = `
+    <div class="stat-card urgent">
+      <div class="stat-label">รอตรวจสอบสลิป</div>
+      <div class="stat-value urgent">${s.awaiting_review}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">รอชำระเงิน</div>
+      <div class="stat-value">${s.pending}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">ส่งสำเร็จวันนี้</div>
+      <div class="stat-value go">${s.today_delivered}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">ส่งสำเร็จทั้งหมด</div>
+      <div class="stat-value">${s.delivered}</div>
+    </div>
+  `;
+} catch {
+  document.getElementById('statGrid').innerHTML = `<div class="loading">โหลด stats ไม่สำเร็จ</div>`;
+}
+</script>
+</body>
+</html>

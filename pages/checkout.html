@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ชำระเงิน</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  :root{--navy:#1A6BA0;--sky:#2196C9;--gold:#D9A330;--gold-deep:#B9821F;--ink:#1A3A52;--line:rgba(26,106,160,0.18);--muted:rgba(26,58,82,0.55);--green-go:#3F8557;--danger:#E04433;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#81CFF0;}
+  body{font-family:'IBM Plex Sans Thai',sans-serif;color:var(--ink);min-height:100vh;padding:14px 14px 40px;-webkit-font-smoothing:antialiased;}
+  .back-link{display:inline-flex;align-items:center;gap:5px;margin-bottom:12px;color:#fff;font-size:13px;font-weight:600;text-decoration:none;}
+  .page-title{font-family:'Baloo 2',sans-serif;font-size:19px;font-weight:800;color:#fff;margin-bottom:14px;}
+  .checkout-card{background:rgba(255,255,255,0.97);border-radius:16px;padding:18px;margin-bottom:14px;box-shadow:0 8px 24px rgba(0,40,80,0.18);}
+  .section-title{font-size:13.5px;font-weight:700;margin-bottom:12px;}
+  .summary-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;}
+  .summary-row.total{font-size:16px;font-weight:800;margin-top:10px;padding-top:10px;border-top:1.5px solid var(--line);}
+  .summary-row.total .amount{color:var(--gold);font-family:'Baloo 2',sans-serif;}
+  .qr-wrap{text-align:center;padding:16px;background:rgba(26,106,160,0.04);border-radius:12px;margin-bottom:14px;}
+  .qr-wrap .qr-note{font-size:12px;color:var(--muted);margin-top:8px;}
+  .pay-amount-highlight{text-align:center;padding:14px 0;margin-bottom:14px;}
+  .pay-amount-highlight .amount{font-family:'Baloo 2',sans-serif;font-size:30px;font-weight:800;color:var(--gold);}
+  .pay-amount-highlight .label{font-size:12px;color:var(--muted);}
+  .slip-upload-zone{border:2px dashed var(--line);border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;transition:border-color .15s ease;}
+  .slip-upload-zone.has-preview{padding:12px;border-style:solid;}
+  .slip-preview-img{width:100%;max-height:260px;object-fit:contain;border-radius:8px;margin-bottom:10px;}
+  .upload-icon{font-size:32px;margin-bottom:8px;}
+  .upload-text{font-size:13px;color:var(--muted);}
+  .upload-hint{font-size:11px;color:var(--muted);margin-top:4px;}
+  .change-img-btn{font-size:12px;color:var(--navy);font-weight:600;background:none;border:none;cursor:pointer;text-decoration:underline;}
+  .submit-slip-btn{width:100%;padding:14px 0;background:linear-gradient(135deg,var(--green-go) 0%,#2F6B43 100%);color:#fff;border:none;border-radius:11px;font-size:15px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;margin-top:14px;}
+  .submit-slip-btn:disabled{opacity:0.45;cursor:not-allowed;}
+  .form-alert{padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none;}
+  .form-alert.show{display:block;}
+  .form-alert.error{background:rgba(224,68,51,0.1);color:var(--danger);border:1px solid rgba(224,68,51,0.25);}
+  .form-alert.success{background:rgba(63,133,87,0.1);color:var(--green-go);border:1px solid rgba(63,133,87,0.25);}
+  .confirm-btn{width:100%;padding:14px 0;background:linear-gradient(135deg,var(--navy) 0%,#0E4C7A 100%);color:#fff;border:none;border-radius:11px;font-size:15.5px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;display:block;text-align:center;text-decoration:none;}
+  .confirm-btn:disabled{opacity:0.55;cursor:not-allowed;}
+  .skeleton{text-align:center;padding:60px 20px;color:rgba(255,255,255,0.85);font-size:14px;}
+  .reject-banner{background:rgba(224,68,51,0.1);border:1px solid rgba(224,68,51,0.3);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--danger);}
+  .reject-banner strong{display:block;margin-bottom:4px;}
+</style>
+</head>
+<body>
+
+<a href="/pages/shop.html" class="back-link">← กลับหน้าสินค้า</a>
+<div class="page-title">ชำระเงิน</div>
+
+<div id="checkoutWrap">
+  <div class="skeleton">กำลังโหลด...</div>
+</div>
+
+<script type="module">
+import { auth, orders } from '../js/api.js';
+
+const session = await auth.getSession();
+if (!session) { window.location.href = '/pages/login.html'; }
+
+const params  = new URLSearchParams(window.location.search);
+const orderId = params.get('order_id');
+const wrap    = document.getElementById('checkoutWrap');
+let selectedFile = null;
+
+if (!orderId) {
+  wrap.innerHTML = `<div class="skeleton">ไม่พบ order_id</div>`;
+} else {
+  loadOrder();
+}
+
+async function loadOrder() {
+  try {
+    const { data: order } = await orders.detail(orderId);
+
+    if (order.status === 'delivered') {
+      wrap.innerHTML = `
+        <div class="checkout-card">
+          <div style="text-align:center;padding:20px 0;">
+            <div style="font-size:48px;margin-bottom:10px;">✅</div>
+            <div style="font-size:17px;font-weight:700;margin-bottom:8px;">ออเดอร์นี้เสร็จสิ้นแล้ว</div>
+          </div>
+        </div>
+        <a href="/pages/history.html" class="confirm-btn">ดูประวัติการสั่งซื้อ</a>`;
+      return;
+    }
+
+    if (order.status === 'awaiting_review') {
+      renderSuccess();
+      return;
+    }
+
+    // pending — แสดงฟอร์มอัปโหลดสลิป
+    renderPayment(order);
+  } catch (e) {
+    wrap.innerHTML = `<div class="skeleton">${e.message}</div>`;
+  }
+}
+
+function renderPayment(order) {
+  const rejectBanner = order.reject_reason
+    ? `<div class="reject-banner"><strong>⚠️ สลิปถูกปฏิเสธ</strong>${order.reject_reason}<br><small>กรุณาส่งสลิปใหม่อีกครั้ง</small></div>`
+    : '';
+
+  wrap.innerHTML = `
+    ${rejectBanner}
+    <div class="checkout-card">
+      <div class="section-title">📦 สรุปออเดอร์</div>
+      <div class="summary-row"><span>${order.product_label}</span></div>
+      <div class="summary-row total">
+        <span>ยอดรวม</span>
+        <span class="amount">฿${Number(order.amount).toLocaleString()}</span>
+      </div>
+    </div>
+
+    <div class="checkout-card">
+      <div class="section-title">💳 ชำระเงินผ่าน QR Code</div>
+      <div class="qr-wrap">
+        <div style="font-size:13px;color:var(--muted);">สแกน QR Code เพื่อโอนเงิน</div>
+        <div class="qr-note">โอนยอด ฿${Number(order.amount).toLocaleString()} แล้วถ่ายสลิปไว้</div>
+      </div>
+      <div class="pay-amount-highlight">
+        <div class="label">ยอดที่ต้องชำระ</div>
+        <div class="amount">฿${Number(order.amount).toLocaleString()}</div>
+      </div>
+    </div>
+
+    <div class="checkout-card">
+      <div class="section-title">📎 แนบสลิปการโอนเงิน</div>
+      <div class="form-alert" id="slipAlert"></div>
+      <div class="slip-upload-zone" id="uploadZone">
+        <div class="upload-icon">📤</div>
+        <div class="upload-text">แตะเพื่อเลือกรูปสลิป</div>
+        <div class="upload-hint">รองรับ JPG, PNG, WEBP (ไม่เกิน 5MB)</div>
+      </div>
+      <input type="file" id="slipFileInput" accept="image/jpeg,image/png,image/webp" style="display:none;">
+      <button class="submit-slip-btn" id="submitSlipBtn" disabled>ส่งสลิป</button>
+    </div>
+  `;
+
+  const zone     = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('slipFileInput');
+  const submitBtn = document.getElementById('submitSlipBtn');
+
+  zone.addEventListener('click', () => {
+    if (!zone.classList.contains('has-preview')) fileInput.click();
+  });
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return showAlert('ไฟล์ใหญ่เกิน 5MB');
+    selectedFile = file;
+    renderPreview(file);
+    submitBtn.disabled = false;
+  });
+
+  submitBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'กำลังส่งสลิป...';
+    try {
+      await orders.uploadSlip(orderId, selectedFile);
+      renderSuccess();
+    } catch (e) {
+      showAlert(e.message);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'ส่งสลิป';
+    }
+  });
+}
+
+function renderPreview(file) {
+  const reader = new FileReader();
+  const zone = document.getElementById('uploadZone');
+  reader.onload = (e) => {
+    zone.className = 'slip-upload-zone has-preview';
+    zone.innerHTML = `
+      <img class="slip-preview-img" src="${e.target.result}" alt="ตัวอย่างสลิป">
+      <button type="button" class="change-img-btn" id="changeImgBtn">เปลี่ยนรูป</button>
+    `;
+    document.getElementById('changeImgBtn').addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      document.getElementById('slipFileInput').click();
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderSuccess() {
+  wrap.innerHTML = `
+    <div class="checkout-card">
+      <div style="text-align:center;padding:20px 0;">
+        <div style="font-size:48px;margin-bottom:10px;">✅</div>
+        <div style="font-size:17px;font-weight:700;margin-bottom:8px;">ส่งสลิปสำเร็จ</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;">
+          ระบบได้รับสลิปของคุณแล้ว<br>กำลังรอแอดมินตรวจสอบ
+        </div>
+      </div>
+    </div>
+    <a href="/pages/history.html" class="confirm-btn">ดูประวัติการสั่งซื้อ</a>
+  `;
+}
+
+function showAlert(msg) {
+  const el = document.getElementById('slipAlert');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'form-alert show error';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สินค้าทั้งหมด</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+  :root{--paper:#FBF8F1;--navy:#1A6BA0;--sky:#2196C9;--gold:#D9A330;--gold-deep:#B9821F;--ink:#1A3A52;--line:rgba(26,106,160,0.18);--muted:rgba(26,58,82,0.55);--green-go:#3F8557;--danger:#E04433;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#81CFF0;}
+  body{font-family:'IBM Plex Sans Thai',sans-serif;color:var(--ink);min-height:100vh;padding-bottom:30px;-webkit-font-smoothing:antialiased;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;}
+  .topbar img{height:34px;}
+  .nav-actions{display:flex;gap:14px;align-items:center;font-size:13px;}
+  .nav-actions a{color:var(--navy);text-decoration:none;font-weight:600;}
+  .nav-actions button{background:none;border:none;color:var(--navy);font-size:13px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;}
+  .hero-banner{margin:0 16px 18px;background:linear-gradient(135deg,#1A6BA0 0%,#0E4C7A 100%);border-radius:18px;padding:26px 22px;color:#fff;box-shadow:0 10px 28px rgba(0,40,80,0.28);position:relative;overflow:hidden;}
+  .hero-title{font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;position:relative;z-index:1;}
+  .hero-sub{font-size:13px;color:rgba(255,255,255,0.85);position:relative;z-index:1;}
+  .hero-banner::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;background:rgba(217,163,48,0.18);border-radius:50%;}
+  .product-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 16px;}
+  @media(min-width:640px){.product-grid{grid-template-columns:repeat(3,1fr);}}
+  .product-card{background:rgba(255,255,255,0.97);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,40,80,0.14);display:flex;flex-direction:column;}
+  .product-img-wrap{width:100%;aspect-ratio:1;background:linear-gradient(135deg,#E8F2FA,#D4E9F7);display:flex;align-items:center;justify-content:center;font-size:48px;}
+  .product-info{padding:10px 11px 12px;display:flex;flex-direction:column;flex:1;}
+  .product-name{font-size:13.5px;font-weight:700;margin-bottom:4px;line-height:1.3;}
+  .product-price{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:17px;margin-bottom:10px;}
+  .buy-btn{margin-top:auto;width:100%;padding:9px 0;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:12.5px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
+  .buy-btn:active{opacity:0.85;}
+  .loading-state,.empty-state{grid-column:1/-1;text-align:center;padding:50px 20px;color:rgba(255,255,255,0.75);font-size:14px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="../images/logo-main-service1.png" alt="logo">
+  <div class="nav-actions" id="navActions">กำลังโหลด...</div>
+</div>
+
+<div class="hero-banner">
+  <div class="hero-title">ซื้อไอดี SimCity BuildIt</div>
+  <div class="hero-sub">พร้อมเล่น ส่งรวดเร็ว ปลอดภัย 100%</div>
+</div>
+
+<div class="product-grid" id="productGrid">
+  <div class="loading-state">กำลังโหลดสินค้า...</div>
+</div>
+
+<script type="module">
+import { auth, products, orders } from '../js/api.js';
+
+// ตรวจ session
+const session = await auth.getSession();
+const navEl = document.getElementById('navActions');
+
+if (!session) {
+  navEl.innerHTML = `<a href="/pages/login.html">เข้าสู่ระบบ</a>`;
+} else {
+  // ดึง role
+  const res = await fetch('/api/auth/profile', {
+    headers: { Authorization: `Bearer ${session.access_token}` }
+  });
+  const { data: profile } = await res.json();
+  const adminLink = profile?.role === 'admin' ? `<a href="/pages/admin/dashboard.html">แอดมิน</a>` : '';
+  navEl.innerHTML = `
+    ${adminLink}
+    <a href="/pages/history.html">ประวัติ</a>
+    <button id="logoutBtn">ออกจากระบบ</button>
+  `;
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await auth.logout();
+    window.location.reload();
+  });
+}
+
+// โหลดสินค้า
+const grid = document.getElementById('productGrid');
+try {
+  const { data } = await products.list();
+  if (!data.length) {
+    grid.innerHTML = `<div class="empty-state">ยังไม่มีสินค้า</div>`;
+  } else {
+    grid.innerHTML = data.map(p => `
+      <div class="product-card">
+        <div class="product-img-wrap">🎮</div>
+        <div class="product-info">
+          <div class="product-name">${p.label}</div>
+          <div class="product-price">฿${Number(p.price).toLocaleString()}</div>
+          <button class="buy-btn" onclick="buyProduct('${p.key}')">ซื้อเลย</button>
+        </div>
+      </div>
+    `).join('');
+  }
+} catch {
+  grid.innerHTML = `<div class="empty-state">โหลดสินค้าไม่สำเร็จ</div>`;
+}
+
+window.buyProduct = async (key) => {
+  if (!session) return window.location.href = '/pages/login.html';
+  try {
+    const { data } = await orders.create(key);
+    window.location.href = `/pages/checkout.html?order_id=${data.id}`;
+  } catch (e) {
+    alert(e.message);
+  }
+};
+</script>
+</body>
+</html>
