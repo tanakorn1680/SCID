@@ -84,6 +84,24 @@ if (!orderId) {
     // credential section
     let credHtml = '';
     if (order.status === 'delivered' && order.credential) {
+      const pwFieldHtml = order.credential.decrypt_failed ? `
+          <div class="cred-row">
+            <div class="cred-label">รหัสผ่าน Gmail</div>
+            <div class="form-alert show error" style="margin-top:4px;">
+              เกิดปัญหาในการแสดงรหัสผ่าน กรุณาติดต่อแอดมินพร้อมแจ้งเลขที่ออเดอร์นี้
+            </div>
+          </div>` : `
+          <div class="cred-row">
+            <div class="cred-label">รหัสผ่าน Gmail</div>
+            <div class="cred-value-row">
+              <div class="cred-value masked" id="pwVal" data-pw="${order.credential.password}">${order.credential.password}</div>
+              <div class="cred-actions">
+                <button class="cred-btn" id="togglePwBtn">แสดง</button>
+                <button class="cred-btn" id="copyPwBtn">คัดลอก</button>
+              </div>
+            </div>
+          </div>`;
+
       credHtml = `
         <div class="credential-card" id="credCard">
           <div class="credential-header">
@@ -97,16 +115,7 @@ if (!orderId) {
               <div class="cred-actions"><button class="cred-btn" id="copyGmailBtn">คัดลอก</button></div>
             </div>
           </div>
-          <div class="cred-row">
-            <div class="cred-label">รหัสผ่าน Gmail</div>
-            <div class="cred-value-row">
-              <div class="cred-value masked" id="pwVal" data-pw="${order.credential.password}">${order.credential.password}</div>
-              <div class="cred-actions">
-                <button class="cred-btn" id="togglePwBtn">แสดง</button>
-                <button class="cred-btn" id="copyPwBtn">คัดลอก</button>
-              </div>
-            </div>
-          </div>
+          ${pwFieldHtml}
         </div>
       `;
     } else if (order.status !== 'cancelled') {

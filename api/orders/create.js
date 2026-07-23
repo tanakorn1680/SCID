@@ -16,8 +16,8 @@ export default async function handler(req) {
 
     const { product_key } = await req.json();
 
-    // ตรวจ product_key
-    const product = getProduct(product_key);
+    // ตรวจ product_key (getProduct query DB — ต้อง await)
+    const product = await getProduct(product_key);
     if (!product) {
       return Response.json(
         { success: false, error: 'ไม่พบสินค้า' },

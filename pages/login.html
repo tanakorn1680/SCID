@@ -30,11 +30,17 @@
   .form-panel{display:none;}
   .form-panel.active{display:block;}
   .back-link{display:block;text-align:center;margin-top:16px;font-size:12.5px;color:var(--muted);text-decoration:none;}
+  .forgot-link{display:block;text-align:right;font-size:12.5px;color:var(--sky);text-decoration:none;margin:-6px 0 14px;}
+  .field-with-toggle{position:relative;}
+  .field-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:12.5px;color:var(--muted);user-select:none;background:none;border:none;font-family:'IBM Plex Sans Thai',sans-serif;padding:4px;}
+  .strength-bar{height:4px;border-radius:2px;background:rgba(26,58,82,0.1);margin-top:6px;overflow:hidden;}
+  .strength-bar-fill{height:100%;width:0%;border-radius:2px;transition:width .2s ease,background-color .2s ease;}
+  .strength-label{font-size:11.5px;margin-top:4px;color:var(--muted);}
 </style>
 </head>
 <body>
 <div class="auth-card">
-  <div class="auth-logo"><img src="../images/logo-main-service1.png" alt="Mayor Service"></div>
+  <div class="auth-logo"><img id="siteLogo" src="../images/logo-main-service1.png" alt="Mayor Service"></div>
   <div class="tab-switch">
     <div class="tab-btn active" data-tab="login">เข้าสู่ระบบ</div>
     <div class="tab-btn" data-tab="register">สมัครสมาชิก</div>
@@ -51,6 +57,7 @@
       <label class="field-label">รหัสผ่าน</label>
       <input type="password" class="field-input" id="loginPassword" placeholder="••••••••">
     </div>
+    <a href="/pages/forgot-password.html" class="forgot-link">ลืมรหัสผ่าน?</a>
     <button class="submit-btn" id="loginBtn">เข้าสู่ระบบ</button>
   </div>
 
@@ -62,20 +69,33 @@
     </div>
     <div class="field-group">
       <label class="field-label">รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)</label>
-      <input type="password" class="field-input" id="regPassword" placeholder="••••••••">
+      <div class="field-with-toggle">
+        <input type="password" class="field-input" id="regPassword" placeholder="••••••••">
+        <button type="button" class="field-toggle" data-toggle-for="regPassword">แสดง</button>
+      </div>
+      <div class="strength-bar"><div class="strength-bar-fill" id="strengthBarFill"></div></div>
+      <div class="strength-label" id="strengthLabel"></div>
     </div>
     <div class="field-group">
       <label class="field-label">ยืนยันรหัสผ่าน</label>
-      <input type="password" class="field-input" id="regPasswordConfirm" placeholder="••••••••">
+      <div class="field-with-toggle">
+        <input type="password" class="field-input" id="regPasswordConfirm" placeholder="••••••••">
+        <button type="button" class="field-toggle" data-toggle-for="regPasswordConfirm">แสดง</button>
+      </div>
     </div>
-    <button class="submit-btn" id="registerBtn">สมัครสมาชิก</button>
+    <button class="submit-btn" id="registerBtn" disabled>สมัครสมาชิก</button>
   </div>
 
   <a href="/" class="back-link">← กลับหน้าแรก</a>
 </div>
 
 <script type="module">
-import { auth } from '../js/api.js';
+import { auth, settings } from '../js/api.js';
+
+// โหลด logo จาก Website Settings ถ้าแอดมินตั้งค่าไว้ (ไม่งั้นใช้ path เดิมเป็น fallback)
+settings.get().then(({ data }) => {
+  if (data.logo_url) document.getElementById('siteLogo').src = data.logo_url;
+}).catch(() => {});
 
 // redirect ถ้า login แล้ว
 auth.getSession().then(session => {
@@ -97,7 +117,58 @@ const alertEl = document.getElementById('formAlert');
 function showAlert(msg, type='error') { alertEl.textContent = msg; alertEl.className = `form-alert show ${type}`; }
 function hideAlert() { alertEl.className = 'form-alert'; }
 
-// LOGIN
+// แสดง/ซ่อนรหัสผ่าน
+document.querySelectorAll('.field-toggle').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.toggleFor);
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    btn.textContent = isHidden ? 'ซ่อน' : 'แสดง';
+  });
+});
+
+// ตรวจความแข็งแรงของรหัสผ่าน — กันรหัสอ่อนที่ผ่านแค่เงื่อนไขความยาว
+// เช่น "11111111" หรือ "aaaaaaaa" ซึ่งยาว 8 ตัวแต่เดาง่ายมาก
+function checkPasswordStrength(pw) {
+  if (!pw) return { score: 0, label: '', color: 'transparent' };
+
+  const isAllSameChar   = /^(.)\1+$/.test(pw);
+  const isSequential    = /^(0123456789|1234567890|abcdefgh|password|12345678)/i.test(pw);
+  const hasLower        = /[a-z]/.test(pw);
+  const hasUpper        = /[A-Z]/.test(pw);
+  const hasDigit        = /[0-9]/.test(pw);
+  const hasSymbol       = /[^a-zA-Z0-9]/.test(pw);
+  const variety         = [hasLower, hasUpper, hasDigit, hasSymbol].filter(Boolean).length;
+
+  if (pw.length < 8 || isAllSameChar || isSequential) {
+    return { score: 1, label: 'รหัสผ่านอ่อนเกินไป', color: 'var(--danger)' };
+  }
+  if (variety <= 2) {
+    return { score: 2, label: 'พอใช้ — ลองเพิ่มตัวเลขหรือสัญลักษณ์', color: 'var(--gold)' };
+  }
+  return { score: 3, label: 'รหัสผ่านแข็งแรงดี', color: 'var(--green-go)' };
+}
+
+function updateRegisterState() {
+  const password = document.getElementById('regPassword').value;
+  const confirm   = document.getElementById('regPasswordConfirm').value;
+  const email     = document.getElementById('regEmail').value.trim();
+
+  const strength = checkPasswordStrength(password);
+  const fill  = document.getElementById('strengthBarFill');
+  const label = document.getElementById('strengthLabel');
+  fill.style.width = `${(strength.score / 3) * 100}%`;
+  fill.style.backgroundColor = strength.color;
+  label.textContent = strength.label;
+  label.style.color = strength.color === 'transparent' ? 'var(--muted)' : strength.color;
+
+  const isValid = email && strength.score >= 2 && password === confirm && confirm.length > 0;
+  document.getElementById('registerBtn').disabled = !isValid;
+}
+
+['regEmail', 'regPassword', 'regPasswordConfirm'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateRegisterState);
+});
 document.getElementById('loginBtn').addEventListener('click', async () => {
   hideAlert();
   const email    = document.getElementById('loginEmail').value.trim();
@@ -137,14 +208,14 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
   const password = document.getElementById('regPassword').value;
   const confirm  = document.getElementById('regPasswordConfirm').value;
   if (!email || !password) return showAlert('กรุณากรอกข้อมูลให้ครบ');
-  if (password.length < 8)  return showAlert('รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร');
+  if (checkPasswordStrength(password).score < 2) return showAlert('รหัสผ่านอ่อนเกินไป กรุณาตั้งรหัสผ่านที่คาดเดายากขึ้น');
   if (password !== confirm)  return showAlert('รหัสผ่านไม่ตรงกัน');
   const btn = document.getElementById('registerBtn');
   btn.disabled = true; btn.textContent = 'กำลังสมัคร...';
   try {
     await auth.register(email, password);
     showAlert('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ', 'success');
-    btn.disabled = false; btn.textContent = 'สมัครสมาชิก';
+    btn.textContent = 'สมัครสมาชิก';
     setTimeout(() => {
       document.querySelector('.tab-btn[data-tab="login"]').click();
       document.getElementById('loginEmail').value = email;

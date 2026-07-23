@@ -40,6 +40,14 @@
   .skeleton{text-align:center;padding:60px 20px;color:rgba(255,255,255,0.85);font-size:14px;}
   .reject-banner{background:rgba(224,68,51,0.1);border:1px solid rgba(224,68,51,0.3);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--danger);}
   .reject-banner strong{display:block;margin-bottom:4px;}
+  .method-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+  .method-option{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--line);border-radius:11px;cursor:pointer;transition:border-color .15s ease,background-color .15s ease;}
+  .method-option.selected{border-color:var(--navy);background:rgba(26,106,160,0.06);}
+  .method-icon{font-size:22px;width:28px;text-align:center;flex-shrink:0;}
+  .method-label{font-size:13.5px;font-weight:600;flex:1;}
+  .method-detail-box{background:rgba(26,106,160,0.04);border-radius:12px;padding:14px;font-size:13px;line-height:1.7;}
+  .method-detail-box .detail-row{display:flex;justify-content:space-between;}
+  .method-detail-box .detail-row .val{font-family:'Space Mono',monospace;font-weight:700;}
 </style>
 </head>
 <body>
@@ -52,7 +60,7 @@
 </div>
 
 <script type="module">
-import { auth, orders } from '../js/api.js';
+import { auth, orders, paymentMethods } from '../js/api.js';
 
 const session = await auth.getSession();
 if (!session) { window.location.href = '/pages/login.html'; }
@@ -113,33 +121,42 @@ function renderPayment(order) {
     </div>
 
     <div class="checkout-card">
-      <div class="section-title">💳 ชำระเงินผ่าน QR Code</div>
-      <div class="qr-wrap">
-        <div style="font-size:13px;color:var(--muted);">สแกน QR Code เพื่อโอนเงิน</div>
-        <div class="qr-note">โอนยอด ฿${Number(order.amount).toLocaleString()} แล้วถ่ายสลิปไว้</div>
+      <div class="section-title">💳 เลือกช่องทางชำระเงิน</div>
+      <div class="form-alert" id="methodAlert"></div>
+      <div class="method-list" id="methodList">
+        <div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">กำลังโหลดช่องทางชำระเงิน...</div>
       </div>
+      <div id="methodDetailWrap"></div>
       <div class="pay-amount-highlight">
         <div class="label">ยอดที่ต้องชำระ</div>
         <div class="amount">฿${Number(order.amount).toLocaleString()}</div>
       </div>
     </div>
 
-    <div class="checkout-card">
+    <div class="checkout-card" id="slipCard" style="opacity:0.4;pointer-events:none;">
       <div class="section-title">📎 แนบสลิปการโอนเงิน</div>
       <div class="form-alert" id="slipAlert"></div>
       <div class="slip-upload-zone" id="uploadZone">
         <div class="upload-icon">📤</div>
         <div class="upload-text">แตะเพื่อเลือกรูปสลิป</div>
-        <div class="upload-hint">รองรับ JPG, PNG, WEBP (ไม่เกิน 5MB)</div>
+        <div class="upload-hint">รองรับ JPG, PNG, WEBP (ไม่เกิน 5MB) — กรุณาเลือกช่องทางชำระเงินก่อน</div>
       </div>
       <input type="file" id="slipFileInput" accept="image/jpeg,image/png,image/webp" style="display:none;">
       <button class="submit-slip-btn" id="submitSlipBtn" disabled>ส่งสลิป</button>
     </div>
   `;
 
+  loadPaymentMethods(order);
+
   const zone     = document.getElementById('uploadZone');
   const fileInput = document.getElementById('slipFileInput');
   const submitBtn = document.getElementById('submitSlipBtn');
+  let selectedMethodId = null;
+
+  function checkReadyToSubmit() {
+    submitBtn.disabled = !(selectedFile && selectedMethodId);
+  }
+  window.__checkoutSetMethod = (id) => { selectedMethodId = id; checkReadyToSubmit(); };
 
   zone.addEventListener('click', () => {
     if (!zone.classList.contains('has-preview')) fileInput.click();
@@ -151,14 +168,15 @@ function renderPayment(order) {
     if (file.size > 5 * 1024 * 1024) return showAlert('ไฟล์ใหญ่เกิน 5MB');
     selectedFile = file;
     renderPreview(file);
-    submitBtn.disabled = false;
+    checkReadyToSubmit();
   });
 
   submitBtn.addEventListener('click', async () => {
-    if (!selectedFile) return;
+    if (!selectedFile || !selectedMethodId) return;
     submitBtn.disabled = true;
     submitBtn.textContent = 'กำลังส่งสลิป...';
     try {
+      await orders.setPaymentMethod(orderId, selectedMethodId);
       await orders.uploadSlip(orderId, selectedFile);
       renderSuccess();
     } catch (e) {
@@ -167,6 +185,91 @@ function renderPayment(order) {
       submitBtn.textContent = 'ส่งสลิป';
     }
   });
+}
+
+async function loadPaymentMethods(order) {
+  const listEl   = document.getElementById('methodList');
+  const detailEl = document.getElementById('methodDetailWrap');
+  const alertEl  = document.getElementById('methodAlert');
+
+  try {
+    const { data: methods } = await paymentMethods.list();
+
+    if (!methods.length) {
+      listEl.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted);font-size:13px;">ยังไม่มีช่องทางชำระเงินที่เปิดใช้งาน กรุณาติดต่อแอดมิน</div>`;
+      return;
+    }
+
+    const icons = { promptpay: '📱', bank: '🏦', truemoney: '💰', qr_code: '🔳' };
+
+    listEl.innerHTML = methods.map(m => `
+      <div class="method-option" data-method-id="${m.id}" onclick="window.__selectMethod('${m.id}')">
+        <div class="method-icon">${icons[m.type] ?? '💳'}</div>
+        <div class="method-label">${m.label}</div>
+      </div>
+    `).join('');
+
+    window.__methodsData = methods;
+
+    window.__selectMethod = (id) => {
+      document.querySelectorAll('.method-option').forEach(el => {
+        el.classList.toggle('selected', el.dataset.methodId === id);
+      });
+
+      const method = window.__methodsData.find(m => m.id === id);
+      detailEl.innerHTML = renderMethodDetail(method, order);
+
+      const slipCard = document.getElementById('slipCard');
+      slipCard.style.opacity = '1';
+      slipCard.style.pointerEvents = 'auto';
+      document.querySelector('#slipCard .upload-hint').textContent = 'รองรับ JPG, PNG, WEBP (ไม่เกิน 5MB)';
+
+      window.__checkoutSetMethod(id);
+    };
+
+  } catch (e) {
+    alertEl.textContent = 'โหลดช่องทางชำระเงินไม่สำเร็จ';
+    alertEl.className = 'form-alert show error';
+  }
+}
+
+function renderMethodDetail(method, order) {
+  const d = method.details || {};
+
+  if (method.type === 'qr_code' && d.image_url) {
+    return `
+      <div class="method-detail-box" style="text-align:center;">
+        <img src="${d.image_url}" alt="QR Code" style="max-width:220px;width:100%;border-radius:10px;margin-bottom:8px;">
+        <div>สแกน QR Code เพื่อโอน ฿${Number(order.amount).toLocaleString()}</div>
+      </div>`;
+  }
+
+  if (method.type === 'promptpay') {
+    return `
+      <div class="method-detail-box">
+        <div class="detail-row"><span>PromptPay</span><span class="val">${d.promptpay_id ?? '-'}</span></div>
+        <div class="detail-row"><span>ชื่อบัญชี</span><span class="val">${d.account_name ?? '-'}</span></div>
+      </div>`;
+  }
+
+  if (method.type === 'bank') {
+    return `
+      <div class="method-detail-box">
+        <div class="detail-row"><span>ธนาคาร</span><span class="val">${d.bank_name ?? '-'}</span></div>
+        <div class="detail-row"><span>เลขบัญชี</span><span class="val">${d.account_number ?? '-'}</span></div>
+        <div class="detail-row"><span>ชื่อบัญชี</span><span class="val">${d.account_name ?? '-'}</span></div>
+      </div>`;
+  }
+
+  if (method.type === 'truemoney') {
+    return `
+      <div class="method-detail-box">
+        <div class="detail-row"><span>TrueMoney</span><span class="val">${d.phone_number ?? '-'}</span></div>
+        <div class="detail-row"><span>ชื่อบัญชี</span><span class="val">${d.account_name ?? '-'}</span></div>
+      </div>`;
+  }
+
+  return `<div class="method-detail-box">โอนยอด ฿${Number(order.amount).toLocaleString()} ตามช่องทางที่เลือก</div>`;
 }
 
 function renderPreview(file) {

@@ -52,10 +52,6 @@
   .form-alert.success{background:rgba(63,133,87,0.1);color:var(--green-go);}
   .reject-box{margin-top:12px;}
   .reject-box textarea{width:100%;padding:10px;border:1.5px solid var(--line);border-radius:8px;font-family:'IBM Plex Sans Thai',sans-serif;font-size:13px;resize:vertical;min-height:60px;}
-  .deliver-form{margin-top:14px;background:#f8fafc;border-radius:10px;padding:14px;}
-  .deliver-form .field{margin-bottom:10px;}
-  .deliver-form label{font-size:12px;font-weight:600;color:var(--ink);display:block;margin-bottom:4px;}
-  .deliver-form input{width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-family:'IBM Plex Sans Thai',sans-serif;}
   .lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:100;align-items:center;justify-content:center;padding:20px;}
   .lightbox.show{display:flex;}
   .lightbox img{max-width:100%;max-height:100%;border-radius:8px;}
@@ -159,11 +155,6 @@ async function openModal(orderId, allOrders) {
       <button class="modal-btn approve" id="approveBtn">✓ ยืนยัน + ส่งไอดี</button>
       <button class="modal-btn reject-btn" id="rejectBtn">✕ ปฏิเสธ</button>
     </div>
-    <div class="deliver-form" id="deliverForm" style="display:none;">
-      <div class="field"><label>Gmail ที่จะส่ง</label><input type="email" id="deliverGmail" placeholder="xxx@gmail.com"></div>
-      <div class="field"><label>รหัสผ่าน Gmail</label><input type="text" id="deliverPassword" placeholder="รหัสผ่าน"></div>
-      <button class="modal-btn approve" id="confirmDeliverBtn" style="width:100%;">ส่งไอดีให้ลูกค้า</button>
-    </div>
   ` : '';
 
   overlay.innerHTML = `
@@ -198,32 +189,21 @@ async function openModal(orderId, allOrders) {
     });
   }
 
-  // approve — แสดงฟอร์มกรอกไอดีก่อน
-  overlay.querySelector('#approveBtn')?.addEventListener('click', () => {
-    overlay.querySelector('#deliverForm').style.display = 'block';
-    overlay.querySelector('#approveBtn').style.display = 'none';
-  });
-
-  // confirm deliver
-  overlay.querySelector('#confirmDeliverBtn')?.addEventListener('click', async (e) => {
-    const gmail    = overlay.querySelector('#deliverGmail').value.trim();
-    const password = overlay.querySelector('#deliverPassword').value.trim();
-    const alertEl  = overlay.querySelector('#modalAlert');
-    if (!gmail || !password) {
-      alertEl.textContent = 'กรุณากรอก Gmail และรหัสผ่านให้ครบ';
-      alertEl.className = 'form-alert show error';
-      return;
-    }
-    e.target.disabled = true; e.target.textContent = 'กำลังส่ง...';
+  // approve — เรียก deliver ทันที (ระบบดึงไอดีจากคลังอัตโนมัติ ไม่ต้องพิมพ์เอง)
+  overlay.querySelector('#approveBtn')?.addEventListener('click', async (e) => {
+    const alertEl = overlay.querySelector('#modalAlert');
+    const btn = e.target;
+    btn.disabled = true; btn.textContent = 'กำลังส่งไอดี...';
     try {
-      await admin.deliver(orderId, gmail, password);
-      alertEl.textContent = 'ส่งไอดีสำเร็จ';
+      const { data } = await admin.deliver(orderId);
+      alertEl.innerHTML = `ส่งไอดีสำเร็จ<br><span style="font-family:'Space Mono',monospace;font-size:11.5px;">${data.gmail} / ${data.password}</span>`;
       alertEl.className = 'form-alert show success';
-      setTimeout(() => { overlay.remove(); loadOrders(); }, 800);
+      overlay.querySelector('.action-row').style.display = 'none';
+      setTimeout(() => { overlay.remove(); loadOrders(); }, 2000);
     } catch (err) {
       alertEl.textContent = err.message;
       alertEl.className = 'form-alert show error';
-      e.target.disabled = false; e.target.textContent = 'ส่งไอดีให้ลูกค้า';
+      btn.disabled = false; btn.textContent = '✓ ยืนยัน + ส่งไอดี';
     }
   });
 

@@ -29,26 +29,34 @@
   .buy-btn{margin-top:auto;width:100%;padding:9px 0;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:12.5px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
   .buy-btn:active{opacity:0.85;}
   .loading-state,.empty-state{grid-column:1/-1;text-align:center;padding:50px 20px;color:rgba(255,255,255,0.75);font-size:14px;}
+  .category-section{padding:0 16px;margin-bottom:6px;}
+  .category-title{font-family:'Baloo 2',sans-serif;font-size:15px;font-weight:700;color:#fff;margin:18px 0 10px;text-shadow:0 1px 4px rgba(0,40,80,0.3);}
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <img src="../images/logo-main-service1.png" alt="logo">
+  <img id="siteLogo" src="../images/logo-main-service1.png" alt="logo">
   <div class="nav-actions" id="navActions">กำลังโหลด...</div>
 </div>
 
 <div class="hero-banner">
   <div class="hero-title">ซื้อไอดี SimCity BuildIt</div>
-  <div class="hero-sub">พร้อมเล่น ส่งรวดเร็ว ปลอดภัย 100%</div>
+  <div class="hero-sub" id="heroSub">พร้อมเล่น ส่งรวดเร็ว ปลอดภัย 100%</div>
 </div>
 
-<div class="product-grid" id="productGrid">
-  <div class="loading-state">กำลังโหลดสินค้า...</div>
+<div id="productGrid">
+  <div class="loading-state" style="padding:50px 20px;text-align:center;color:rgba(255,255,255,0.75);">กำลังโหลดสินค้า...</div>
 </div>
 
 <script type="module">
-import { auth, products, orders } from '../js/api.js';
+import { auth, products, orders, settings } from '../js/api.js';
+
+// โหลด logo/ข้อความหน้าแรกจาก Website Settings ถ้าแอดมินตั้งค่าไว้
+settings.get().then(({ data }) => {
+  if (data.logo_url)  document.getElementById('siteLogo').src = data.logo_url;
+  if (data.home_text) document.getElementById('heroSub').textContent = data.home_text;
+}).catch(() => {});
 
 // ตรวจ session
 const session = await auth.getSession();
@@ -74,26 +82,44 @@ if (!session) {
   });
 }
 
-// โหลดสินค้า
+// โหลดสินค้า — จัดกลุ่มตาม category
 const grid = document.getElementById('productGrid');
 try {
   const { data } = await products.list();
   if (!data.length) {
-    grid.innerHTML = `<div class="empty-state">ยังไม่มีสินค้า</div>`;
+    grid.innerHTML = `<div class="empty-state" style="padding:50px 20px;text-align:center;color:rgba(255,255,255,0.75);">ยังไม่มีสินค้า</div>`;
   } else {
-    grid.innerHTML = data.map(p => `
-      <div class="product-card">
-        <div class="product-img-wrap">🎮</div>
-        <div class="product-info">
-          <div class="product-name">${p.label}</div>
-          <div class="product-price">฿${Number(p.price).toLocaleString()}</div>
-          <button class="buy-btn" onclick="buyProduct('${p.key}')">ซื้อเลย</button>
-        </div>
+    // จัดกลุ่มตาม category โดยรักษาลำดับที่ backend ส่งมา (sort_order)
+    const grouped = [];
+    const seen = new Map();
+    for (const p of data) {
+      if (!seen.has(p.category)) {
+        seen.set(p.category, []);
+        grouped.push(p.category);
+      }
+      seen.get(p.category).push(p);
+    }
+
+    grid.innerHTML = grouped.map(category => `
+      <div class="category-section">
+        <div class="category-title">${category}</div>
+      </div>
+      <div class="product-grid" style="padding:0 16px;">
+        ${seen.get(category).map(p => `
+          <div class="product-card">
+            <div class="product-img-wrap">🎮</div>
+            <div class="product-info">
+              <div class="product-name">${p.label}</div>
+              <div class="product-price">฿${Number(p.price).toLocaleString()}</div>
+              <button class="buy-btn" onclick="buyProduct('${p.key}')">ซื้อเลย</button>
+            </div>
+          </div>
+        `).join('')}
       </div>
     `).join('');
   }
 } catch {
-  grid.innerHTML = `<div class="empty-state">โหลดสินค้าไม่สำเร็จ</div>`;
+  grid.innerHTML = `<div class="empty-state" style="padding:50px 20px;text-align:center;color:rgba(255,255,255,0.75);">โหลดสินค้าไม่สำเร็จ</div>`;
 }
 
 window.buyProduct = async (key) => {

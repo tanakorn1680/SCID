@@ -64,12 +64,38 @@ export const auth = {
   onAuthChange(callback) {
     return supabase.auth.onAuthStateChange(callback);
   },
+
+  async requestPasswordReset(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/pages/reset-password.html`,
+    });
+    if (error) throw new Error(mapAuthError(error));
+  },
+
+  async updatePassword(newPassword) {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw new Error(mapAuthError(error));
+  },
 };
 
 // ── Products ────────────────────────────────────────────────
 export const products = {
   async list() {
     return apiFetch('/api/products');
+  },
+};
+
+// ── Payment Methods (public — สำหรับหน้า checkout) ─────────
+export const paymentMethods = {
+  async list() {
+    return apiFetch('/api/payment-methods');
+  },
+};
+
+// ── Site Settings (public — สำหรับ logo/banner/สี) ─────────
+export const settings = {
+  async get() {
+    return apiFetch('/api/settings');
   },
 };
 
@@ -88,6 +114,13 @@ export const orders = {
 
   async detail(orderId) {
     return apiFetch(`/api/orders/detail?id=${orderId}`);
+  },
+
+  async setPaymentMethod(orderId, paymentMethodId) {
+    return apiFetch('/api/orders/set-payment-method', {
+      method: 'POST',
+      body: JSON.stringify({ order_id: orderId, payment_method_id: paymentMethodId }),
+    });
   },
 
   async uploadSlip(orderId, file) {
@@ -125,10 +158,10 @@ export const admin = {
     return apiFetch(`/api/admin/slip-url?order_id=${orderId}`);
   },
 
-  async deliver(orderId, gmail, password) {
+  async deliver(orderId) {
     return apiFetch('/api/admin/deliver', {
       method: 'POST',
-      body: JSON.stringify({ order_id: orderId, gmail, password }),
+      body: JSON.stringify({ order_id: orderId }),
     });
   },
 
@@ -138,6 +171,131 @@ export const admin = {
       body: JSON.stringify({ order_id: orderId, reason }),
     });
   },
+
+  inventory: {
+    async list({ productKey = null, status = null } = {}) {
+      const params = new URLSearchParams();
+      if (productKey) params.set('product_key', productKey);
+      if (status)     params.set('status', status);
+      return apiFetch(`/api/admin/inventory?${params}`);
+    },
+
+    async bulkAdd(productKey, lines) {
+      return apiFetch('/api/admin/inventory', {
+        method: 'POST',
+        body: JSON.stringify({ product_key: productKey, lines }),
+      });
+    },
+
+    async remove(id) {
+      return apiFetch('/api/admin/inventory', {
+        method: 'DELETE',
+        body: JSON.stringify({ id }),
+      });
+    },
+  },
+
+  products: {
+    async list() {
+      return apiFetch('/api/admin/products');
+    },
+
+    async create(product) {
+      return apiFetch('/api/admin/products', {
+        method: 'POST',
+        body: JSON.stringify(product),
+      });
+    },
+
+    async update(id, updates) {
+      return apiFetch('/api/admin/products', {
+        method: 'PUT',
+        body: JSON.stringify({ id, ...updates }),
+      });
+    },
+
+    async remove(id) {
+      return apiFetch('/api/admin/products', {
+        method: 'DELETE',
+        body: JSON.stringify({ id }),
+      });
+    },
+  },
+
+  paymentMethods: {
+    async list() {
+      return apiFetch('/api/admin/payment-methods');
+    },
+
+    async create(method) {
+      return apiFetch('/api/admin/payment-methods', {
+        method: 'POST',
+        body: JSON.stringify(method),
+      });
+    },
+
+    async update(id, updates) {
+      return apiFetch('/api/admin/payment-methods', {
+        method: 'PUT',
+        body: JSON.stringify({ id, ...updates }),
+      });
+    },
+
+    async remove(id) {
+      return apiFetch('/api/admin/payment-methods', {
+        method: 'DELETE',
+        body: JSON.stringify({ id }),
+      });
+    },
+  },
+
+  settings: {
+    async get() {
+      return apiFetch('/api/admin/settings');
+    },
+
+    async update(updates) {
+      return apiFetch('/api/admin/settings', {
+        method: 'PUT',
+        body: JSON.stringify({ updates }),
+      });
+    },
+  },
+
+  async customers() {
+    return apiFetch('/api/admin/customers');
+  },
+
+  async uploadAsset(assetKey, file) {
+    const token = await getToken();
+    const form  = new FormData();
+    form.append('asset_key', assetKey);
+    form.append('file', file);
+
+    const res  = await fetch('/api/admin/upload-asset', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error ?? 'อัปโหลดไม่สำเร็จ');
+    return json;
+  },
+
+  async uploadPaymentQr(file) {
+    const token = await getToken();
+    const form  = new FormData();
+    form.append('file', file);
+
+    const res  = await fetch('/api/admin/upload-payment-qr', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error ?? 'อัปโหลดไม่สำเร็จ');
+    return json;
+  },
 };
 
 // ── Map Supabase auth error → ภาษาไทย ──────────────────────
@@ -146,6 +304,8 @@ function mapAuthError(error) {
   if (msg.includes('Invalid login credentials')) return 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
   if (msg.includes('already registered'))        return 'อีเมลนี้ถูกใช้แล้ว';
   if (msg.includes('Email not confirmed'))       return 'กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ';
+  if (msg.includes('Password should be'))        return 'รหัสผ่านไม่ตรงตามเงื่อนไขความปลอดภัย';
+  if (msg.includes('rate limit'))                 return 'มีการร้องขอบ่อยเกินไป กรุณารอสักครู่';
   console.error('Auth error:', error);
   return 'เกิดข้อผิดพลาด กรุณาลองใหม่';
 }

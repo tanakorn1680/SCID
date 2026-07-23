@@ -1,18 +1,29 @@
 // GET /api/products
-// Public — แสดงรายการสินค้าและราคา (ไม่ต้อง login)
+// Public — แสดงรายการสินค้าที่เปิดขาย จัดกลุ่มตาม category (ไม่ต้อง login)
 
-import { PRODUCTS } from './_lib/products.js';
+import { supabaseAdmin } from './_lib/supabase.js';
 
-export default function handler(req) {
+export default async function handler(req) {
   if (req.method !== 'GET') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
 
-  const list = Object.values(PRODUCTS).map(p => ({
-    key:   p.key,
-    label: p.label,
-    price: p.price,
-  }));
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('products')
+      .select('key, label, category, price')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
 
-  return Response.json({ success: true, data: list });
+    if (error) throw error;
+
+    return Response.json({ success: true, data });
+
+  } catch (err) {
+    console.error('GET /api/products failed:', err);
+    return Response.json(
+      { success: false, error: 'โหลดสินค้าไม่สำเร็จ' },
+      { status: 500 }
+    );
+  }
 }

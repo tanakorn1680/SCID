@@ -1,27 +1,24 @@
 // ============================================================
 // api/_lib/products.js
-// รายการสินค้าและราคา — แก้ที่นี่ที่เดียว
-// frontend ดึงผ่าน GET /api/products เท่านั้น (ไม่ได้อ่านไฟล์นี้โดยตรง)
+// สินค้าอ่านจากตาราง products ใน DB (V3 — เดิมเป็น hardcoded object)
+// แอดมินแก้ผ่านหน้า Products UI ได้เลย ไม่ต้องแก้ไฟล์นี้/deploy ใหม่
 // ============================================================
 
-export const PRODUCTS = {
-  account_real: {
-    key:   'account_real',
-    label: 'ไอดี Real Server',
-    price: 150,   // บาท
-  },
-  account_cheat: {
-    key:   'account_cheat',
-    label: 'ไอดี Cheat Server',
-    price: 80,
-  },
-  // เพิ่มสินค้าใหม่ที่นี่
-};
+import { supabaseAdmin } from './supabase.js';
 
 /**
- * ดึงสินค้าจาก key
- * คืน null ถ้าไม่พบ
+ * ดึงสินค้าจาก key (เฉพาะที่ is_active=true)
+ * คืน null ถ้าไม่พบหรือปิดขายแล้ว
+ * ใช้ตอนสร้าง order — ป้องกันการสั่งซื้อสินค้าที่แอดมินปิดขายไปแล้ว
  */
-export function getProduct(key) {
-  return PRODUCTS[key] ?? null;
+export async function getProduct(key) {
+  const { data, error } = await supabaseAdmin
+    .from('products')
+    .select('key, label, category, price')
+    .eq('key', key)
+    .eq('is_active', true)
+    .single();
+
+  if (error || !data) return null;
+  return data;
 }

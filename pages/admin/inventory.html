@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>คลังไอดี — Admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  :root{--navy:#1A6BA0;--gold:#D9A330;--ink:#1A3A52;--green-go:#3F8557;--danger:#E04433;--line:rgba(26,106,160,0.15);}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'IBM Plex Sans Thai',sans-serif;background:#F0F4F8;color:var(--ink);min-height:100vh;padding:16px 14px 40px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .back-link{font-size:13px;font-weight:600;color:var(--navy);text-decoration:none;}
+  .page-title{font-family:'Baloo 2',sans-serif;font-size:18px;font-weight:800;margin-bottom:14px;}
+  .card{background:#fff;border-radius:13px;padding:16px;box-shadow:0 2px 10px rgba(0,40,80,0.08);margin-bottom:14px;}
+  .card-title{font-size:14px;font-weight:700;margin-bottom:12px;}
+  .summary-list{display:flex;flex-wrap:wrap;gap:8px;}
+  .summary-chip{background:rgba(26,106,160,0.06);border-radius:9px;padding:8px 12px;font-size:12.5px;}
+  .summary-chip .count{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--navy);font-size:15px;}
+  .field{margin-bottom:12px;}
+  .field label{font-size:12.5px;font-weight:600;display:block;margin-bottom:5px;}
+  .field select,.field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-family:'IBM Plex Sans Thai',sans-serif;background:#fff;}
+  .field textarea{font-family:'Space Mono',monospace;min-height:120px;resize:vertical;}
+  .hint{font-size:11.5px;color:rgba(26,58,82,0.5);margin-top:5px;}
+  .submit-btn{width:100%;padding:12px 0;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
+  .submit-btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .form-alert{padding:9px 11px;border-radius:8px;font-size:12.5px;margin-top:10px;display:none;}
+  .form-alert.show{display:block;}
+  .form-alert.error{background:rgba(224,68,51,0.1);color:var(--danger);}
+  .form-alert.success{background:rgba(63,133,87,0.1);color:var(--green-go);}
+  .filter-bar{display:flex;gap:8px;margin-bottom:12px;}
+  .filter-bar select{flex:1;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:#fff;}
+  .inv-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px dotted var(--line);font-size:12.5px;}
+  .inv-row:last-child{border-bottom:none;}
+  .inv-email{font-family:'Space Mono',monospace;font-size:12px;}
+  .inv-status{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:11px;}
+  .inv-status.ready{background:rgba(63,133,87,0.12);color:var(--green-go);}
+  .inv-status.sold{background:rgba(26,58,82,0.08);color:rgba(26,58,82,0.6);}
+  .del-btn{background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;}
+  .empty-state{text-align:center;padding:30px 20px;color:rgba(26,58,82,0.5);font-size:13px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/pages/admin/dashboard.html" class="back-link">← Dashboard</a>
+</div>
+<div class="page-title">🔑 คลังไอดี</div>
+
+<div class="card">
+  <div class="card-title">คงเหลือพร้อมขาย</div>
+  <div class="summary-list" id="summaryList">
+    <div class="hint">กำลังโหลด...</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">เพิ่มไอดีเข้าคลัง</div>
+  <div class="field">
+    <label>สินค้า</label>
+    <select id="productSelect"><option>กำลังโหลด...</option></select>
+  </div>
+  <div class="field">
+    <label>รายการไอดี (บรรทัดละ 1 รายการ)</label>
+    <textarea id="bulkLines" placeholder="email1@gmail.com:password1&#10;email2@gmail.com:password2&#10;email3@gmail.com:password3"></textarea>
+    <div class="hint">รูปแบบ: email:password ต่อบรรทัด — วางได้ทีละหลายร้อยรายการ</div>
+  </div>
+  <button class="submit-btn" id="addBtn">เพิ่มเข้าคลัง</button>
+  <div class="form-alert" id="addAlert"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">รายการในคลัง</div>
+  <div class="filter-bar">
+    <select id="filterProduct"><option value="">ทุกสินค้า</option></select>
+    <select id="filterStatus">
+      <option value="ready" selected>พร้อมขาย</option>
+      <option value="sold">ขายแล้ว</option>
+      <option value="">ทั้งหมด</option>
+    </select>
+  </div>
+  <div id="invList"><div class="empty-state">กำลังโหลด...</div></div>
+</div>
+
+<script type="module">
+import { auth, admin } from '../../js/api.js';
+
+const session = await auth.getSession();
+if (!session) { window.location.href = '/pages/login.html'; }
+
+const res = await fetch('/api/auth/profile', { headers: { Authorization: `Bearer ${session.access_token}` } });
+const { data: profile } = await res.json();
+if (profile?.role !== 'admin') { window.location.href = '/pages/shop.html'; }
+
+let products = [];
+
+async function loadProducts() {
+  const { data } = await admin.products.list();
+  products = data;
+
+  const options = data.map(p => `<option value="${p.key}">${p.label}</option>`).join('');
+  document.getElementById('productSelect').innerHTML = options || '<option value="">ไม่มีสินค้า</option>';
+  document.getElementById('filterProduct').innerHTML =
+    `<option value="">ทุกสินค้า</option>` + options;
+}
+
+async function loadInventory() {
+  const listEl = document.getElementById('invList');
+  listEl.innerHTML = `<div class="empty-state">กำลังโหลด...</div>`;
+
+  const productKey = document.getElementById('filterProduct').value || null;
+  const status     = document.getElementById('filterStatus').value || null;
+
+  try {
+    const { data, ready_summary } = await admin.inventory.list({ productKey, status });
+
+    // สรุปคงเหลือต่อสินค้า
+    const summaryEl = document.getElementById('summaryList');
+    const chips = products.map(p => `
+      <div class="summary-chip">${p.label}: <span class="count">${ready_summary[p.key] ?? 0}</span></div>
+    `).join('');
+    summaryEl.innerHTML = chips || `<div class="hint">ยังไม่มีสินค้า</div>`;
+
+    if (!data.length) {
+      listEl.innerHTML = `<div class="empty-state">ไม่พบรายการ</div>`;
+      return;
+    }
+
+    const productLabel = (key) => products.find(p => p.key === key)?.label ?? key;
+
+    listEl.innerHTML = data.map(row => `
+      <div class="inv-row">
+        <div>
+          <div class="inv-email">${row.gmail}</div>
+          <div class="hint">${productLabel(row.product_key)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="inv-status ${row.status}">${row.status === 'ready' ? 'พร้อมขาย' : 'ขายแล้ว'}</span>
+          ${row.status === 'ready' ? `<button class="del-btn" data-id="${row.id}">ลบ</button>` : ''}
+        </div>
+      </div>
+    `).join('');
+
+    listEl.querySelectorAll('.del-btn').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('ลบรายการนี้ออกจากคลัง?')) return;
+        try {
+          await admin.inventory.remove(btn.dataset.id);
+          loadInventory();
+        } catch (e) {
+          alert(e.message);
+        }
+      });
+    });
+
+  } catch (e) {
+    listEl.innerHTML = `<div class="empty-state">โหลดไม่สำเร็จ</div>`;
+  }
+}
+
+document.getElementById('filterProduct').addEventListener('change', loadInventory);
+document.getElementById('filterStatus').addEventListener('change', loadInventory);
+
+document.getElementById('addBtn').addEventListener('click', async () => {
+  const productKey = document.getElementById('productSelect').value;
+  const lines      = document.getElementById('bulkLines').value;
+  const alertEl    = document.getElementById('addAlert');
+  const btn        = document.getElementById('addBtn');
+
+  if (!productKey || !lines.trim()) {
+    alertEl.textContent = 'กรุณาเลือกสินค้าและกรอกรายการไอดี';
+    alertEl.className = 'form-alert show error';
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'กำลังเพิ่ม...';
+  try {
+    const { added } = await admin.inventory.bulkAdd(productKey, lines);
+    alertEl.textContent = `เพิ่มไอดีเข้าคลังสำเร็จ ${added} รายการ`;
+    alertEl.className = 'form-alert show success';
+    document.getElementById('bulkLines').value = '';
+    loadInventory();
+  } catch (e) {
+    alertEl.textContent = e.message;
+    alertEl.className = 'form-alert show error';
+  }
+  btn.disabled = false; btn.textContent = 'เพิ่มเข้าคลัง';
+});
+
+await loadProducts();
+await loadInventory();
+</script>
+</body>
+</html>

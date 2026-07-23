@@ -15,7 +15,7 @@
   .nav-links{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
   .nav-link{padding:9px 16px;background:var(--navy);color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;}
   .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;}
-  @media(min-width:600px){.stat-grid{grid-template-columns:repeat(4,1fr);}}
+  @media(min-width:600px){.stat-grid{grid-template-columns:repeat(3,1fr);}}
   .stat-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 10px rgba(0,40,80,0.08);}
   .stat-card.urgent::before{content:'';display:block;width:4px;height:100%;position:absolute;left:0;top:0;background:var(--danger);border-radius:12px 0 0 12px;}
   .stat-card{position:relative;overflow:hidden;}
@@ -34,7 +34,13 @@
 </div>
 
 <div class="nav-links">
-  <a href="/pages/admin/orders.html" class="nav-link">📋 ตรวจสอบออเดอร์</a>
+  <a href="/pages/admin/orders.html" class="nav-link">📋 ออเดอร์</a>
+  <a href="/pages/admin/products.html" class="nav-link">🎮 สินค้า</a>
+  <a href="/pages/admin/inventory.html" class="nav-link">🔑 คลังไอดี</a>
+  <a href="/pages/admin/customers.html" class="nav-link">👥 สมาชิก</a>
+  <a href="/pages/admin/payment-methods.html" class="nav-link">💳 ช่องทางชำระเงิน</a>
+  <a href="/pages/admin/settings.html" class="nav-link">⚙️ ตั้งค่าเว็บไซต์</a>
+  <a href="/pages/admin/admin-settings.html" class="nav-link">🔐 ตั้งค่าผู้ดูแลระบบ</a>
 </div>
 
 <div class="stat-grid" id="statGrid">
@@ -61,21 +67,29 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
 try {
   const { data: s } = await admin.stats();
   document.getElementById('statGrid').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">ยอดขายวันนี้</div>
+      <div class="stat-value go">฿${Number(s.revenue_today).toLocaleString()}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">ยอดขายเดือนนี้</div>
+      <div class="stat-value go">฿${Number(s.revenue_month).toLocaleString()}</div>
+    </div>
     <div class="stat-card urgent">
-      <div class="stat-label">รอตรวจสอบสลิป</div>
-      <div class="stat-value urgent">${s.awaiting_review}</div>
+      <div class="stat-label">ออเดอร์รออนุมัติ</div>
+      <div class="stat-value urgent">${s.pending_review}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">รอชำระเงิน</div>
-      <div class="stat-value">${s.pending}</div>
+      <div class="stat-label">ไอดีพร้อมขาย</div>
+      <div class="stat-value">${s.inventory_ready}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">ส่งสำเร็จวันนี้</div>
-      <div class="stat-value go">${s.today_delivered}</div>
+      <div class="stat-label">สมาชิกทั้งหมด</div>
+      <div class="stat-value">${s.total_customers}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">ส่งสำเร็จทั้งหมด</div>
-      <div class="stat-value">${s.delivered}</div>
+      <div class="stat-label">จำนวนสินค้า</div>
+      <div class="stat-value">${s.product_count}</div>
     </div>
   `;
 } catch {

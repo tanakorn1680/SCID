@@ -46,24 +46,43 @@ export default async function handler(req) {
 
     let credential = null;
 
-    // ดึง credential เฉพาะเมื่อ delivered แล้ว
+    // ดึงไอดีเฉพาะเมื่อ delivered แล้ว
+    // V3 เขียนลง inventory (ผ่าน deliver_order RPC) — เช็คที่นี่ก่อน
+    // ถ้าไม่เจอ (order เก่าก่อน migration) fallback ไปอ่าน credentials เดิม
+    // credentials เป็น historical read-only ตาม decision — ไม่มีการเขียนใหม่ลงตารางนี้อีก
     if (order.status === 'delivered') {
-      const { data: cred, error: credErr } = await supabaseAdmin
-        .from('credentials')
-        .select('gmail, password_enc, delivered_at')
+      const { data: inv, error: invErr } = await supabaseAdmin
+        .from('inventory')
+        .select('gmail, password_enc, sold_at')
         .eq('order_id', orderId)
         .single();
 
-      if (!credErr && cred) {
-        // decrypt password ด้วย Node.js crypto
-        let password = null;
-        try { password = decrypt(cred.password_enc); } catch (_) {}
+      if (!invErr && inv) {
+        let password = null, decryptFailed = false;
+        try {
+          password = decrypt(inv.password_enc);
+        } catch (decryptErr) {
+          console.error(`decrypt failed for order ${orderId} (inventory):`, decryptErr);
+          decryptFailed = true;
+        }
+        credential = { gmail: inv.gmail, password, delivered_at: inv.sold_at, decrypt_failed: decryptFailed };
+      } else {
+        const { data: cred, error: credErr } = await supabaseAdmin
+          .from('credentials')
+          .select('gmail, password_enc, delivered_at')
+          .eq('order_id', orderId)
+          .single();
 
-        credential = {
-          gmail:        cred.gmail,
-          password,
-          delivered_at: cred.delivered_at,
-        };
+        if (!credErr && cred) {
+          let password = null, decryptFailed = false;
+          try {
+            password = decrypt(cred.password_enc);
+          } catch (decryptErr) {
+            console.error(`decrypt failed for order ${orderId} (credentials):`, decryptErr);
+            decryptFailed = true;
+          }
+          credential = { gmail: cred.gmail, password, delivered_at: cred.delivered_at, decrypt_failed: decryptFailed };
+        }
       }
     }
 

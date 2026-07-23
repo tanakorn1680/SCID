@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>สินค้า — Admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+  :root{--navy:#1A6BA0;--gold:#D9A330;--ink:#1A3A52;--green-go:#3F8557;--danger:#E04433;--line:rgba(26,106,160,0.15);}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'IBM Plex Sans Thai',sans-serif;background:#F0F4F8;color:var(--ink);min-height:100vh;padding:16px 14px 40px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .back-link{font-size:13px;font-weight:600;color:var(--navy);text-decoration:none;}
+  .page-title{font-family:'Baloo 2',sans-serif;font-size:18px;font-weight:800;margin-bottom:14px;}
+  .card{background:#fff;border-radius:13px;padding:16px;box-shadow:0 2px 10px rgba(0,40,80,0.08);margin-bottom:14px;}
+  .card-title{font-size:14px;font-weight:700;margin-bottom:12px;}
+  .field{margin-bottom:12px;}
+  .field label{font-size:12.5px;font-weight:600;display:block;margin-bottom:5px;}
+  .field input{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-family:'IBM Plex Sans Thai',sans-serif;background:#fff;}
+  .field-row{display:flex;gap:10px;}
+  .field-row .field{flex:1;}
+  .hint{font-size:11.5px;color:rgba(26,58,82,0.5);margin-top:5px;}
+  .submit-btn{width:100%;padding:12px 0;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
+  .submit-btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .form-alert{padding:9px 11px;border-radius:8px;font-size:12.5px;margin-top:10px;display:none;}
+  .form-alert.show{display:block;}
+  .form-alert.error{background:rgba(224,68,51,0.1);color:var(--danger);}
+  .form-alert.success{background:rgba(63,133,87,0.1);color:var(--green-go);}
+  .product-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dotted var(--line);gap:10px;}
+  .product-row:last-child{border-bottom:none;}
+  .product-info{flex:1;}
+  .product-label{font-size:13px;font-weight:700;}
+  .product-meta{font-size:11.5px;color:rgba(26,58,82,0.5);margin-top:2px;}
+  .product-price{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:14px;}
+  .row-actions{display:flex;gap:6px;flex-shrink:0;}
+  .icon-btn{background:rgba(26,106,160,0.08);border:none;border-radius:7px;padding:7px 10px;font-size:12px;cursor:pointer;color:var(--navy);font-family:'IBM Plex Sans Thai',sans-serif;}
+  .icon-btn.danger{background:rgba(224,68,51,0.1);color:var(--danger);}
+  .inactive{opacity:0.5;}
+  .empty-state{text-align:center;padding:30px 20px;color:rgba(26,58,82,0.5);font-size:13px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/pages/admin/dashboard.html" class="back-link">← Dashboard</a>
+</div>
+<div class="page-title">🎮 จัดการสินค้า</div>
+
+<div class="card">
+  <div class="card-title" id="formTitle">เพิ่มสินค้าใหม่</div>
+  <div class="field">
+    <label>รหัสสินค้า (ภาษาอังกฤษ, ตัวพิมพ์เล็ก, ไม่มีเว้นวรรค)</label>
+    <input type="text" id="fKey" placeholder="เช่น account_real">
+    <div class="hint">ใช้อ้างอิงในระบบ แก้ไม่ได้หลังสร้างแล้ว</div>
+  </div>
+  <div class="field">
+    <label>ชื่อสินค้า</label>
+    <input type="text" id="fLabel" placeholder="เช่น ไอดี Real Server">
+  </div>
+  <div class="field-row">
+    <div class="field">
+      <label>ประเภทสินค้า</label>
+      <input type="text" id="fCategory" placeholder="เช่น Real Server" list="categoryList">
+      <datalist id="categoryList"></datalist>
+    </div>
+    <div class="field">
+      <label>ราคา (บาท)</label>
+      <input type="number" id="fPrice" min="0" step="0.01" placeholder="0">
+    </div>
+  </div>
+  <button class="submit-btn" id="saveBtn">บันทึกสินค้าใหม่</button>
+  <button class="submit-btn" id="cancelEditBtn" style="display:none;background:rgba(26,58,82,0.15);color:var(--ink);margin-top:8px;">ยกเลิกแก้ไข</button>
+  <div class="form-alert" id="formAlert"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">รายการสินค้าทั้งหมด</div>
+  <div id="productList"><div class="empty-state">กำลังโหลด...</div></div>
+</div>
+
+<script type="module">
+import { auth, admin } from '../../js/api.js';
+
+const session = await auth.getSession();
+if (!session) { window.location.href = '/pages/login.html'; }
+
+const res = await fetch('/api/auth/profile', { headers: { Authorization: `Bearer ${session.access_token}` } });
+const { data: profile } = await res.json();
+if (profile?.role !== 'admin') { window.location.href = '/pages/shop.html'; }
+
+let editingId = null;
+
+async function loadProducts() {
+  const listEl = document.getElementById('productList');
+  try {
+    const { data } = await admin.products.list();
+
+    // เติม datalist สำหรับ category ที่มีอยู่แล้ว — ช่วยให้แอดมินเลือกซ้ำได้ง่ายแทนพิมพ์ใหม่ทุกครั้ง
+    const categories = [...new Set(data.map(p => p.category))];
+    document.getElementById('categoryList').innerHTML =
+      categories.map(c => `<option value="${c}">`).join('');
+
+    if (!data.length) {
+      listEl.innerHTML = `<div class="empty-state">ยังไม่มีสินค้า</div>`;
+      return;
+    }
+
+    listEl.innerHTML = data.map(p => `
+      <div class="product-row ${p.is_active ? '' : 'inactive'}">
+        <div class="product-info">
+          <div class="product-label">${p.label}</div>
+          <div class="product-meta">${p.category} · ${p.is_active ? 'เปิดขาย' : 'ปิดขาย'}</div>
+        </div>
+        <div class="product-price">฿${Number(p.price).toLocaleString()}</div>
+        <div class="row-actions">
+          <button class="icon-btn" data-edit="${p.id}">แก้ไข</button>
+          <button class="icon-btn" data-toggle="${p.id}" data-active="${p.is_active}">${p.is_active ? 'ปิดขาย' : 'เปิดขาย'}</button>
+          <button class="icon-btn danger" data-delete="${p.id}">ลบ</button>
+        </div>
+      </div>
+    `).join('');
+
+    listEl.querySelectorAll('[data-edit]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = data.find(x => x.id === btn.dataset.edit);
+        startEdit(p);
+      });
+    });
+
+    listEl.querySelectorAll('[data-toggle]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        try {
+          await admin.products.update(btn.dataset.toggle, { is_active: btn.dataset.active !== 'true' });
+          loadProducts();
+        } catch (e) { alert(e.message); }
+      });
+    });
+
+    listEl.querySelectorAll('[data-delete]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('ลบสินค้านี้? (ลบไม่ได้ถ้ามีไอดีในคลังผูกอยู่)')) return;
+        try {
+          await admin.products.remove(btn.dataset.delete);
+          loadProducts();
+        } catch (e) { alert(e.message); }
+      });
+    });
+
+  } catch (e) {
+    listEl.innerHTML = `<div class="empty-state">โหลดไม่สำเร็จ</div>`;
+  }
+}
+
+function startEdit(p) {
+  editingId = p.id;
+  document.getElementById('formTitle').textContent = `แก้ไข: ${p.label}`;
+  document.getElementById('fKey').value = p.key;
+  document.getElementById('fKey').disabled = true;   // รหัสสินค้าแก้ไม่ได้หลังสร้าง
+  document.getElementById('fLabel').value = p.label;
+  document.getElementById('fCategory').value = p.category;
+  document.getElementById('fPrice').value = p.price;
+  document.getElementById('saveBtn').textContent = 'บันทึกการแก้ไข';
+  document.getElementById('cancelEditBtn').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetForm() {
+  editingId = null;
+  document.getElementById('formTitle').textContent = 'เพิ่มสินค้าใหม่';
+  document.getElementById('fKey').value = '';
+  document.getElementById('fKey').disabled = false;
+  document.getElementById('fLabel').value = '';
+  document.getElementById('fCategory').value = '';
+  document.getElementById('fPrice').value = '';
+  document.getElementById('saveBtn').textContent = 'บันทึกสินค้าใหม่';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+}
+
+document.getElementById('cancelEditBtn').addEventListener('click', resetForm);
+
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  const key      = document.getElementById('fKey').value.trim();
+  const label    = document.getElementById('fLabel').value.trim();
+  const category = document.getElementById('fCategory').value.trim();
+  const price    = document.getElementById('fPrice').value;
+  const alertEl  = document.getElementById('formAlert');
+  const btn      = document.getElementById('saveBtn');
+
+  if (!label || !category || price === '') {
+    alertEl.textContent = 'กรุณากรอกข้อมูลให้ครบ';
+    alertEl.className = 'form-alert show error';
+    return;
+  }
+  if (!editingId && !key) {
+    alertEl.textContent = 'กรุณากรอกรหัสสินค้า';
+    alertEl.className = 'form-alert show error';
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+  try {
+    if (editingId) {
+      await admin.products.update(editingId, { label, category, price });
+    } else {
+      await admin.products.create({ key, label, category, price });
+    }
+    alertEl.textContent = 'บันทึกสำเร็จ';
+    alertEl.className = 'form-alert show success';
+    resetForm();
+    loadProducts();
+  } catch (e) {
+    alertEl.textContent = e.message;
+    alertEl.className = 'form-alert show error';
+    btn.disabled = false;
+    btn.textContent = editingId ? 'บันทึกการแก้ไข' : 'บันทึกสินค้าใหม่';
+    return;
+  }
+  btn.disabled = false;
+  btn.textContent = editingId ? 'บันทึกการแก้ไข' : 'บันทึกสินค้าใหม่';
+});
+
+loadProducts();
+</script>
+</body>
+</html>

@@ -4,30 +4,7 @@
 
 import { requireAuth, errorResponse } from '../_lib/auth.js';
 import { supabaseAdmin }              from '../_lib/supabase.js';
-
-// magic bytes สำหรับ JPEG / PNG / WEBP
-const ALLOWED_SIGNATURES = [
-  { bytes: [0xFF, 0xD8, 0xFF],             ext: 'jpg'  },  // JPEG
-  { bytes: [0x89, 0x50, 0x4E, 0x47],       ext: 'png'  },  // PNG
-  { bytes: [0x52, 0x49, 0x46, 0x46],       ext: 'webp', check: 'webp' }, // WEBP
-];
-
-function detectMime(buffer) {
-  const bytes = new Uint8Array(buffer.slice(0, 12));
-
-  for (const sig of ALLOWED_SIGNATURES) {
-    const match = sig.bytes.every((b, i) => bytes[i] === b);
-    if (!match) continue;
-
-    // WEBP: ตรวจ byte 8-11 = "WEBP"
-    if (sig.check === 'webp') {
-      const webp = String.fromCharCode(...bytes.slice(8, 12));
-      if (webp !== 'WEBP') continue;
-    }
-    return sig.ext;
-  }
-  return null;
-}
+import { detectImageType }            from '../_lib/file-validation.js';
 
 export default async function handler(req) {
   if (req.method !== 'POST') {
@@ -86,7 +63,7 @@ export default async function handler(req) {
 
     // ตรวจ magic bytes (ป้องกัน file type spoofing)
     const arrayBuffer = await file.arrayBuffer();
-    const ext = detectMime(arrayBuffer);
+    const ext = detectImageType(arrayBuffer);
     if (!ext) {
       return Response.json(
         { success: false, error: 'รองรับเฉพาะ JPG, PNG, WEBP เท่านั้น' },

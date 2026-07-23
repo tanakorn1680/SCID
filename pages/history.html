@@ -42,7 +42,7 @@
 
 <div class="topbar">
   <a href="/pages/shop.html" class="back-link">← หน้าสินค้า</a>
-  <img src="../images/logo-main-service1.png" alt="logo">
+  <img id="siteLogo" src="../images/logo-main-service1.png" alt="logo">
 </div>
 
 <div class="page-header">
@@ -55,7 +55,11 @@
 </div>
 
 <script type="module">
-import { auth, orders } from '../js/api.js';
+import { auth, orders, settings } from '../js/api.js';
+
+settings.get().then(({ data }) => {
+  if (data.logo_url) document.getElementById('siteLogo').src = data.logo_url;
+}).catch(() => {});
 
 const session = await auth.getSession();
 if (!session) { window.location.href = '/pages/login.html'; }
