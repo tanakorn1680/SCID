@@ -1,6 +1,11 @@
 // ============================================================
 // js/api.js — Frontend API client
 // เรียก /api/* เท่านั้น ไม่แตะ Supabase โดยตรง
+//
+// หมายเหตุ: หลังรวม Serverless Functions เพื่อให้อยู่ในลิมิต Vercel
+// Hobby Plan (≤12 functions) หลาย endpoint เดิมถูกรวมเป็น router เดียว
+// แยกด้วย query param (?action=, ?resource=, ?scope=) — ดู mapping
+// เต็มได้ที่ docs/API_ROUTES.md
 // ============================================================
 
 // ── Auth (Supabase JS ยังใช้สำหรับ login/register/session เท่านั้น)
@@ -35,6 +40,20 @@ async function apiFetch(path, options = {}) {
   if (!json.success) {
     throw new Error(json.error ?? 'เกิดข้อผิดพลาด');
   }
+  return json;
+}
+
+// ── Helper: อัปโหลดไฟล์ผ่าน FormData (ต้องใช้ fetch ตรง ไม่ผ่าน apiFetch
+//    เพราะ apiFetch ตั้ง Content-Type: application/json ตายตัวซึ่งชนกับ multipart)
+async function uploadFetch(path, form) {
+  const token = await getToken();
+  const res  = await fetch(path, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.error ?? 'อัปโหลดไม่สำเร็จ');
   return json;
 }
 
@@ -78,66 +97,58 @@ export const auth = {
   },
 };
 
-// ── Products ────────────────────────────────────────────────
+// ── Products (รวมเข้า /api/admin/catalog-products แล้ว) ────
 export const products = {
   async list() {
-    return apiFetch('/api/products');
+    return apiFetch('/api/admin/catalog-products?scope=public');
   },
 };
 
-// ── Payment Methods (public — สำหรับหน้า checkout) ─────────
+// ── Payment Methods (รวมเข้า /api/admin/catalog-payment แล้ว) ─
 export const paymentMethods = {
   async list() {
-    return apiFetch('/api/payment-methods');
+    return apiFetch('/api/admin/catalog-payment?scope=public');
   },
 };
 
-// ── Site Settings (public — สำหรับ logo/banner/สี) ─────────
+// ── Site Settings (รวมเข้า /api/admin/site-assets แล้ว) ────
 export const settings = {
   async get() {
-    return apiFetch('/api/settings');
+    return apiFetch('/api/admin/site-assets?resource=settings&scope=public');
   },
 };
 
-// ── Orders ──────────────────────────────────────────────────
+// ── Orders (รวมเข้า /api/orders แล้ว — แยกด้วย ?action=) ───
 export const orders = {
   async create(productKey) {
-    return apiFetch('/api/orders/create', {
+    return apiFetch('/api/orders?action=create', {
       method: 'POST',
       body: JSON.stringify({ product_key: productKey }),
     });
   },
 
   async myOrders() {
-    return apiFetch('/api/orders/my');
+    return apiFetch('/api/orders?action=my');
   },
 
   async detail(orderId) {
-    return apiFetch(`/api/orders/detail?id=${orderId}`);
+    return apiFetch(`/api/orders?action=detail&id=${orderId}`);
   },
 
   async setPaymentMethod(orderId, paymentMethodId) {
-    return apiFetch('/api/orders/set-payment-method', {
+    return apiFetch('/api/orders?action=set-payment-method', {
       method: 'POST',
       body: JSON.stringify({ order_id: orderId, payment_method_id: paymentMethodId }),
     });
   },
 
+  // upload-slip รวมเข้า /api/orders/slip (คนละไฟล์จาก /api/orders เพราะ
+  // FormData vs JSON — ดู _lib/handlers/order-slip.js)
   async uploadSlip(orderId, file) {
-    const token = await getToken();
-    const form  = new FormData();
+    const form = new FormData();
     form.append('order_id', orderId);
     form.append('file', file);
-
-    const res  = await fetch('/api/orders/upload-slip', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
-      // ไม่ใส่ Content-Type → browser set multipart/form-data + boundary อัตโนมัติ
-    });
-    const json = await res.json();
-    if (!json.success) throw new Error(json.error ?? 'อัปโหลดสลิปไม่สำเร็จ');
-    return json;
+    return uploadFetch('/api/orders/slip', form);
   },
 };
 
@@ -147,6 +158,7 @@ export const admin = {
     return apiFetch('/api/admin/stats');
   },
 
+  // orders/deliver/reject รวมเข้า /api/admin/orders แล้ว — แยกด้วย method + action
   async orders({ status = null, page = 0, search = '' } = {}) {
     const params = new URLSearchParams({ page });
     if (status) params.set('status', status);
@@ -154,22 +166,23 @@ export const admin = {
     return apiFetch(`/api/admin/orders?${params}`);
   },
 
-  async slipUrl(orderId) {
-    return apiFetch(`/api/admin/slip-url?order_id=${orderId}`);
-  },
-
   async deliver(orderId) {
-    return apiFetch('/api/admin/deliver', {
+    return apiFetch('/api/admin/orders', {
       method: 'POST',
-      body: JSON.stringify({ order_id: orderId }),
+      body: JSON.stringify({ action: 'approve', order_id: orderId }),
     });
   },
 
   async reject(orderId, reason) {
-    return apiFetch('/api/admin/reject', {
+    return apiFetch('/api/admin/orders', {
       method: 'POST',
-      body: JSON.stringify({ order_id: orderId, reason }),
+      body: JSON.stringify({ action: 'reject', order_id: orderId, reason }),
     });
+  },
+
+  // slip-url รวมเข้า /api/orders/slip แล้ว (GET = แอดมินอ่าน, POST = ลูกค้าเขียน)
+  async slipUrl(orderId) {
+    return apiFetch(`/api/orders/slip?order_id=${orderId}`);
   },
 
   inventory: {
@@ -195,67 +208,71 @@ export const admin = {
     },
   },
 
+  // products รวมเข้า /api/admin/catalog-products แล้ว (ไม่มี scope=public
+  // เพราะเป็น admin path เต็มรูปแบบ)
   products: {
     async list() {
-      return apiFetch('/api/admin/products');
+      return apiFetch('/api/admin/catalog-products');
     },
 
     async create(product) {
-      return apiFetch('/api/admin/products', {
+      return apiFetch('/api/admin/catalog-products', {
         method: 'POST',
         body: JSON.stringify(product),
       });
     },
 
     async update(id, updates) {
-      return apiFetch('/api/admin/products', {
+      return apiFetch('/api/admin/catalog-products', {
         method: 'PUT',
         body: JSON.stringify({ id, ...updates }),
       });
     },
 
     async remove(id) {
-      return apiFetch('/api/admin/products', {
+      return apiFetch('/api/admin/catalog-products', {
         method: 'DELETE',
         body: JSON.stringify({ id }),
       });
     },
   },
 
+  // payment-methods รวมเข้า /api/admin/catalog-payment แล้ว
   paymentMethods: {
     async list() {
-      return apiFetch('/api/admin/payment-methods');
+      return apiFetch('/api/admin/catalog-payment');
     },
 
     async create(method) {
-      return apiFetch('/api/admin/payment-methods', {
+      return apiFetch('/api/admin/catalog-payment', {
         method: 'POST',
         body: JSON.stringify(method),
       });
     },
 
     async update(id, updates) {
-      return apiFetch('/api/admin/payment-methods', {
+      return apiFetch('/api/admin/catalog-payment', {
         method: 'PUT',
         body: JSON.stringify({ id, ...updates }),
       });
     },
 
     async remove(id) {
-      return apiFetch('/api/admin/payment-methods', {
+      return apiFetch('/api/admin/catalog-payment', {
         method: 'DELETE',
         body: JSON.stringify({ id }),
       });
     },
   },
 
+  // settings รวมเข้า /api/admin/site-assets?resource=settings แล้ว
   settings: {
     async get() {
-      return apiFetch('/api/admin/settings');
+      return apiFetch('/api/admin/site-assets?resource=settings');
     },
 
     async update(updates) {
-      return apiFetch('/api/admin/settings', {
+      return apiFetch('/api/admin/site-assets?resource=settings', {
         method: 'PUT',
         body: JSON.stringify({ updates }),
       });
@@ -266,35 +283,19 @@ export const admin = {
     return apiFetch('/api/admin/customers');
   },
 
+  // upload-asset รวมเข้า /api/admin/site-assets?resource=asset แล้ว
   async uploadAsset(assetKey, file) {
-    const token = await getToken();
-    const form  = new FormData();
+    const form = new FormData();
     form.append('asset_key', assetKey);
     form.append('file', file);
-
-    const res  = await fetch('/api/admin/upload-asset', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
-    });
-    const json = await res.json();
-    if (!json.success) throw new Error(json.error ?? 'อัปโหลดไม่สำเร็จ');
-    return json;
+    return uploadFetch('/api/admin/site-assets?resource=asset', form);
   },
 
+  // upload-payment-qr รวมเข้า /api/admin/site-assets?resource=payment-qr แล้ว
   async uploadPaymentQr(file) {
-    const token = await getToken();
-    const form  = new FormData();
+    const form = new FormData();
     form.append('file', file);
-
-    const res  = await fetch('/api/admin/upload-payment-qr', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
-    });
-    const json = await res.json();
-    if (!json.success) throw new Error(json.error ?? 'อัปโหลดไม่สำเร็จ');
-    return json;
+    return uploadFetch('/api/admin/site-assets?resource=payment-qr', form);
   },
 };
 

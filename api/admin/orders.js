@@ -1,51 +1,47 @@
-// GET /api/admin/orders?status=awaiting_review&page=0
-// Admin only — ดูออเดอร์ทั้งหมด พร้อม filter และ pagination
+// api/admin/orders.js
+// Router เท่านั้น — business logic อยู่ที่ _lib/handlers/admin-orders.js
+//
+// GET  /api/admin/orders?status=&page=&search=        → list
+// POST /api/admin/orders  body:{action:'approve', order_id}          → approve (auto-deliver)
+// POST /api/admin/orders  body:{action:'reject', order_id, reason}   → reject
 
-import { requireAdmin, errorResponse } from '../_lib/auth.js';
-import { supabaseAdmin }               from '../_lib/supabase.js';
+import { requireAdmin, errorResponse }        from '../_lib/auth.js';
+import { listOrders, approveOrder, rejectOrder } from '../_lib/handlers/admin-orders.js';
 
-const PAGE_SIZE = 30;
+export const config = { runtime: "nodejs" };
 
 export default async function handler(req) {
-  if (req.method !== 'GET') {
-    return Response.json({ error: 'Method not allowed' }, { status: 405 });
-  }
-
   try {
     await requireAdmin(req);
 
-    const url    = new URL(req.url);
-    const status = url.searchParams.get('status') || null;
-    const page   = parseInt(url.searchParams.get('page') || '0', 10);
-    const search = url.searchParams.get('search') || '';    // ค้นหา email
+    if (req.method === 'GET') {
+      const result = await listOrders(new URL(req.url));
+      return Response.json({ success: true, ...result });
+    }
 
-    const from = page * PAGE_SIZE;
-    const to   = from + PAGE_SIZE - 1;
+    if (req.method === 'POST') {
+      const { action, order_id, reason } = await req.json();
 
-    let query = supabaseAdmin
-      .from('orders')
-      .select(
-        'id, user_email, product_label, amount, status, slip_path, reject_reason, created_at, updated_at',
-        { count: 'exact' }
-      )
-      .order('created_at', { ascending: false })
-      .range(from, to);
+      if (action === 'approve') {
+        const { httpStatus, body } = await approveOrder(order_id);
+        return Response.json(body, { status: httpStatus });
+      }
 
-    if (status) query = query.eq('status', status);
-    if (search) query = query.ilike('user_email', `%${search}%`);
+      if (action === 'reject') {
+        const { httpStatus, body } = await rejectOrder(order_id, reason);
+        return Response.json(body, { status: httpStatus });
+      }
 
-    const { data, error, count } = await query;
-    if (error) throw error;
+      return Response.json(
+        { success: false, error: `ไม่รู้จัก action: ${action}` },
+        { status: 400 }
+      );
+    }
 
-    return Response.json({
-      success: true,
-      data,
-      total: count ?? 0,
-      page,
-      page_size: PAGE_SIZE,
-    });
+    return Response.json({ error: 'Method not allowed' }, { status: 405 });
 
   } catch (err) {
+    console.error(`${req.method} /api/admin/orders failed:`, err);
     return errorResponse(err);
   }
 }
