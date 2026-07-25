@@ -16,6 +16,8 @@ import {
   adminDeleteMethod,
 } from '../_lib/handlers/catalog-payment.js';
 
+export const config = { runtime: "nodejs" };
+
 export default async function handler(req) {
   const url = new URL(req.url);
 

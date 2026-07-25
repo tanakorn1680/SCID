@@ -9,6 +9,8 @@ import { requireAdmin, errorResponse } from '../_lib/auth.js';
 import { supabaseAdmin }               from '../_lib/supabase.js';
 import { encrypt }                     from '../_lib/crypto.js';
 
+export const config = { runtime: "nodejs" };
+
 export default async function handler(req) {
   try {
     await requireAdmin(req);

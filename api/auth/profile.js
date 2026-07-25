@@ -3,6 +3,8 @@
 
 import { requireAuth, errorResponse } from '../_lib/auth.js';
 
+export const config = { runtime: "nodejs" };
+
 export default async function handler(req) {
   if (req.method !== 'GET') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });

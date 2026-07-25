@@ -17,6 +17,11 @@ import {
   adminDeleteProduct,
 } from '../_lib/handlers/catalog-products.js';
 
+// จำเป็นเสมอเมื่อไฟล์ใช้ new URL(req.url) — ถ้าไม่ตั้ง Vercel จะใช้ Edge
+// Runtime เป็น default ซึ่ง req.url อาจเป็น relative path แทน full URL
+// ทำให้ new URL() throw "Invalid URL" (ERR_INVALID_URL) ทันที
+export const config = { runtime: "nodejs" };
+
 export default async function handler(req) {
   const url = new URL(req.url);
 
