@@ -16,14 +16,14 @@ import {
   adminUpdateProduct,
   adminDeleteProduct,
 } from '../_lib/handlers/catalog-products.js';
+import { parseRequestUrl } from '../_lib/request-url.js';
 
-// จำเป็นเสมอเมื่อไฟล์ใช้ new URL(req.url) — ถ้าไม่ตั้ง Vercel จะใช้ Edge
-// Runtime เป็น default ซึ่ง req.url อาจเป็น relative path แทน full URL
-// ทำให้ new URL() throw "Invalid URL" (ERR_INVALID_URL) ทันที
+// runtime: nodejs จำเป็นสำหรับ FormData/streaming APIs อื่นในระบบ
+// (ไม่ใช่สาเหตุของ Invalid URL — ดู request-url.js สำหรับสาเหตุจริง)
 export const config = { runtime: "nodejs" };
 
 export default async function handler(req) {
-  const url = new URL(req.url);
+  const url = parseRequestUrl(req);
 
   // ── public path: ไม่ต้อง auth เลย ต้องอยู่ก่อนบรรทัด requireAdmin เสมอ ──
   if (req.method === 'GET' && url.searchParams.get('scope') === 'public') {

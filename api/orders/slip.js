@@ -9,6 +9,7 @@
 
 import { requireAuth, requireAdmin, errorResponse } from '../_lib/auth.js';
 import { uploadSlip, getSignedSlipUrl }              from '../_lib/handlers/order-slip.js';
+import { parseRequestUrl }                           from '../_lib/request-url.js';
 
 export const config = { runtime: "nodejs" };
 
@@ -23,7 +24,7 @@ export default async function handler(req) {
 
     if (req.method === 'GET') {
       await requireAdmin(req);
-      const url     = new URL(req.url);
+      const url     = parseRequestUrl(req);
       const orderId = url.searchParams.get('order_id');
       const { httpStatus, body } = await getSignedSlipUrl(orderId);
       return Response.json(body, { status: httpStatus });

@@ -16,13 +16,14 @@ import {
   listMyOrders,
   setOrderPaymentMethod,
 } from '../_lib/handlers/customer-orders.js';
+import { parseRequestUrl } from '../_lib/request-url.js';
 
 export const config = { runtime: "nodejs" };
 
 export default async function handler(req) {
   try {
     const { profile } = await requireAuth(req);
-    const url    = new URL(req.url);
+    const url    = parseRequestUrl(req);
     const action = url.searchParams.get('action');
 
     if (req.method === 'POST' && action === 'create') {

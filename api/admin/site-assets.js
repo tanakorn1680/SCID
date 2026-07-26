@@ -20,11 +20,12 @@ import {
   uploadSiteAsset,
   uploadPaymentQr,
 } from '../_lib/handlers/site-assets-upload.js';
+import { parseRequestUrl } from '../_lib/request-url.js';
 
 export const config = { runtime: "nodejs" };
 
 export default async function handler(req) {
-  const url      = new URL(req.url);
+  const url      = parseRequestUrl(req);
   const resource = url.searchParams.get('resource') || 'settings';
 
   // ── public: อ่าน settings ไม่ต้อง login ──

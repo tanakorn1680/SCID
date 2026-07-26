@@ -15,11 +15,12 @@ import {
   adminUpdateMethod,
   adminDeleteMethod,
 } from '../_lib/handlers/catalog-payment.js';
+import { parseRequestUrl } from '../_lib/request-url.js';
 
 export const config = { runtime: "nodejs" };
 
 export default async function handler(req) {
-  const url = new URL(req.url);
+  const url = parseRequestUrl(req);
 
   if (req.method === 'GET' && url.searchParams.get('scope') === 'public') {
     try {

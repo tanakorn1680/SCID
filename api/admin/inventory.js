@@ -8,6 +8,7 @@
 import { requireAdmin, errorResponse } from '../_lib/auth.js';
 import { supabaseAdmin }               from '../_lib/supabase.js';
 import { encrypt }                     from '../_lib/crypto.js';
+import { parseRequestUrl }             from '../_lib/request-url.js';
 
 export const config = { runtime: "nodejs" };
 
@@ -28,7 +29,7 @@ export default async function handler(req) {
 }
 
 async function listInventory(req) {
-  const url        = new URL(req.url);
+  const url        = parseRequestUrl(req);
   const productKey = url.searchParams.get('product_key') || null;
   const status     = url.searchParams.get('status') || null;
 

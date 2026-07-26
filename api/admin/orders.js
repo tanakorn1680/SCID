@@ -7,6 +7,7 @@
 
 import { requireAdmin, errorResponse }        from '../_lib/auth.js';
 import { listOrders, approveOrder, rejectOrder } from '../_lib/handlers/admin-orders.js';
+import { parseRequestUrl }                       from '../_lib/request-url.js';
 
 export const config = { runtime: "nodejs" };
 
@@ -15,7 +16,7 @@ export default async function handler(req) {
     await requireAdmin(req);
 
     if (req.method === 'GET') {
-      const result = await listOrders(new URL(req.url));
+      const result = await listOrders(parseRequestUrl(req));
       return Response.json({ success: true, ...result });
     }
 
