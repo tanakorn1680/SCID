@@ -24,12 +24,12 @@ import { parseRequestUrl } from '../_lib/request-url.js';
 
 export const config = { runtime: "nodejs" };
 
-export default async function handler(req) {
+export async function GET(req) {
   const url      = parseRequestUrl(req);
   const resource = url.searchParams.get('resource') || 'settings';
 
   // ── public: อ่าน settings ไม่ต้อง login ──
-  if (req.method === 'GET' && resource === 'settings' && url.searchParams.get('scope') === 'public') {
+  if (resource === 'settings' && url.searchParams.get('scope') === 'public') {
     try {
       const { httpStatus, body } = await publicGetSettings();
       return Response.json(body, { status: httpStatus });
@@ -39,30 +39,58 @@ export default async function handler(req) {
     }
   }
 
-  // ── ทุกอย่างจากนี้ลงไปคือ admin เท่านั้น ──
+  // ── admin เท่านั้น ──
   try {
     await requireAdmin(req);
 
     if (resource === 'settings') {
-      if (req.method === 'GET') {
-        const { httpStatus, body } = await adminGetSettings();
-        return Response.json(body, { status: httpStatus });
-      }
-      if (req.method === 'PUT') {
-        const payload = await req.json();
-        const { httpStatus, body } = await adminPutSettings(payload);
-        return Response.json(body, { status: httpStatus });
-      }
-      return Response.json({ error: 'Method not allowed' }, { status: 405 });
+      const { httpStatus, body } = await adminGetSettings();
+      return Response.json(body, { status: httpStatus });
     }
 
-    if (resource === 'asset' && req.method === 'POST') {
+    return Response.json({ success: false, error: `ไม่รู้จัก resource: ${resource}` }, { status: 400 });
+
+  } catch (err) {
+    console.error(`GET /api/admin/site-assets?resource=${resource} failed:`, err);
+    return errorResponse(err);
+  }
+}
+
+export async function PUT(req) {
+  const url      = parseRequestUrl(req);
+  const resource = url.searchParams.get('resource') || 'settings';
+
+  try {
+    await requireAdmin(req);
+
+    if (resource === 'settings') {
+      const payload = await req.json();
+      const { httpStatus, body } = await adminPutSettings(payload);
+      return Response.json(body, { status: httpStatus });
+    }
+
+    return Response.json({ success: false, error: `ไม่รู้จัก resource: ${resource}` }, { status: 400 });
+
+  } catch (err) {
+    console.error(`PUT /api/admin/site-assets?resource=${resource} failed:`, err);
+    return errorResponse(err);
+  }
+}
+
+export async function POST(req) {
+  const url      = parseRequestUrl(req);
+  const resource = url.searchParams.get('resource') || 'settings';
+
+  try {
+    await requireAdmin(req);
+
+    if (resource === 'asset') {
       const form = await req.formData();
       const { httpStatus, body } = await uploadSiteAsset(form);
       return Response.json(body, { status: httpStatus });
     }
 
-    if (resource === 'payment-qr' && req.method === 'POST') {
+    if (resource === 'payment-qr') {
       const form = await req.formData();
       const { httpStatus, body } = await uploadPaymentQr(form);
       return Response.json(body, { status: httpStatus });
@@ -71,7 +99,7 @@ export default async function handler(req) {
     return Response.json({ success: false, error: `ไม่รู้จัก resource: ${resource}` }, { status: 400 });
 
   } catch (err) {
-    console.error(`${req.method} /api/admin/site-assets?resource=${resource} failed:`, err);
+    console.error(`POST /api/admin/site-assets?resource=${resource} failed:`, err);
     return errorResponse(err);
   }
 }

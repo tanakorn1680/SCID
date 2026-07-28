@@ -12,18 +12,32 @@ import { parseRequestUrl }             from '../_lib/request-url.js';
 
 export const config = { runtime: "nodejs" };
 
-export default async function handler(req) {
+export async function GET(req) {
   try {
     await requireAdmin(req);
-
-    if (req.method === 'GET')    return await listInventory(req);
-    if (req.method === 'POST')   return await bulkAddInventory(req);
-    if (req.method === 'DELETE') return await deleteInventory(req);
-
-    return Response.json({ error: 'Method not allowed' }, { status: 405 });
-
+    return await listInventory(req);
   } catch (err) {
-    console.error(`${req.method} /api/admin/inventory failed:`, err);
+    console.error('GET /api/admin/inventory failed:', err);
+    return errorResponse(err);
+  }
+}
+
+export async function POST(req) {
+  try {
+    await requireAdmin(req);
+    return await bulkAddInventory(req);
+  } catch (err) {
+    console.error('POST /api/admin/inventory failed:', err);
+    return errorResponse(err);
+  }
+}
+
+export async function DELETE(req) {
+  try {
+    await requireAdmin(req);
+    return await deleteInventory(req);
+  } catch (err) {
+    console.error('DELETE /api/admin/inventory failed:', err);
     return errorResponse(err);
   }
 }

@@ -13,27 +13,27 @@ import { parseRequestUrl }                           from '../_lib/request-url.j
 
 export const config = { runtime: "nodejs" };
 
-export default async function handler(req) {
+export async function POST(req) {
   try {
-    if (req.method === 'POST') {
-      const { profile } = await requireAuth(req);
-      const form = await req.formData();
-      const { httpStatus, body } = await uploadSlip(profile, form);
-      return Response.json(body, { status: httpStatus });
-    }
-
-    if (req.method === 'GET') {
-      await requireAdmin(req);
-      const url     = parseRequestUrl(req);
-      const orderId = url.searchParams.get('order_id');
-      const { httpStatus, body } = await getSignedSlipUrl(orderId);
-      return Response.json(body, { status: httpStatus });
-    }
-
-    return Response.json({ error: 'Method not allowed' }, { status: 405 });
-
+    const { profile } = await requireAuth(req);
+    const form = await req.formData();
+    const { httpStatus, body } = await uploadSlip(profile, form);
+    return Response.json(body, { status: httpStatus });
   } catch (err) {
-    console.error(`${req.method} /api/orders/slip failed:`, err);
+    console.error('POST /api/orders/slip failed:', err);
+    return errorResponse(err);
+  }
+}
+
+export async function GET(req) {
+  try {
+    await requireAdmin(req);
+    const url     = parseRequestUrl(req);
+    const orderId = url.searchParams.get('order_id');
+    const { httpStatus, body } = await getSignedSlipUrl(orderId);
+    return Response.json(body, { status: httpStatus });
+  } catch (err) {
+    console.error('GET /api/orders/slip failed:', err);
     return errorResponse(err);
   }
 }

@@ -22,11 +22,11 @@ import { parseRequestUrl } from '../_lib/request-url.js';
 // (ไม่ใช่สาเหตุของ Invalid URL — ดู request-url.js สำหรับสาเหตุจริง)
 export const config = { runtime: "nodejs" };
 
-export default async function handler(req) {
+export async function GET(req) {
   const url = parseRequestUrl(req);
 
   // ── public path: ไม่ต้อง auth เลย ต้องอยู่ก่อนบรรทัด requireAdmin เสมอ ──
-  if (req.method === 'GET' && url.searchParams.get('scope') === 'public') {
+  if (url.searchParams.get('scope') === 'public') {
     try {
       const { httpStatus, body } = await publicListProducts();
       return Response.json(body, { status: httpStatus });
@@ -36,37 +36,49 @@ export default async function handler(req) {
     }
   }
 
-  // ── ทุกอย่างจากบรรทัดนี้ลงไปคือ admin เท่านั้น ──
+  // ── admin เท่านั้น ──
   try {
     await requireAdmin(req);
-
-    if (req.method === 'GET') {
-      const { httpStatus, body } = await adminListProducts();
-      return Response.json(body, { status: httpStatus });
-    }
-
-    if (req.method === 'POST') {
-      const payload = await req.json();
-      const { httpStatus, body } = await adminCreateProduct(payload);
-      return Response.json(body, { status: httpStatus });
-    }
-
-    if (req.method === 'PUT') {
-      const payload = await req.json();
-      const { httpStatus, body } = await adminUpdateProduct(payload);
-      return Response.json(body, { status: httpStatus });
-    }
-
-    if (req.method === 'DELETE') {
-      const payload = await req.json();
-      const { httpStatus, body } = await adminDeleteProduct(payload);
-      return Response.json(body, { status: httpStatus });
-    }
-
-    return Response.json({ error: 'Method not allowed' }, { status: 405 });
-
+    const { httpStatus, body } = await adminListProducts();
+    return Response.json(body, { status: httpStatus });
   } catch (err) {
-    console.error(`${req.method} /api/admin/catalog-products failed:`, err);
+    console.error('GET /api/admin/catalog-products failed:', err);
+    return errorResponse(err);
+  }
+}
+
+export async function POST(req) {
+  try {
+    await requireAdmin(req);
+    const payload = await req.json();
+    const { httpStatus, body } = await adminCreateProduct(payload);
+    return Response.json(body, { status: httpStatus });
+  } catch (err) {
+    console.error('POST /api/admin/catalog-products failed:', err);
+    return errorResponse(err);
+  }
+}
+
+export async function PUT(req) {
+  try {
+    await requireAdmin(req);
+    const payload = await req.json();
+    const { httpStatus, body } = await adminUpdateProduct(payload);
+    return Response.json(body, { status: httpStatus });
+  } catch (err) {
+    console.error('PUT /api/admin/catalog-products failed:', err);
+    return errorResponse(err);
+  }
+}
+
+export async function DELETE(req) {
+  try {
+    await requireAdmin(req);
+    const payload = await req.json();
+    const { httpStatus, body } = await adminDeleteProduct(payload);
+    return Response.json(body, { status: httpStatus });
+  } catch (err) {
+    console.error('DELETE /api/admin/catalog-products failed:', err);
     return errorResponse(err);
   }
 }

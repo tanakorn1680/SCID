@@ -20,30 +20,46 @@ import { parseRequestUrl } from '../_lib/request-url.js';
 
 export const config = { runtime: "nodejs" };
 
-export default async function handler(req) {
+export async function GET(req) {
   try {
     const { profile } = await requireAuth(req);
     const url    = parseRequestUrl(req);
     const action = url.searchParams.get('action');
 
-    if (req.method === 'POST' && action === 'create') {
-      const payload = await req.json();
-      const { httpStatus, body } = await createOrder(profile, payload);
-      return Response.json(body, { status: httpStatus });
-    }
-
-    if (req.method === 'GET' && action === 'detail') {
+    if (action === 'detail') {
       const orderId = url.searchParams.get('id');
       const { httpStatus, body } = await getOrderDetail(profile, orderId);
       return Response.json(body, { status: httpStatus });
     }
 
-    if (req.method === 'GET' && action === 'my') {
+    if (action === 'my') {
       const { httpStatus, body } = await listMyOrders(profile);
       return Response.json(body, { status: httpStatus });
     }
 
-    if (req.method === 'POST' && action === 'set-payment-method') {
+    return Response.json(
+      { success: false, error: `ไม่รู้จัก action: ${action}` },
+      { status: 400 }
+    );
+  } catch (err) {
+    console.error('GET /api/orders failed:', err);
+    return errorResponse(err);
+  }
+}
+
+export async function POST(req) {
+  try {
+    const { profile } = await requireAuth(req);
+    const url    = parseRequestUrl(req);
+    const action = url.searchParams.get('action');
+
+    if (action === 'create') {
+      const payload = await req.json();
+      const { httpStatus, body } = await createOrder(profile, payload);
+      return Response.json(body, { status: httpStatus });
+    }
+
+    if (action === 'set-payment-method') {
       const payload = await req.json();
       const { httpStatus, body } = await setOrderPaymentMethod(profile, payload);
       return Response.json(body, { status: httpStatus });
@@ -53,9 +69,8 @@ export default async function handler(req) {
       { success: false, error: `ไม่รู้จัก action: ${action}` },
       { status: 400 }
     );
-
   } catch (err) {
-    console.error(`${req.method} /api/orders failed:`, err);
+    console.error('POST /api/orders failed:', err);
     return errorResponse(err);
   }
 }

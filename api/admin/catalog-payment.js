@@ -19,10 +19,10 @@ import { parseRequestUrl } from '../_lib/request-url.js';
 
 export const config = { runtime: "nodejs" };
 
-export default async function handler(req) {
+export async function GET(req) {
   const url = parseRequestUrl(req);
 
-  if (req.method === 'GET' && url.searchParams.get('scope') === 'public') {
+  if (url.searchParams.get('scope') === 'public') {
     try {
       const { httpStatus, body } = await publicListMethods();
       return Response.json(body, { status: httpStatus });
@@ -34,34 +34,46 @@ export default async function handler(req) {
 
   try {
     await requireAdmin(req);
-
-    if (req.method === 'GET') {
-      const { httpStatus, body } = await adminListMethods();
-      return Response.json(body, { status: httpStatus });
-    }
-
-    if (req.method === 'POST') {
-      const payload = await req.json();
-      const { httpStatus, body } = await adminCreateMethod(payload);
-      return Response.json(body, { status: httpStatus });
-    }
-
-    if (req.method === 'PUT') {
-      const payload = await req.json();
-      const { httpStatus, body } = await adminUpdateMethod(payload);
-      return Response.json(body, { status: httpStatus });
-    }
-
-    if (req.method === 'DELETE') {
-      const payload = await req.json();
-      const { httpStatus, body } = await adminDeleteMethod(payload);
-      return Response.json(body, { status: httpStatus });
-    }
-
-    return Response.json({ error: 'Method not allowed' }, { status: 405 });
-
+    const { httpStatus, body } = await adminListMethods();
+    return Response.json(body, { status: httpStatus });
   } catch (err) {
-    console.error(`${req.method} /api/admin/catalog-payment failed:`, err);
+    console.error('GET /api/admin/catalog-payment failed:', err);
+    return errorResponse(err);
+  }
+}
+
+export async function POST(req) {
+  try {
+    await requireAdmin(req);
+    const payload = await req.json();
+    const { httpStatus, body } = await adminCreateMethod(payload);
+    return Response.json(body, { status: httpStatus });
+  } catch (err) {
+    console.error('POST /api/admin/catalog-payment failed:', err);
+    return errorResponse(err);
+  }
+}
+
+export async function PUT(req) {
+  try {
+    await requireAdmin(req);
+    const payload = await req.json();
+    const { httpStatus, body } = await adminUpdateMethod(payload);
+    return Response.json(body, { status: httpStatus });
+  } catch (err) {
+    console.error('PUT /api/admin/catalog-payment failed:', err);
+    return errorResponse(err);
+  }
+}
+
+export async function DELETE(req) {
+  try {
+    await requireAdmin(req);
+    const payload = await req.json();
+    const { httpStatus, body } = await adminDeleteMethod(payload);
+    return Response.json(body, { status: httpStatus });
+  } catch (err) {
+    console.error('DELETE /api/admin/catalog-payment failed:', err);
     return errorResponse(err);
   }
 }

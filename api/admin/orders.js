@@ -11,38 +11,38 @@ import { parseRequestUrl }                       from '../_lib/request-url.js';
 
 export const config = { runtime: "nodejs" };
 
-export default async function handler(req) {
+export async function GET(req) {
   try {
     await requireAdmin(req);
-
-    if (req.method === 'GET') {
-      const result = await listOrders(parseRequestUrl(req));
-      return Response.json({ success: true, ...result });
-    }
-
-    if (req.method === 'POST') {
-      const { action, order_id, reason } = await req.json();
-
-      if (action === 'approve') {
-        const { httpStatus, body } = await approveOrder(order_id);
-        return Response.json(body, { status: httpStatus });
-      }
-
-      if (action === 'reject') {
-        const { httpStatus, body } = await rejectOrder(order_id, reason);
-        return Response.json(body, { status: httpStatus });
-      }
-
-      return Response.json(
-        { success: false, error: `ไม่รู้จัก action: ${action}` },
-        { status: 400 }
-      );
-    }
-
-    return Response.json({ error: 'Method not allowed' }, { status: 405 });
-
+    const result = await listOrders(parseRequestUrl(req));
+    return Response.json({ success: true, ...result });
   } catch (err) {
-    console.error(`${req.method} /api/admin/orders failed:`, err);
+    console.error('GET /api/admin/orders failed:', err);
+    return errorResponse(err);
+  }
+}
+
+export async function POST(req) {
+  try {
+    await requireAdmin(req);
+    const { action, order_id, reason } = await req.json();
+
+    if (action === 'approve') {
+      const { httpStatus, body } = await approveOrder(order_id);
+      return Response.json(body, { status: httpStatus });
+    }
+
+    if (action === 'reject') {
+      const { httpStatus, body } = await rejectOrder(order_id, reason);
+      return Response.json(body, { status: httpStatus });
+    }
+
+    return Response.json(
+      { success: false, error: `ไม่รู้จัก action: ${action}` },
+      { status: 400 }
+    );
+  } catch (err) {
+    console.error('POST /api/admin/orders failed:', err);
     return errorResponse(err);
   }
 }
