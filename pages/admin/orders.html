@@ -41,7 +41,8 @@
   .detail-row .label{color:rgba(26,58,82,0.55);}
   .detail-row .value{font-weight:600;}
   .action-row{display:flex;gap:8px;margin-top:16px;}
-  .modal-btn{flex:1;padding:11px 0;border:none;border-radius:9px;font-size:13px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
+  .modal-btn{flex:1;padding:11px 0;border:none;border-radius:9px;font-size:13px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+  .modal-btn svg{width:15px;height:15px;flex-shrink:0;}
   .modal-btn.approve{background:var(--green-go);color:#fff;}
   .modal-btn.reject-btn{background:rgba(224,68,51,0.1);color:var(--danger);}
   .modal-btn.close-btn{background:rgba(26,58,82,0.08);color:var(--ink);}
@@ -147,13 +148,13 @@ async function openModal(orderId, allOrders) {
   document.body.appendChild(overlay);
 
   const slipHtml = order.slip_path
-    ? `<div id="slipPlaceholder" style="text-align:center;padding:20px;color:rgba(26,58,82,0.4);font-size:13px;">⏳ กำลังโหลดสลิป...</div>`
+    ? `<div id="slipPlaceholder" style="text-align:center;padding:20px;color:rgba(26,58,82,0.4);font-size:13px;">กำลังโหลดสลิป...</div>`
     : `<div style="text-align:center;padding:20px;color:rgba(26,58,82,0.4);font-size:13px;">ยังไม่มีสลิป</div>`;
 
   const actionHtml = order.status === 'awaiting_review' ? `
     <div class="action-row">
-      <button class="modal-btn approve" id="approveBtn">✓ ยืนยัน + ส่งไอดี</button>
-      <button class="modal-btn reject-btn" id="rejectBtn">✕ ปฏิเสธ</button>
+      <button class="modal-btn approve" id="approveBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ยืนยัน + ส่งไอดี</button>
+      <button class="modal-btn reject-btn" id="rejectBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> ปฏิเสธ</button>
     </div>
   ` : '';
 
@@ -203,7 +204,7 @@ async function openModal(orderId, allOrders) {
     } catch (err) {
       alertEl.textContent = err.message;
       alertEl.className = 'form-alert show error';
-      btn.disabled = false; btn.textContent = '✓ ยืนยัน + ส่งไอดี';
+      btn.disabled = false; btn.textContent = 'ยืนยัน + ส่งไอดี';
     }
   });
 

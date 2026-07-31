@@ -36,7 +36,7 @@
   .cred-actions{display:flex;gap:6px;flex-shrink:0;}
   .cred-btn{padding:5px 10px;background:rgba(255,255,255,0.2);border:none;border-radius:7px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
   .pending-msg{background:rgba(217,163,48,0.08);border:1px solid rgba(217,163,48,0.25);border-radius:10px;padding:14px 16px;text-align:center;}
-  .pending-msg .icon{font-size:24px;margin-bottom:6px;}
+  .pending-msg .icon{display:flex;justify-content:center;margin-bottom:6px;color:var(--muted);}
   .pending-msg .title{font-size:14px;font-weight:700;color:var(--gold-deep);margin-bottom:4px;}
   .pending-msg .sub{font-size:12.5px;color:var(--muted);}
   .skeleton{text-align:center;padding:60px 20px;color:rgba(255,255,255,0.8);}
@@ -63,10 +63,10 @@ const orderId = new URLSearchParams(window.location.search).get('id');
 const pageBody = document.getElementById('pageBody');
 
 const STATUS = {
-  pending:         { label:'รอชำระเงิน',    dot:'⏳' },
-  awaiting_review: { label:'รอตรวจสอบสลิป', dot:'🔍' },
-  delivered:       { label:'ส่งข้อมูลแล้ว', dot:'✅' },
-  cancelled:       { label:'ยกเลิก',        dot:'❌' },
+  pending:         { label:'รอชำระเงิน' },
+  awaiting_review: { label:'รอตรวจสอบสลิป' },
+  delivered:       { label:'ส่งข้อมูลแล้ว' },
+  cancelled:       { label:'ยกเลิก' },
 };
 
 function fmtDate(iso) {
@@ -79,7 +79,7 @@ if (!orderId) {
 } else {
   try {
     const { data: order } = await orders.detail(orderId);
-    const s = STATUS[order.status] || { label: order.status, dot: '•' };
+    const s = STATUS[order.status] || { label: order.status };
 
     // credential section
     let credHtml = '';
@@ -105,7 +105,7 @@ if (!orderId) {
       credHtml = `
         <div class="credential-card" id="credCard">
           <div class="credential-header">
-            <span style="font-size:20px;">🔑</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
             <span class="credential-title-text">ข้อมูลไอดีของคุณ</span>
           </div>
           <div class="cred-row">
@@ -121,7 +121,7 @@ if (!orderId) {
     } else if (order.status !== 'cancelled') {
       credHtml = `
         <div class="pending-msg">
-          <div class="icon">⏳</div>
+          <div class="icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
           <div class="title">กำลังรอแอดมินตรวจสอบ</div>
           <div class="sub">เมื่อได้รับการยืนยัน ไอดีจะปรากฏที่นี่</div>
         </div>
@@ -130,7 +130,7 @@ if (!orderId) {
 
     pageBody.innerHTML = `
       <div class="section-card">
-        <span class="status-badge-lg ${order.status}">${s.dot} ${s.label}</span>
+        <span class="status-badge-lg ${order.status}">${s.label}</span>
         <div class="detail-row"><span class="lbl">สินค้า</span><span class="val">${order.product_label}</span></div>
         <div class="detail-row"><span class="lbl">ยอดเงิน</span><span class="val" style="color:var(--gold);font-family:'Baloo 2',sans-serif;font-size:16px;">฿${Number(order.amount).toLocaleString()}</span></div>
         <div class="detail-row"><span class="lbl">วันที่สั่ง</span><span class="val">${fmtDate(order.created_at)}</span></div>

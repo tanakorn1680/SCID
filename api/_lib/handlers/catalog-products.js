@@ -11,15 +11,32 @@ import { supabaseAdmin } from '../supabase.js';
 /**
  * public — สินค้าที่เปิดขายเท่านั้น ไม่ต้อง login
  * เดิมคือ GET /api/products
+ * รวม stock_count (จำนวนไอดีพร้อมขายในคลัง) เพื่อให้หน้าร้านแสดง
+ * "คงเหลือ X ชิ้น" และปิดปุ่มซื้อถ้าหมด — ใช้ RPC เดิมจาก Phase 5
+ * (inventory_ready_counts) แทนการ query inventory ทีละสินค้า (N+1)
  */
 export async function publicListProducts() {
-  const { data, error } = await supabaseAdmin
-    .from('products')
-    .select('key, label, category, price')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true });
+  const [productsResult, countsResult] = await Promise.all([
+    supabaseAdmin
+      .from('products')
+      .select('key, label, category, price, spec')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true }),
+    supabaseAdmin.rpc('inventory_ready_counts'),
+  ]);
 
-  if (error) throw error;
+  if (productsResult.error) throw productsResult.error;
+  if (countsResult.error) throw countsResult.error;
+
+  const stockByKey = new Map(
+    countsResult.data.map(row => [row.product_key, Number(row.ready_count)])
+  );
+
+  const data = productsResult.data.map(p => ({
+    ...p,
+    stock_count: stockByKey.get(p.key) ?? 0,
+  }));
+
   return { httpStatus: 200, body: { success: true, data } };
 }
 
@@ -29,7 +46,7 @@ export async function publicListProducts() {
 export async function adminListProducts() {
   const { data, error } = await supabaseAdmin
     .from('products')
-    .select('id, key, label, category, price, is_active, sort_order, created_at')
+    .select('id, key, label, category, price, spec, is_active, sort_order, created_at')
     .order('sort_order', { ascending: true });
 
   if (error) throw error;
@@ -39,7 +56,7 @@ export async function adminListProducts() {
 /**
  * admin: create
  */
-export async function adminCreateProduct({ key, label, category, price, sort_order }) {
+export async function adminCreateProduct({ key, label, category, price, spec, sort_order }) {
   if (!key || !label || !category || price == null) {
     return {
       httpStatus: 400,
@@ -60,7 +77,12 @@ export async function adminCreateProduct({ key, label, category, price, sort_ord
 
   const { data, error } = await supabaseAdmin
     .from('products')
-    .insert({ key, label, category, price: Number(price), sort_order: sort_order ?? 0 })
+    .insert({
+      key, label, category,
+      price: Number(price),
+      spec: spec?.trim() || null,
+      sort_order: sort_order ?? 0,
+    })
     .select()
     .single();
 
@@ -77,7 +99,7 @@ export async function adminCreateProduct({ key, label, category, price, sort_ord
 /**
  * admin: update
  */
-export async function adminUpdateProduct({ id, label, category, price, is_active, sort_order }) {
+export async function adminUpdateProduct({ id, label, category, price, spec, is_active, sort_order }) {
   if (!id) {
     return { httpStatus: 400, body: { success: false, error: 'ไม่ระบุ id' } };
   }
@@ -85,6 +107,7 @@ export async function adminUpdateProduct({ id, label, category, price, is_active
   const updates = {};
   if (label      !== undefined) updates.label      = label;
   if (category   !== undefined) updates.category   = category;
+  if (spec       !== undefined) updates.spec       = spec?.trim() || null;
   if (is_active  !== undefined) updates.is_active  = is_active;
   if (sort_order !== undefined) updates.sort_order = sort_order;
   if (price      !== undefined) {

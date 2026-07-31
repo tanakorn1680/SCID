@@ -22,12 +22,24 @@
   .product-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:0 16px;}
   @media(min-width:640px){.product-grid{grid-template-columns:repeat(3,1fr);}}
   .product-card{background:rgba(255,255,255,0.97);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,40,80,0.14);display:flex;flex-direction:column;}
-  .product-img-wrap{width:100%;aspect-ratio:1;background:linear-gradient(135deg,#E8F2FA,#D4E9F7);display:flex;align-items:center;justify-content:center;font-size:48px;}
+  .product-img-wrap{width:100%;aspect-ratio:1;background:linear-gradient(135deg,#E8F2FA,#D4E9F7);display:flex;align-items:center;justify-content:center;color:#9DBDD6;}
   .product-info{padding:10px 11px 12px;display:flex;flex-direction:column;flex:1;}
   .product-name{font-size:13.5px;font-weight:700;margin-bottom:4px;line-height:1.3;}
-  .product-price{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:17px;margin-bottom:10px;}
+  .product-price{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:17px;margin-bottom:2px;}
+  .stock-line{font-size:11px;margin-bottom:8px;}
+  .stock-line.in-stock{color:var(--green-go);}
+  .stock-line.out-of-stock{color:var(--danger);font-weight:600;}
+  .spec-link{background:none;border:none;color:var(--sky);font-size:11px;font-weight:600;text-decoration:underline;cursor:pointer;padding:0 0 8px;text-align:left;font-family:'IBM Plex Sans Thai',sans-serif;}
   .buy-btn{margin-top:auto;width:100%;padding:9px 0;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:12.5px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
   .buy-btn:active{opacity:0.85;}
+  .buy-btn:disabled{background:rgba(26,58,82,0.25);cursor:not-allowed;}
+  .spec-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(10,25,40,0.55);z-index:50;align-items:flex-end;justify-content:center;}
+  .spec-modal-backdrop.show{display:flex;}
+  .spec-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:520px;max-height:78vh;display:flex;flex-direction:column;padding:20px 18px calc(20px + env(safe-area-inset-bottom));}
+  .spec-modal-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;margin-bottom:4px;}
+  .spec-modal-price{color:var(--gold);font-weight:800;font-size:14px;margin-bottom:12px;}
+  .spec-modal-body{white-space:pre-line;font-size:13px;line-height:1.75;color:var(--ink);overflow-y:auto;flex:1;}
+  .spec-modal-close{margin-top:14px;width:100%;padding:11px 0;background:rgba(26,58,82,0.08);color:var(--ink);border:none;border-radius:9px;font-size:13px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
   .loading-state,.empty-state{grid-column:1/-1;text-align:center;padding:50px 20px;color:rgba(255,255,255,0.75);font-size:14px;}
   .category-section{padding:0 16px;margin-bottom:6px;}
   .category-title{font-family:'Baloo 2',sans-serif;font-size:15px;font-weight:700;color:#fff;margin:18px 0 10px;text-shadow:0 1px 4px rgba(0,40,80,0.3);}
@@ -47,6 +59,15 @@
 
 <div id="productGrid">
   <div class="loading-state" style="padding:50px 20px;text-align:center;color:rgba(255,255,255,0.75);">กำลังโหลดสินค้า...</div>
+</div>
+
+<div class="spec-modal-backdrop" id="specModalBackdrop">
+  <div class="spec-modal">
+    <div class="spec-modal-title" id="specModalTitle"></div>
+    <div class="spec-modal-price" id="specModalPrice"></div>
+    <div class="spec-modal-body" id="specModalBody"></div>
+    <button class="spec-modal-close" id="specModalCloseBtn">ปิด</button>
+  </div>
 </div>
 
 <script type="module">
@@ -105,22 +126,54 @@ try {
         <div class="category-title">${category}</div>
       </div>
       <div class="product-grid" style="padding:0 16px;">
-        ${seen.get(category).map(p => `
+        ${seen.get(category).map(p => {
+          const inStock = p.stock_count > 0;
+          const stockLine = inStock
+            ? `<div class="stock-line in-stock">คงเหลือ ${p.stock_count} ชิ้น</div>`
+            : `<div class="stock-line out-of-stock">สินค้าหมดชั่วคราว</div>`;
+          const specBtn = p.spec
+            ? `<button class="spec-link" onclick='openSpecModal(${JSON.stringify(p)})'>ดูรายละเอียด</button>`
+            : '';
+          return `
           <div class="product-card">
-            <div class="product-img-wrap">🎮</div>
+            <div class="product-img-wrap"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="20" height="10" rx="4"/><path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg></div>
             <div class="product-info">
               <div class="product-name">${p.label}</div>
               <div class="product-price">฿${Number(p.price).toLocaleString()}</div>
-              <button class="buy-btn" onclick="buyProduct('${p.key}')">ซื้อเลย</button>
+              ${stockLine}
+              ${specBtn}
+              <button class="buy-btn" onclick="buyProduct('${p.key}')" ${inStock ? '' : 'disabled'}>
+                ${inStock ? 'ซื้อเลย' : 'สินค้าหมด'}
+              </button>
             </div>
           </div>
-        `).join('')}
+        `;
+        }).join('')}
       </div>
     `).join('');
   }
 } catch {
   grid.innerHTML = `<div class="empty-state" style="padding:50px 20px;text-align:center;color:rgba(255,255,255,0.75);">โหลดสินค้าไม่สำเร็จ</div>`;
 }
+
+// ── Modal ดูรายละเอียดสเปค ──────────────────────────────────
+const specBackdrop = document.getElementById('specModalBackdrop');
+
+window.openSpecModal = (product) => {
+  document.getElementById('specModalTitle').textContent = product.label;
+  document.getElementById('specModalPrice').textContent = `฿${Number(product.price).toLocaleString()}`;
+  document.getElementById('specModalBody').textContent = product.spec;
+  specBackdrop.classList.add('show');
+};
+
+function closeSpecModal() {
+  specBackdrop.classList.remove('show');
+}
+
+document.getElementById('specModalCloseBtn').addEventListener('click', closeSpecModal);
+specBackdrop.addEventListener('click', (e) => {
+  if (e.target === specBackdrop) closeSpecModal();
+});
 
 window.buyProduct = async (key) => {
   if (!session) return window.location.href = '/pages/login.html';

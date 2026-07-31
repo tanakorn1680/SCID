@@ -11,12 +11,14 @@
   body{font-family:'IBM Plex Sans Thai',sans-serif;background:#F0F4F8;color:var(--ink);min-height:100vh;padding:16px 14px 40px;}
   .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
   .back-link{font-size:13px;font-weight:600;color:var(--navy);text-decoration:none;}
-  .page-title{font-family:'Baloo 2',sans-serif;font-size:18px;font-weight:800;margin-bottom:14px;}
+  .page-title{font-family:'Baloo 2',sans-serif;font-size:18px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .page-title svg{width:20px;height:20px;flex-shrink:0;}
   .card{background:#fff;border-radius:13px;padding:16px;box-shadow:0 2px 10px rgba(0,40,80,0.08);margin-bottom:14px;}
   .card-title{font-size:14px;font-weight:700;margin-bottom:12px;}
   .field{margin-bottom:12px;}
   .field label{font-size:12.5px;font-weight:600;display:block;margin-bottom:5px;}
   .field input{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-family:'IBM Plex Sans Thai',sans-serif;background:#fff;}
+  .field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-family:'IBM Plex Sans Thai',sans-serif;background:#fff;min-height:160px;resize:vertical;line-height:1.6;}
   .field-row{display:flex;gap:10px;}
   .field-row .field{flex:1;}
   .hint{font-size:11.5px;color:rgba(26,58,82,0.5);margin-top:5px;}
@@ -44,7 +46,7 @@
 <div class="topbar">
   <a href="/pages/admin/dashboard.html" class="back-link">← Dashboard</a>
 </div>
-<div class="page-title">🎮 จัดการสินค้า</div>
+<div class="page-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="20" height="10" rx="4"/><path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg> จัดการสินค้า</div>
 
 <div class="card">
   <div class="card-title" id="formTitle">เพิ่มสินค้าใหม่</div>
@@ -67,6 +69,11 @@
       <label>ราคา (บาท)</label>
       <input type="number" id="fPrice" min="0" step="0.01" placeholder="0">
     </div>
+  </div>
+  <div class="field">
+    <label>รายละเอียดสเปค (แสดงให้ลูกค้าดูก่อนซื้อ)</label>
+    <textarea id="fSpec" placeholder="เช่น&#10;• Levels = 30&#10;• Simoleons = 80,000,000&#10;• SimCash = 48,000"></textarea>
+    <div class="hint">ไม่บังคับกรอก — ถ้าเว้นว่างจะไม่แสดงส่วนนี้ในหน้าร้าน</div>
   </div>
   <button class="submit-btn" id="saveBtn">บันทึกสินค้าใหม่</button>
   <button class="submit-btn" id="cancelEditBtn" style="display:none;background:rgba(26,58,82,0.15);color:var(--ink);margin-top:8px;">ยกเลิกแก้ไข</button>
@@ -159,6 +166,7 @@ function startEdit(p) {
   document.getElementById('fLabel').value = p.label;
   document.getElementById('fCategory').value = p.category;
   document.getElementById('fPrice').value = p.price;
+  document.getElementById('fSpec').value = p.spec ?? '';
   document.getElementById('saveBtn').textContent = 'บันทึกการแก้ไข';
   document.getElementById('cancelEditBtn').style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -172,6 +180,7 @@ function resetForm() {
   document.getElementById('fLabel').value = '';
   document.getElementById('fCategory').value = '';
   document.getElementById('fPrice').value = '';
+  document.getElementById('fSpec').value = '';
   document.getElementById('saveBtn').textContent = 'บันทึกสินค้าใหม่';
   document.getElementById('cancelEditBtn').style.display = 'none';
 }
@@ -183,6 +192,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   const label    = document.getElementById('fLabel').value.trim();
   const category = document.getElementById('fCategory').value.trim();
   const price    = document.getElementById('fPrice').value;
+  const spec     = document.getElementById('fSpec').value;
   const alertEl  = document.getElementById('formAlert');
   const btn      = document.getElementById('saveBtn');
 
@@ -200,9 +210,9 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
   try {
     if (editingId) {
-      await admin.products.update(editingId, { label, category, price });
+      await admin.products.update(editingId, { label, category, price, spec });
     } else {
-      await admin.products.create({ key, label, category, price });
+      await admin.products.create({ key, label, category, price, spec });
     }
     alertEl.textContent = 'บันทึกสำเร็จ';
     alertEl.className = 'form-alert show success';

@@ -65,10 +65,10 @@ const session = await auth.getSession();
 if (!session) { window.location.href = '/pages/login.html'; }
 
 const STATUS = {
-  pending:          { label: 'รอชำระเงิน',      dot: '⏳' },
-  awaiting_review:  { label: 'รอตรวจสอบสลิป',   dot: '🔍' },
-  delivered:        { label: 'ส่งข้อมูลแล้ว',   dot: '✅' },
-  cancelled:        { label: 'ยกเลิก',           dot: '❌' },
+  pending:          { label: 'รอชำระเงิน' },
+  awaiting_review:  { label: 'รอตรวจสอบสลิป' },
+  delivered:        { label: 'ส่งข้อมูลแล้ว' },
+  cancelled:        { label: 'ยกเลิก' },
 };
 
 function fmtDate(iso) {
@@ -84,7 +84,7 @@ try {
     document.getElementById('orderList').innerHTML = `<div class="empty-state">ยังไม่มีประวัติการสั่งซื้อ</div>`;
   } else {
     document.getElementById('orderList').innerHTML = data.map(o => {
-      const s = STATUS[o.status] || { label: o.status, dot: '•' };
+      const s = STATUS[o.status] || { label: o.status };
       const cta = o.status === 'pending'
         ? `<a href="/pages/checkout.html?order_id=${o.id}" class="detail-btn">ชำระเงิน →</a>`
         : `<a href="/pages/order-detail.html?id=${o.id}" class="detail-btn">ดูรายละเอียด →</a>`;
@@ -95,7 +95,7 @@ try {
               <div class="order-id">#${o.id.slice(0,8).toUpperCase()}</div>
               <div class="order-date">${fmtDate(o.created_at)}</div>
             </div>
-            <span class="status-badge ${o.status}">${s.dot} ${s.label}</span>
+            <span class="status-badge ${o.status}">${s.label}</span>
           </div>
           <div class="order-product">${o.product_label}</div>
           <div class="order-amount">฿${Number(o.amount).toLocaleString()}</div>
