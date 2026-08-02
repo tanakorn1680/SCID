@@ -85,9 +85,10 @@ try {
   } else {
     document.getElementById('orderList').innerHTML = data.map(o => {
       const s = STATUS[o.status] || { label: o.status };
-      const cta = o.status === 'pending'
+      const canPay = o.status === 'pending' && o.in_stock !== false;
+      const cta = canPay
         ? `<a href="/pages/checkout.html?order_id=${o.id}" class="detail-btn">ชำระเงิน →</a>`
-        : `<a href="/pages/order-detail.html?id=${o.id}" class="detail-btn">ดูรายละเอียด →</a>`;
+        : (o.status === 'pending' ? '' : `<a href="/pages/order-detail.html?id=${o.id}" class="detail-btn">ดูรายละเอียด →</a>`);
       return `
         <div class="order-card ${o.status}">
           <div class="order-top">

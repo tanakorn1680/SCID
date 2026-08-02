@@ -53,8 +53,8 @@
 </div>
 
 <div class="hero-banner">
-  <div class="hero-title">ไอดี SimCity BuildIt</div>
-  <div class="hero-sub" id="heroSub"> </div>
+  <div class="hero-title">ซื้อไอดี SimCity BuildIt</div>
+  <div class="hero-sub" id="heroSub">พร้อมเล่น ส่งรวดเร็ว ปลอดภัย 100%</div>
 </div>
 
 <div id="productGrid">
@@ -142,7 +142,7 @@ try {
               <div class="product-price">฿${Number(p.price).toLocaleString()}</div>
               ${stockLine}
               ${specBtn}
-              <button class="buy-btn" onclick="buyProduct('${p.key}')" ${inStock ? '' : 'disabled'}>
+              <button class="buy-btn" onclick='buyProduct(${JSON.stringify({ key: p.key, label: p.label, price: p.price })})' ${inStock ? '' : 'disabled'}>
                 ${inStock ? 'ซื้อเลย' : 'สินค้าหมด'}
               </button>
             </div>
@@ -175,10 +175,16 @@ specBackdrop.addEventListener('click', (e) => {
   if (e.target === specBackdrop) closeSpecModal();
 });
 
-window.buyProduct = async (key) => {
+window.buyProduct = async (product) => {
   if (!session) return window.location.href = '/pages/login.html';
+
+  const confirmed = confirm(
+    `ยืนยันการสั่งซื้อ\n\n${product.label}\nราคา ฿${Number(product.price).toLocaleString()}`
+  );
+  if (!confirmed) return;
+
   try {
-    const { data } = await orders.create(key);
+    const { data } = await orders.create(product.key);
     window.location.href = `/pages/checkout.html?order_id=${data.id}`;
   } catch (e) {
     alert(e.message);

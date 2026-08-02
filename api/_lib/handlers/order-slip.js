@@ -22,7 +22,7 @@ export async function uploadSlip(profile, form) {
 
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
-    .select('id, status, user_id')
+    .select('id, status, user_id, product_key')
     .eq('id', orderId)
     .single();
 
@@ -36,6 +36,25 @@ export async function uploadSlip(profile, form) {
 
   if (!['pending', 'awaiting_review'].includes(order.status)) {
     return { httpStatus: 400, body: { success: false, error: 'ไม่สามารถอัปโหลดสลิปในสถานะนี้' } };
+  }
+
+  // เช็คสต็อกก่อนรับสลิป — กันลูกค้าจ่ายเงินไปเปล่าๆ ถ้าคลังหมดไปแล้วระหว่างรอ
+  // (เช่น คนอื่นซื้อไอดีตัวสุดท้ายไปก่อนระหว่างที่ order นี้ยังค้าง pending อยู่)
+  // ยังไม่ auto-cancel order ตรงนี้ เพราะแอดมินอาจเติมคลังใหม่ทีหลังได้ —
+  // แค่บล็อกไม่ให้อัปโหลดสลิปตอนที่ยังไม่มีของจริง
+  const { count: readyCount, error: stockErr } = await supabaseAdmin
+    .from('inventory')
+    .select('id', { count: 'exact', head: true })
+    .eq('product_key', order.product_key)
+    .eq('status', 'ready');
+
+  if (stockErr) throw stockErr;
+
+  if (!readyCount) {
+    return {
+      httpStatus: 409,
+      body: { success: false, error: 'สินค้านี้หมดชั่วคราว กรุณาติดต่อแอดมินก่อนโอนเงิน' },
+    };
   }
 
   if (file.size > 5 * 1024 * 1024) {

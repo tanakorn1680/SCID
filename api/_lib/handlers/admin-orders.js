@@ -12,12 +12,32 @@ import { supabaseAdmin } from '../supabase.js';
 import { decrypt }       from '../crypto.js';
 
 const PAGE_SIZE = 30;
+const PENDING_EXPIRY_MINUTES = 10;
+
+/**
+ * expireAllPendingOrders — เวอร์ชัน global ของ auto-expire (ไม่จำกัด user_id)
+ * เรียกก่อน list เสมอ เพื่อให้แอดมินเห็นสถานะล่าสุดโดยไม่ต้องรอให้ลูกค้า
+ * เปิดหน้าประวัติของตัวเองก่อน (ซึ่งเป็น per-user check ใน customer-orders.js)
+ */
+async function expireAllPendingOrders() {
+  const cutoff = new Date(Date.now() - PENDING_EXPIRY_MINUTES * 60 * 1000).toISOString();
+
+  const { error } = await supabaseAdmin
+    .from('orders')
+    .update({ status: 'cancelled' })
+    .eq('status', 'pending')
+    .lt('created_at', cutoff);
+
+  if (error) console.error('expireAllPendingOrders failed:', error);
+}
 
 /**
  * list — ดูออเดอร์ทั้งหมด พร้อม filter/pagination
  * เดิมคือ GET /api/admin/orders
  */
 export async function listOrders(url) {
+  await expireAllPendingOrders();
+
   const status = url.searchParams.get('status') || null;
   const page   = parseInt(url.searchParams.get('page') || '0', 10);
   const search = url.searchParams.get('search') || '';

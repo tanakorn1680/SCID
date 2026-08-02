@@ -12,6 +12,29 @@ import { supabaseAdmin } from '../supabase.js';
 import { decrypt }       from '../crypto.js';
 import { getProduct }    from '../products.js';
 
+const PENDING_EXPIRY_MINUTES = 10;
+
+/**
+ * expirePendingOrders — sync order ที่ pending เกิน 10 นาทีให้เป็น cancelled จริงใน DB
+ * (soft — ไม่ลบข้อมูล เก็บไว้เป็นประวัติ) เรียกจากทุก handler ที่อ่านข้อมูล order
+ * ก่อนส่งกลับ เพื่อให้ลูกค้าและแอดมินเห็นสถานะตรงกันเสมอ ไม่ต้องพึ่ง cron job แยก
+ * (ระบบยังไม่มี background job ใดๆ — เช็คตอนมีคนเปิดหน้าจึงเป็นทางที่ตรงไปตรงมาที่สุด)
+ *
+ * ไม่ throw ถ้า UPDATE ไม่มีอะไรให้ทำ (ไม่มี order ไหนหมดเวลาพอดี) — เงียบและไปต่อ
+ */
+async function expirePendingOrders(userId) {
+  const cutoff = new Date(Date.now() - PENDING_EXPIRY_MINUTES * 60 * 1000).toISOString();
+
+  const { error } = await supabaseAdmin
+    .from('orders')
+    .update({ status: 'cancelled' })
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .lt('created_at', cutoff);
+
+  if (error) console.error('expirePendingOrders failed:', error);
+}
+
 /**
  * create — สร้าง order ใหม่ ราคาคำนวณ server-side เสมอ
  * เดิมคือ POST /api/orders/create
@@ -49,9 +72,11 @@ export async function getOrderDetail(profile, orderId) {
     return { httpStatus: 400, body: { success: false, error: 'ไม่ระบุ order id' } };
   }
 
+  await expirePendingOrders(profile.id);
+
   const { data: order, error } = await supabaseAdmin
     .from('orders')
-    .select('id, product_label, amount, status, reject_reason, created_at, updated_at, user_id')
+    .select('id, product_key, product_label, amount, status, reject_reason, created_at, updated_at, user_id')
     .eq('id', orderId)
     .single();
 
@@ -103,6 +128,20 @@ export async function getOrderDetail(profile, orderId) {
     }
   }
 
+  // เช็คสต็อกเฉพาะตอน pending — จุดเดียวที่ checkout.html ต้องรู้ว่าจะโชว์
+  // ฟอร์มอัปโหลดสลิปได้ไหม (สถานะอื่นไม่เกี่ยวกับสต็อกแล้ว)
+  let inStock = null;
+  if (order.status === 'pending') {
+    const { count, error: stockErr } = await supabaseAdmin
+      .from('inventory')
+      .select('id', { count: 'exact', head: true })
+      .eq('product_key', order.product_key)
+      .eq('status', 'ready');
+
+    if (stockErr) throw stockErr;
+    inStock = (count ?? 0) > 0;
+  }
+
   return {
     httpStatus: 200,
     body: {
@@ -115,6 +154,7 @@ export async function getOrderDetail(profile, orderId) {
         reject_reason: order.reject_reason,
         created_at:    order.created_at,
         updated_at:    order.updated_at,
+        in_stock:      inStock,
         credential,
       },
     },
@@ -126,15 +166,35 @@ export async function getOrderDetail(profile, orderId) {
  * เดิมคือ GET /api/orders/my
  */
 export async function listMyOrders(profile) {
+  await expirePendingOrders(profile.id);
+
   const { data, error } = await supabaseAdmin
     .from('orders')
-    .select('id, product_label, amount, status, created_at, updated_at')
+    .select('id, product_key, product_label, amount, status, created_at, updated_at')
     .eq('user_id', profile.id)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
 
-  return { httpStatus: 200, body: { success: true, data } };
+  // เช็คสต็อกเฉพาะ order ที่ pending (จุดเดียวที่ต้องโชว์/ซ่อนปุ่มชำระเงิน)
+  // กันปุ่ม "ชำระเงิน" ค้างอยู่ทั้งที่คลังหมดไปแล้ว (ลูกค้าจ่ายไปก็ไม่มีของส่ง)
+  const pendingProductKeys = [...new Set(
+    data.filter(o => o.status === 'pending').map(o => o.product_key)
+  )];
+
+  let stockByKey = new Map();
+  if (pendingProductKeys.length) {
+    const { data: counts, error: countErr } = await supabaseAdmin.rpc('inventory_ready_counts');
+    if (countErr) throw countErr;
+    stockByKey = new Map(counts.map(row => [row.product_key, Number(row.ready_count)]));
+  }
+
+  const result = data.map(o => ({
+    ...o,
+    in_stock: o.status !== 'pending' ? null : (stockByKey.get(o.product_key) ?? 0) > 0,
+  }));
+
+  return { httpStatus: 200, body: { success: true, data: result } };
 }
 
 /**

@@ -97,7 +97,31 @@ async function loadOrder() {
       return;
     }
 
-    // pending — แสดงฟอร์มอัปโหลดสลิป
+    if (order.status === 'cancelled') {
+      wrap.innerHTML = `
+        <div class="checkout-card">
+          <div style="text-align:center;padding:20px 0;">
+            <div style="font-size:17px;font-weight:700;margin-bottom:8px;">ออเดอร์นี้ถูกยกเลิกแล้ว</div>
+            <div style="font-size:13px;color:var(--muted);">กรุณาสั่งซื้อใหม่หากยังต้องการสินค้านี้</div>
+          </div>
+        </div>
+        <a href="/pages/shop.html" class="confirm-btn">กลับไปหน้าสินค้า</a>`;
+      return;
+    }
+
+    if (order.status === 'pending' && order.in_stock === false) {
+      wrap.innerHTML = `
+        <div class="checkout-card">
+          <div style="text-align:center;padding:20px 0;">
+            <div style="font-size:17px;font-weight:700;margin-bottom:8px;">สินค้านี้หมดชั่วคราว</div>
+            <div style="font-size:13px;color:var(--muted);">กรุณาติดต่อแอดมิน หรือรอสินค้าเข้าใหม่</div>
+          </div>
+        </div>
+        <a href="/pages/shop.html" class="confirm-btn">กลับไปหน้าสินค้า</a>`;
+      return;
+    }
+
+    // pending และยังมีสต็อก — แสดงฟอร์มอัปโหลดสลิป
     renderPayment(order);
   } catch (e) {
     wrap.innerHTML = `<div class="skeleton">${e.message}</div>`;
