@@ -206,17 +206,6 @@ export const admin = {
         body: JSON.stringify({ id }),
       });
     },
-
-    async forceRemove(id) {
-      return apiFetch('/api/admin/inventory', {
-        method: 'DELETE',
-        body: JSON.stringify({ id, force: true }),
-      });
-    },
-
-    async reveal(id) {
-      return apiFetch(`/api/admin/inventory?reveal=1&id=${id}`);
-    },
   },
 
   // products รวมเข้า /api/admin/catalog-products แล้ว (ไม่มี scope=public
