@@ -31,14 +31,61 @@
   .form-alert.success{background:rgba(63,133,87,0.1);color:var(--green-go);}
   .filter-bar{display:flex;gap:8px;margin-bottom:12px;}
   .filter-bar select{flex:1;padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;background:#fff;}
-  .inv-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px dotted var(--line);font-size:12.5px;}
+
+  /* ── inventory row ───────────────────── */
+  .inv-row{padding:11px 0;border-bottom:1px dotted var(--line);}
   .inv-row:last-child{border-bottom:none;}
-  .inv-email{font-family:'Space Mono',monospace;font-size:12px;}
-  .inv-status{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:11px;}
+  .inv-row-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+  .inv-row-meta{min-width:0;flex:1;}
+  .inv-email{font-family:'Space Mono',monospace;font-size:12px;word-break:break-all;}
+  .inv-product{font-size:11.5px;color:rgba(26,58,82,0.5);margin-top:2px;}
+  .inv-sold-at{font-size:11px;color:rgba(26,58,82,0.45);margin-top:2px;}
+  .inv-status{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:11px;white-space:nowrap;flex-shrink:0;}
   .inv-status.ready{background:rgba(63,133,87,0.12);color:var(--green-go);}
   .inv-status.sold{background:rgba(26,58,82,0.08);color:rgba(26,58,82,0.6);}
-  .del-btn{background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;}
+  .inv-row-actions{display:flex;align-items:center;gap:6px;margin-top:7px;flex-wrap:wrap;}
+
+  /* ── action buttons ──────────────────── */
+  .action-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:7px;font-size:11.5px;font-weight:600;font-family:'IBM Plex Sans Thai',sans-serif;cursor:pointer;border:none;line-height:1.3;}
+  .action-btn svg{width:13px;height:13px;flex-shrink:0;}
+  .btn-view{background:rgba(26,106,160,0.08);color:var(--navy);}
+  .btn-view:hover{background:rgba(26,106,160,0.15);}
+  .btn-del{background:rgba(224,68,51,0.08);color:var(--danger);}
+  .btn-del:hover{background:rgba(224,68,51,0.15);}
+  .btn-force{background:rgba(217,163,48,0.1);color:#9a6f10;}
+  .btn-force:hover{background:rgba(217,163,48,0.2);}
+  .action-btn:disabled{opacity:0.45;cursor:not-allowed;}
+
   .empty-state{text-align:center;padding:30px 20px;color:rgba(26,58,82,0.5);font-size:13px;}
+
+  /* ── Modal overlay ───────────────────── */
+  .modal-overlay{position:fixed;inset:0;background:rgba(10,25,45,0.55);z-index:900;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .modal-overlay.open{opacity:1;pointer-events:all;}
+  .modal-sheet{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:520px;padding:22px 20px 32px;transform:translateY(40px);transition:transform .22s ease;max-height:85vh;overflow-y:auto;}
+  .modal-overlay.open .modal-sheet{transform:translateY(0);}
+  .modal-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;margin-bottom:4px;}
+  .modal-sub{font-size:12.5px;color:rgba(26,58,82,0.55);margin-bottom:16px;}
+  .modal-close{float:right;background:none;border:none;font-size:20px;cursor:pointer;color:rgba(26,58,82,0.4);line-height:1;margin-top:-2px;}
+
+  /* credential fields */
+  .cred-field{margin-bottom:12px;}
+  .cred-label{font-size:11.5px;font-weight:600;color:rgba(26,58,82,0.55);margin-bottom:4px;}
+  .cred-value{font-family:'Space Mono',monospace;font-size:13px;background:#F0F4F8;border-radius:8px;padding:9px 12px;word-break:break-all;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .cred-text{flex:1;min-width:0;}
+  .copy-btn{background:none;border:none;cursor:pointer;color:var(--navy);padding:2px;flex-shrink:0;}
+  .copy-btn svg{width:15px;height:15px;display:block;}
+  .cred-loading{text-align:center;padding:20px;color:rgba(26,58,82,0.45);font-size:13px;}
+  .cred-err{color:var(--danger);font-size:13px;padding:12px 0;}
+
+  /* force-delete warning */
+  .warn-box{background:rgba(224,68,51,0.07);border:1px solid rgba(224,68,51,0.2);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12.5px;line-height:1.6;}
+  .warn-box strong{color:var(--danger);}
+  .warn-email{font-family:'Space Mono',monospace;font-size:11.5px;background:rgba(224,68,51,0.08);border-radius:6px;padding:3px 8px;display:inline-block;margin-top:4px;word-break:break-all;}
+  .modal-actions{display:flex;gap:8px;margin-top:6px;}
+  .modal-btn{flex:1;padding:12px 0;border:none;border-radius:9px;font-size:13.5px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
+  .modal-btn.cancel{background:rgba(26,58,82,0.07);color:var(--ink);}
+  .modal-btn.confirm-del{background:var(--danger);color:#fff;}
+  .modal-btn:disabled{opacity:0.5;cursor:not-allowed;}
 </style>
 </head>
 <body>
@@ -46,7 +93,10 @@
 <div class="topbar">
   <a href="/pages/admin/dashboard.html" class="back-link">← Dashboard</a>
 </div>
-<div class="page-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg> คลังไอดี</div>
+<div class="page-title">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
+  คลังไอดี
+</div>
 
 <div class="card">
   <div class="card-title">คงเหลือพร้อมขาย</div>
@@ -83,6 +133,36 @@
   <div id="invList"><div class="empty-state">กำลังโหลด...</div></div>
 </div>
 
+<!-- Modal: ดู Credential -->
+<div class="modal-overlay" id="credModal">
+  <div class="modal-sheet">
+    <button class="modal-close" id="credModalClose">&#x2715;</button>
+    <div class="modal-title">รายละเอียดไอดี</div>
+    <div class="modal-sub" id="credModalSub"></div>
+    <div id="credModalBody">
+      <div class="cred-loading">กำลังโหลด...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Force Delete ยืนยัน -->
+<div class="modal-overlay" id="forceModal">
+  <div class="modal-sheet">
+    <button class="modal-close" id="forceModalClose">&#x2715;</button>
+    <div class="modal-title">ปลดล็อกและลบไอดีนี้?</div>
+    <div class="modal-sub">ไอดีนี้ถูกผูกกับ Order แล้ว</div>
+    <div class="warn-box">
+      <strong>คำเตือน:</strong> การลบจะไม่สามารถย้อนกลับได้ และข้อมูลไอดีนี้จะหายไปถาวร<br>
+      ใช้เฉพาะกรณีที่ยืนยันแล้วว่าเป็น<strong>ไอดีทดสอบ</strong>ที่ไม่ต้องการเก็บ
+      <div class="warn-email" id="forceModalEmail"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="forceCancelBtn">ยกเลิก</button>
+      <button class="modal-btn confirm-del" id="forceConfirmBtn">ลบถาวร</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { auth, admin } from '../../js/api.js';
 
@@ -95,16 +175,34 @@ if (profile?.role !== 'admin') { window.location.href = '/pages/shop.html'; }
 
 let products = [];
 
+// ── format วัน-เวลาแบบไทย ──────────────────────────────────
+function fmtDateTh(isoStr) {
+  if (!isoStr) return null;
+  const d = new Date(isoStr);
+  return d.toLocaleString('th-TH', {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+    timeZone: 'Asia/Bangkok',
+  });
+}
+
+// ── SVG icons ─────────────────────────────────────────────
+const iconEye = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const iconTrash = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+const iconUnlock = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>`;
+const iconCopy = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+
+// ── Load products ──────────────────────────────────────────
 async function loadProducts() {
   const { data } = await admin.products.list();
   products = data;
-
   const options = data.map(p => `<option value="${p.key}">${p.label}</option>`).join('');
   document.getElementById('productSelect').innerHTML = options || '<option value="">ไม่มีสินค้า</option>';
   document.getElementById('filterProduct').innerHTML =
     `<option value="">ทุกสินค้า</option>` + options;
 }
 
+// ── Load inventory list ────────────────────────────────────
 async function loadInventory() {
   const listEl = document.getElementById('invList');
   listEl.innerHTML = `<div class="empty-state">กำลังโหลด...</div>`;
@@ -129,29 +227,59 @@ async function loadInventory() {
 
     const productLabel = (key) => products.find(p => p.key === key)?.label ?? key;
 
-    listEl.innerHTML = data.map(row => `
-      <div class="inv-row">
-        <div>
-          <div class="inv-email">${row.gmail}</div>
-          <div class="hint">${productLabel(row.product_key)}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span class="inv-status ${row.status}">${row.status === 'ready' ? 'พร้อมขาย' : 'ขายแล้ว'}</span>
-          ${row.status === 'ready' ? `<button class="del-btn" data-id="${row.id}">ลบ</button>` : ''}
-        </div>
-      </div>
-    `).join('');
+    listEl.innerHTML = data.map(row => {
+      const soldAtStr = row.sold_at ? `<div class="inv-sold-at">ขายเมื่อ ${fmtDateTh(row.sold_at)}</div>` : '';
+      const isSold    = row.status === 'sold';
+      const hasOrder  = !!row.order_id;
 
+      // ปุ่มลบ: ถ้า ready ไม่มี order → ลบปกติ / ถ้า sold หรือมี order → ปุ่มปลดล็อก
+      let deleteBtn = '';
+      if (!hasOrder && row.status === 'ready') {
+        deleteBtn = `<button class="action-btn btn-del del-btn" data-id="${row.id}" data-email="${row.gmail}">${iconTrash} ลบ</button>`;
+      } else {
+        deleteBtn = `<button class="action-btn btn-force force-btn" data-id="${row.id}" data-email="${row.gmail}">${iconUnlock} ปลดล็อกลบ</button>`;
+      }
+
+      return `
+        <div class="inv-row">
+          <div class="inv-row-top">
+            <div class="inv-row-meta">
+              <div class="inv-email">${row.gmail}</div>
+              <div class="inv-product">${productLabel(row.product_key)}</div>
+              ${soldAtStr}
+            </div>
+            <span class="inv-status ${row.status}">${isSold ? 'ขายแล้ว' : 'พร้อมขาย'}</span>
+          </div>
+          <div class="inv-row-actions">
+            <button class="action-btn btn-view view-btn" data-id="${row.id}" data-email="${row.gmail}">${iconEye} ดูรายละเอียด</button>
+            ${deleteBtn}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // ── ปุ่มลบปกติ ─────────────────────────────────────────
     listEl.querySelectorAll('.del-btn').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (!confirm('ลบรายการนี้ออกจากคลัง?')) return;
+        btn.disabled = true;
         try {
           await admin.inventory.remove(btn.dataset.id);
           loadInventory();
         } catch (e) {
-          alert(e.message);
+          showInlineErr(btn, e.message);
+          btn.disabled = false;
         }
       });
+    });
+
+    // ── ปุ่มดูรายละเอียด ────────────────────────────────────
+    listEl.querySelectorAll('.view-btn').forEach(btn => {
+      btn.addEventListener('click', () => openCredModal(btn.dataset.id, btn.dataset.email));
+    });
+
+    // ── ปุ่มปลดล็อกลบ ───────────────────────────────────────
+    listEl.querySelectorAll('.force-btn').forEach(btn => {
+      btn.addEventListener('click', () => openForceModal(btn.dataset.id, btn.dataset.email));
     });
 
   } catch (e) {
@@ -159,9 +287,114 @@ async function loadInventory() {
   }
 }
 
+function showInlineErr(btn, msg) {
+  const err = document.createElement('span');
+  err.style.cssText = 'font-size:11px;color:var(--danger);margin-left:6px;';
+  err.textContent = msg;
+  btn.parentNode.appendChild(err);
+  setTimeout(() => err.remove(), 3000);
+}
+
+// ── Modal: ดู Credential ──────────────────────────────────
+const credModal    = document.getElementById('credModal');
+const credModalSub = document.getElementById('credModalSub');
+const credModalBody = document.getElementById('credModalBody');
+
+function openCredModal(id, email) {
+  credModalSub.textContent = email;
+  credModalBody.innerHTML  = `<div class="cred-loading">กำลังโหลด...</div>`;
+  credModal.classList.add('open');
+
+  admin.inventory.getCredential(id).then(({ data }) => {
+    credModalBody.innerHTML = `
+      <div class="cred-field">
+        <div class="cred-label">Email</div>
+        <div class="cred-value">
+          <span class="cred-text">${data.gmail}</span>
+          <button class="copy-btn" data-copy="${data.gmail}" title="คัดลอก">${iconCopy}</button>
+        </div>
+      </div>
+      <div class="cred-field">
+        <div class="cred-label">Password</div>
+        <div class="cred-value">
+          <span class="cred-text">${data.password}</span>
+          <button class="copy-btn" data-copy="${data.password}" title="คัดลอก">${iconCopy}</button>
+        </div>
+      </div>
+      ${data.sold_at ? `<div class="hint">ขายเมื่อ ${fmtDateTh(data.sold_at)}</div>` : ''}
+    `;
+    credModalBody.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        navigator.clipboard.writeText(btn.dataset.copy).catch(() => {});
+        btn.style.color = 'var(--green-go)';
+        setTimeout(() => { btn.style.color = ''; }, 1200);
+      });
+    });
+  }).catch(e => {
+    credModalBody.innerHTML = `<div class="cred-err">${e.message}</div>`;
+  });
+}
+
+function closeCredModal() {
+  credModal.classList.remove('open');
+}
+
+document.getElementById('credModalClose').addEventListener('click', closeCredModal);
+credModal.addEventListener('click', e => { if (e.target === credModal) closeCredModal(); });
+
+// ── Modal: Force Delete ────────────────────────────────────
+const forceModal      = document.getElementById('forceModal');
+const forceModalEmail = document.getElementById('forceModalEmail');
+const forceConfirmBtn = document.getElementById('forceConfirmBtn');
+const forceCancelBtn  = document.getElementById('forceCancelBtn');
+let   pendingForceId  = null;
+
+function openForceModal(id, email) {
+  pendingForceId = id;
+  forceModalEmail.textContent = email;
+  forceConfirmBtn.disabled    = false;
+  forceConfirmBtn.textContent = 'ลบถาวร';
+  forceModal.classList.add('open');
+}
+
+function closeForceModal() {
+  forceModal.classList.remove('open');
+  pendingForceId = null;
+}
+
+forceConfirmBtn.addEventListener('click', async () => {
+  if (!pendingForceId) return;
+  forceConfirmBtn.disabled    = true;
+  forceConfirmBtn.textContent = 'กำลังลบ...';
+  try {
+    await admin.inventory.forceDelete(pendingForceId);
+    closeForceModal();
+    loadInventory();
+  } catch (e) {
+    forceConfirmBtn.textContent = 'ลบถาวร';
+    forceConfirmBtn.disabled    = false;
+    // แสดง error ใน warn-box
+    const warnBox = forceModal.querySelector('.warn-box');
+    let errEl = forceModal.querySelector('.force-err');
+    if (!errEl) {
+      errEl = document.createElement('div');
+      errEl.className = 'force-err';
+      errEl.style.cssText = 'color:var(--danger);font-size:12px;margin-top:8px;';
+      warnBox.appendChild(errEl);
+    }
+    errEl.textContent = e.message;
+  }
+});
+
+document.getElementById('forceModalClose').addEventListener('click', closeForceModal);
+forceCancelBtn.addEventListener('click', closeForceModal);
+forceModal.addEventListener('click', e => { if (e.target === forceModal) closeForceModal(); });
+
+// ── Filters ────────────────────────────────────────────────
 document.getElementById('filterProduct').addEventListener('change', loadInventory);
 document.getElementById('filterStatus').addEventListener('change', loadInventory);
 
+// ── Bulk Add ───────────────────────────────────────────────
 document.getElementById('addBtn').addEventListener('click', async () => {
   const productKey = document.getElementById('productSelect').value;
   const lines      = document.getElementById('bulkLines').value;
@@ -188,6 +421,7 @@ document.getElementById('addBtn').addEventListener('click', async () => {
   btn.disabled = false; btn.textContent = 'เพิ่มเข้าคลัง';
 });
 
+// ── Init ───────────────────────────────────────────────────
 await loadProducts();
 await loadInventory();
 </script>

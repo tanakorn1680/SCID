@@ -2,12 +2,14 @@
 // Admin only — จัดการคลังไอดี
 //
 // GET    ?product_key=xxx&status=ready   → list พร้อม filter
+// GET    ?id=xxx                         → ดู credential (email+password) แบบ lazy-load (decrypt เฉพาะแถวที่ขอ)
 // POST   { product_key, lines }          → bulk เพิ่ม (lines = "email:password" ต่อบรรทัด)
-// DELETE { id }                          → ลบรายการที่ยัง status='ready' เท่านั้น (กันลบของที่ขายไปแล้ว)
+// DELETE { id }                          → ลบรายการที่ยัง status='ready' เท่านั้น
+// DELETE { id, force: true }             → force delete ไอดีที่มี order ผูกอยู่ (สำหรับลบไอดีทดสอบ)
 
 import { requireAdmin, errorResponse } from '../_lib/auth.js';
 import { supabaseAdmin }               from '../_lib/supabase.js';
-import { encrypt }                     from '../_lib/crypto.js';
+import { encrypt, decrypt }            from '../_lib/crypto.js';
 import { parseRequestUrl }             from '../_lib/request-url.js';
 
 export const config = { runtime: "nodejs" };
@@ -15,7 +17,11 @@ export const config = { runtime: "nodejs" };
 export async function GET(req) {
   try {
     await requireAdmin(req);
-    return await listInventory(req);
+    const url = parseRequestUrl(req);
+    if (url.searchParams.get('id')) {
+      return await getCredential(url);
+    }
+    return await listInventory(url);
   } catch (err) {
     console.error('GET /api/admin/inventory failed:', err);
     return errorResponse(err);
@@ -42,8 +48,8 @@ export async function DELETE(req) {
   }
 }
 
-async function listInventory(req) {
-  const url        = parseRequestUrl(req);
+
+async function listInventory(url) {
   const productKey = url.searchParams.get('product_key') || null;
   const status     = url.searchParams.get('status') || null;
 
@@ -72,6 +78,45 @@ async function listInventory(req) {
   }
 
   return Response.json({ success: true, data, ready_summary: summary });
+}
+
+async function getCredential(url) {
+  const id = url.searchParams.get('id');
+
+  const { data, error } = await supabaseAdmin
+    .from('inventory')
+    .select('id, gmail, password_enc, status, order_id, sold_at')
+    .eq('id', id)
+    .single();
+
+  if (error || !data) {
+    return Response.json(
+      { success: false, error: 'ไม่พบรายการนี้' },
+      { status: 404 }
+    );
+  }
+
+  let password = null;
+  try {
+    password = decrypt(data.password_enc);
+  } catch {
+    return Response.json(
+      { success: false, error: 'ถอดรหัสไม่สำเร็จ' },
+      { status: 500 }
+    );
+  }
+
+  return Response.json({
+    success: true,
+    data: {
+      id:       data.id,
+      gmail:    data.gmail,
+      password,
+      status:   data.status,
+      order_id: data.order_id,
+      sold_at:  data.sold_at,
+    },
+  });
 }
 
 async function bulkAddInventory(req) {
@@ -151,7 +196,8 @@ async function bulkAddInventory(req) {
 }
 
 async function deleteInventory(req) {
-  const { id } = await req.json();
+  const body = await req.json();
+  const { id, force } = body;
 
   if (!id) {
     return Response.json(
@@ -160,12 +206,33 @@ async function deleteInventory(req) {
     );
   }
 
-  // ลบได้เฉพาะที่ยัง ready — กันลบไอดีที่ผูกกับ order ที่ขายไปแล้ว (ห้ามข้อมูลสูญหาย)
+  if (force === true) {
+    // Force delete — ใช้สำหรับลบไอดีทดสอบที่มี order ผูกอยู่
+    // ไม่มีเงื่อนไข status หรือ order_id — ลบตรงๆ โดย admin ยืนยันแล้ว
+    const { data, error } = await supabaseAdmin
+      .from('inventory')
+      .delete()
+      .eq('id', id)
+      .select('id')
+      .single();
+
+    if (error || !data) {
+      return Response.json(
+        { success: false, error: 'ไม่พบรายการ หรือลบไม่สำเร็จ' },
+        { status: 400 }
+      );
+    }
+
+    return Response.json({ success: true, forced: true });
+  }
+
+  // ปกติ — ลบได้เฉพาะ status='ready' และไม่มี order ผูก (กันลบไอดีที่ขายไปแล้วโดยไม่ตั้งใจ)
   const { data, error } = await supabaseAdmin
     .from('inventory')
     .delete()
     .eq('id', id)
     .eq('status', 'ready')
+    .is('order_id', null)
     .select('id')
     .single();
 

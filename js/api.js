@@ -206,6 +206,19 @@ export const admin = {
         body: JSON.stringify({ id }),
       });
     },
+
+    // lazy-load credential (email+password) เฉพาะแถวที่กดดู
+    async getCredential(id) {
+      return apiFetch(`/api/admin/inventory?id=${id}`);
+    },
+
+    // force delete ไอดีที่มี order ผูกอยู่ (เช่น ไอดีทดสอบ) — admin ยืนยันแล้ว
+    async forceDelete(id) {
+      return apiFetch('/api/admin/inventory', {
+        method: 'DELETE',
+        body: JSON.stringify({ id, force: true }),
+      });
+    },
   },
 
   // products รวมเข้า /api/admin/catalog-products แล้ว (ไม่มี scope=public
