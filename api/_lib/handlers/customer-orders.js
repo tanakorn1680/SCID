@@ -95,7 +95,7 @@ export async function getOrderDetail(profile, orderId) {
   if (order.status === 'delivered') {
     const { data: inv, error: invErr } = await supabaseAdmin
       .from('inventory')
-      .select('gmail, password_enc, sold_at')
+      .select('gmail, password_enc, sold_at, instruction_title, instruction_body')
       .eq('order_id', orderId)
       .single();
 
@@ -107,7 +107,7 @@ export async function getOrderDetail(profile, orderId) {
         console.error(`decrypt failed for order ${orderId} (inventory):`, decryptErr);
         decryptFailed = true;
       }
-      credential = { gmail: inv.gmail, password, delivered_at: inv.sold_at, decrypt_failed: decryptFailed };
+      credential = { gmail: inv.gmail, password, delivered_at: inv.sold_at, decrypt_failed: decryptFailed, instruction_title: inv.instruction_title ?? null, instruction_body: inv.instruction_body ?? null };
     } else {
       const { data: cred, error: credErr } = await supabaseAdmin
         .from('credentials')
