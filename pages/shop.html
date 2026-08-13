@@ -19,11 +19,10 @@
   .hero-title{font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;position:relative;z-index:1;}
   .hero-sub{font-size:13px;color:rgba(255,255,255,0.85);position:relative;z-index:1;}
   .hero-banner::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;background:rgba(217,163,48,0.18);border-radius:50%;}
-  .product-grid{display:flex;flex-direction:row;gap:12px;padding:0 16px 8px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;width:100%;}
-  .product-grid::-webkit-scrollbar{display:none;}
-  .product-card{background:rgba(255,255,255,0.97);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,40,80,0.14);display:flex;flex-direction:column;flex:0 0 155px;width:155px;scroll-snap-align:start;}
-  @media(min-width:400px){.product-card{flex:0 0 170px;width:170px;}}
-  @media(min-width:640px){.product-card{flex:0 0 210px;width:210px;}}
+  .product-scroll-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 16px 8px;}
+  .product-scroll-wrap::-webkit-scrollbar{display:none;}
+  .product-grid{display:grid;grid-template-columns:repeat(auto-fill,155px);grid-auto-flow:column;grid-auto-columns:155px;gap:12px;width:max-content;}
+  .product-card{background:rgba(255,255,255,0.97);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,40,80,0.14);display:flex;flex-direction:column;width:155px;}
   .product-img-wrap{width:100%;aspect-ratio:1;background:linear-gradient(135deg,#E8F2FA,#D4E9F7);display:flex;align-items:center;justify-content:center;color:#9DBDD6;}
   .product-info{padding:10px 11px 12px;display:flex;flex-direction:column;flex:1;}
   .product-name{font-size:13.5px;font-weight:700;margin-bottom:4px;line-height:1.3;}
@@ -151,30 +150,32 @@ try {
     grid.innerHTML = grouped.map(category => `
       <div class="category-section">
         <div class="category-title">${category}</div>
-        <div class="product-grid">
-          ${seen.get(category).map(p => {
-            const inStock = p.stock_count > 0;
-            const stockLine = inStock
-              ? `<div class="stock-line in-stock">คงเหลือ ${p.stock_count} ชิ้น</div>`
-              : `<div class="stock-line out-of-stock">สินค้าหมดชั่วคราว</div>`;
-            const specBtn = p.spec
-              ? `<button class="spec-link" onclick='openSpecModal(${JSON.stringify(p)})'>ดูรายละเอียด</button>`
-              : '';
-            return `
-            <div class="product-card">
-              <div class="product-img-wrap"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="20" height="10" rx="4"/><path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg></div>
-              <div class="product-info">
-                <div class="product-name">${p.label}</div>
-                <div class="product-price">฿${Number(p.price).toLocaleString()}</div>
-                ${stockLine}
-                ${specBtn}
-                <button class="buy-btn" onclick='buyProduct(${JSON.stringify({ key: p.key, label: p.label, price: p.price })})' ${inStock ? '' : 'disabled'}>
-                  ${inStock ? 'ซื้อเลย' : 'สินค้าหมด'}
-                </button>
+        <div class="product-scroll-wrap">
+          <div class="product-grid">
+            ${seen.get(category).map(p => {
+              const inStock = p.stock_count > 0;
+              const stockLine = inStock
+                ? `<div class="stock-line in-stock">คงเหลือ ${p.stock_count} ชิ้น</div>`
+                : `<div class="stock-line out-of-stock">สินค้าหมดชั่วคราว</div>`;
+              const specBtn = p.spec
+                ? `<button class="spec-link" onclick='openSpecModal(${JSON.stringify(p)})'>ดูรายละเอียด</button>`
+                : '';
+              return `
+              <div class="product-card">
+                <div class="product-img-wrap"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="20" height="10" rx="4"/><path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg></div>
+                <div class="product-info">
+                  <div class="product-name">${p.label}</div>
+                  <div class="product-price">฿${Number(p.price).toLocaleString()}</div>
+                  ${stockLine}
+                  ${specBtn}
+                  <button class="buy-btn" onclick='buyProduct(${JSON.stringify({ key: p.key, label: p.label, price: p.price })})' ${inStock ? '' : 'disabled'}>
+                    ${inStock ? 'ซื้อเลย' : 'สินค้าหมด'}
+                  </button>
+                </div>
               </div>
-            </div>
-          `;
-          }).join('')}
+            `;
+            }).join('')}
+          </div>
         </div>
       </div>
     `).join('');
