@@ -7,6 +7,7 @@
 // ที่ router — ห้ามเรียก requireAdmin ก่อนเข้าถึงฟังก์ชันนี้
 
 import { supabaseAdmin } from '../supabase.js';
+import { getImagesByKeys } from './catalog-product-images.js';
 
 /**
  * public — สินค้าที่เปิดขายเท่านั้น ไม่ต้อง login
@@ -14,6 +15,8 @@ import { supabaseAdmin } from '../supabase.js';
  * รวม stock_count (จำนวนไอดีพร้อมขายในคลัง) เพื่อให้หน้าร้านแสดง
  * "คงเหลือ X ชิ้น" และปิดปุ่มซื้อถ้าหมด — ใช้ RPC เดิมจาก Phase 5
  * (inventory_ready_counts) แทนการ query inventory ทีละสินค้า (N+1)
+ *
+ * v2: เพิ่ม images[] ต่อสินค้า — batch query 1 ครั้ง ไม่เป็น N+1
  */
 export async function publicListProducts() {
   const [productsResult, countsResult] = await Promise.all([
@@ -28,20 +31,26 @@ export async function publicListProducts() {
   if (productsResult.error) throw productsResult.error;
   if (countsResult.error) throw countsResult.error;
 
-  const stockByKey = new Map(
-    countsResult.data.map(row => [row.product_key, Number(row.ready_count)])
-  );
+  const productKeys = productsResult.data.map(p => p.key);
+
+  const [stockByKey, imagesByKey] = await Promise.all([
+    Promise.resolve(
+      new Map(countsResult.data.map(row => [row.product_key, Number(row.ready_count)]))
+    ),
+    getImagesByKeys(productKeys),
+  ]);
 
   const data = productsResult.data.map(p => ({
     ...p,
     stock_count: stockByKey.get(p.key) ?? 0,
+    images:      imagesByKey.get(p.key) ?? [],
   }));
 
   return { httpStatus: 200, body: { success: true, data } };
 }
 
 /**
- * admin: list — ทุกสินค้ารวม is_active=false
+ * admin: list — ทุกสินค้ารวม is_active=false + images[]
  */
 export async function adminListProducts() {
   const { data, error } = await supabaseAdmin
@@ -50,7 +59,16 @@ export async function adminListProducts() {
     .order('sort_order', { ascending: true });
 
   if (error) throw error;
-  return { httpStatus: 200, body: { success: true, data } };
+
+  const productKeys = data.map(p => p.key);
+  const imagesByKey = await getImagesByKeys(productKeys);
+
+  const enriched = data.map(p => ({
+    ...p,
+    images: imagesByKey.get(p.key) ?? [],
+  }));
+
+  return { httpStatus: 200, body: { success: true, data: enriched } };
 }
 
 /**
@@ -134,6 +152,7 @@ export async function adminUpdateProduct({ id, label, category, price, spec, is_
 
 /**
  * admin: delete — เฉพาะที่ไม่มี inventory ผูกอยู่
+ * รูปภาพจะถูกลบ cascade ตาม ON DELETE CASCADE ที่ตั้งใน migration
  */
 export async function adminDeleteProduct({ id }) {
   if (!id) {

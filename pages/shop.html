@@ -23,7 +23,12 @@
   .product-scroll-wrap::-webkit-scrollbar{display:none;}
   .product-grid{display:inline-flex;flex-direction:row;gap:12px;align-items:stretch;}
   .product-card{background:rgba(255,255,255,0.97);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,40,80,0.14);display:flex;flex-direction:column;width:155px;flex-shrink:0;}
-  .product-img-wrap{width:100%;aspect-ratio:4/3;background:linear-gradient(135deg,#E8F2FA,#D4E9F7);display:flex;align-items:center;justify-content:center;color:#9DBDD6;flex-shrink:0;}
+  /* รูปภาพสินค้า — ถ้ามีรูปจริงจะซ่อน placeholder SVG */
+  .product-img-wrap{width:100%;aspect-ratio:4/3;background:linear-gradient(135deg,#E8F2FA,#D4E9F7);display:flex;align-items:center;justify-content:center;color:#9DBDD6;flex-shrink:0;overflow:hidden;position:relative;}
+  .product-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+  .product-img-wrap .placeholder-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9DBDD6;}
+  /* badge จำนวนรูปเพิ่มเติม */
+  .img-count-badge{position:absolute;bottom:5px;right:6px;background:rgba(0,0,0,0.48);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px;line-height:1.4;pointer-events:none;}
   .product-info{padding:10px 11px 12px;display:flex;flex-direction:column;flex:1;}
   .product-name{font-size:13px;font-weight:700;margin-bottom:6px;line-height:1.35;min-height:2.7em;}
   .product-price{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:17px;margin-bottom:4px;}
@@ -34,13 +39,29 @@
   .buy-btn{margin-top:auto;width:100%;padding:9px 0;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:12.5px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
   .buy-btn:active{opacity:0.85;}
   .buy-btn:disabled{background:rgba(26,58,82,0.25);cursor:not-allowed;}
+
+  /* ── Spec Modal (รายละเอียด + gallery) ── */
   .spec-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(10,25,40,0.55);z-index:50;align-items:flex-end;justify-content:center;}
   .spec-modal-backdrop.show{display:flex;}
-  .spec-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:520px;max-height:78vh;display:flex;flex-direction:column;padding:20px 18px calc(20px + env(safe-area-inset-bottom));}
+  .spec-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:520px;max-height:82vh;display:flex;flex-direction:column;padding:0 0 calc(16px + env(safe-area-inset-bottom));}
+  /* Gallery strip ด้านบน modal */
+  .gallery-wrap{flex-shrink:0;background:#000;border-radius:18px 18px 0 0;overflow:hidden;position:relative;aspect-ratio:4/3;display:none;}
+  .gallery-wrap.has-images{display:block;}
+  .gallery-main{width:100%;height:100%;object-fit:contain;background:#0d1c2b;}
+  .gallery-thumb-strip{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding:8px 14px;background:rgba(255,255,255,0.97);flex-shrink:0;}
+  .gallery-thumb-strip::-webkit-scrollbar{display:none;}
+  .gallery-thumb-strip.has-images{display:flex;}
+  .gallery-thumb-strip{display:none;}
+  .gallery-thumb{width:52px;height:52px;object-fit:cover;border-radius:7px;cursor:pointer;border:2.5px solid transparent;flex-shrink:0;transition:border-color 0.15s;}
+  .gallery-thumb.active{border-color:var(--navy);}
+  /* Modal body scroll */
+  .spec-modal-body-wrap{padding:16px 18px 0;overflow-y:auto;flex:1;}
   .spec-modal-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;margin-bottom:4px;}
   .spec-modal-price{color:var(--gold);font-weight:800;font-size:14px;margin-bottom:12px;}
-  .spec-modal-body{white-space:pre-line;font-size:13px;line-height:1.75;color:var(--ink);overflow-y:auto;flex:1;}
-  .spec-modal-close{margin-top:14px;width:100%;padding:11px 0;background:rgba(26,58,82,0.08);color:var(--ink);border:none;border-radius:9px;font-size:13px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
+  .spec-modal-body{white-space:pre-line;font-size:13px;line-height:1.75;color:var(--ink);}
+  .spec-modal-close{margin:14px 18px 0;width:calc(100% - 36px);padding:11px 0;background:rgba(26,58,82,0.08);color:var(--ink);border:none;border-radius:9px;font-size:13px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;flex-shrink:0;}
+
+  /* ── Confirm Modal ── */
   .confirm-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(10,25,40,0.55);z-index:60;align-items:flex-end;justify-content:center;}
   .confirm-modal-backdrop.show{display:flex;}
   .confirm-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:420px;padding:22px 20px calc(20px + env(safe-area-inset-bottom));}
@@ -52,6 +73,7 @@
   .confirm-modal-actions button{flex:1;padding:12px 0;border:none;border-radius:9px;font-size:13.5px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
   .confirm-modal-cancel{background:rgba(26,58,82,0.08);color:var(--ink);}
   .confirm-modal-ok{background:var(--navy);color:#fff;}
+
   .loading-state,.empty-state{grid-column:1/-1;text-align:center;padding:50px 20px;color:rgba(255,255,255,0.75);font-size:14px;}
   .category-section{margin-bottom:6px;}
   .category-title{font-family:'Baloo 2',sans-serif;font-size:15px;font-weight:700;color:#fff;margin:18px 0 10px;padding:0 16px;text-shadow:0 1px 4px rgba(0,40,80,0.3);}
@@ -73,15 +95,25 @@
   <div class="loading-state" style="padding:50px 20px;text-align:center;color:rgba(255,255,255,0.75);">กำลังโหลดสินค้า...</div>
 </div>
 
+<!-- ── Spec + Gallery Modal ── -->
 <div class="spec-modal-backdrop" id="specModalBackdrop">
   <div class="spec-modal">
-    <div class="spec-modal-title" id="specModalTitle"></div>
-    <div class="spec-modal-price" id="specModalPrice"></div>
-    <div class="spec-modal-body" id="specModalBody"></div>
+    <!-- Gallery: แสดงเฉพาะถ้าสินค้ามีรูป -->
+    <div class="gallery-wrap" id="galleryWrap">
+      <img class="gallery-main" id="galleryMain" src="" alt="product image">
+    </div>
+    <div class="gallery-thumb-strip" id="galleryThumbStrip"></div>
+    <!-- ข้อความ spec -->
+    <div class="spec-modal-body-wrap">
+      <div class="spec-modal-title" id="specModalTitle"></div>
+      <div class="spec-modal-price" id="specModalPrice"></div>
+      <div class="spec-modal-body" id="specModalBody"></div>
+    </div>
     <button class="spec-modal-close" id="specModalCloseBtn">ปิด</button>
   </div>
 </div>
 
+<!-- ── Confirm Modal ── -->
 <div class="confirm-modal-backdrop" id="confirmModalBackdrop">
   <div class="confirm-modal">
     <div class="confirm-modal-title">ยืนยันการสั่งซื้อ</div>
@@ -99,7 +131,7 @@
 <script type="module">
 import { auth, products, orders, settings } from '../js/api.js';
 
-// โหลด logo/ข้อความหน้าแรกจาก Website Settings ถ้าแอดมินตั้งค่าไว้
+// โหลด logo/ข้อความหน้าแรกจาก Website Settings
 settings.get().then(({ data }) => {
   if (data.logo_url)  document.getElementById('siteLogo').src = data.logo_url;
   if (data.home_text) document.getElementById('heroSub').textContent = data.home_text;
@@ -112,7 +144,6 @@ const navEl = document.getElementById('navActions');
 if (!session) {
   navEl.innerHTML = `<a href="/pages/login.html">เข้าสู่ระบบ</a>`;
 } else {
-  // ดึง role
   const res = await fetch('/api/auth/profile', {
     headers: { Authorization: `Bearer ${session.access_token}` }
   });
@@ -129,21 +160,48 @@ if (!session) {
   });
 }
 
-// โหลดสินค้า — จัดกลุ่มตาม category
+// ── helper: สร้าง HTML ส่วนรูปภาพของ card ──
+function buildCardImage(images) {
+  const cover = images.find(img => img.is_cover) ?? images[0] ?? null;
+  if (!cover) {
+    // ไม่มีรูป → placeholder SVG เดิม
+    return `
+      <div class="product-img-wrap">
+        <div class="placeholder-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="8" width="20" height="10" rx="4"/>
+            <path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/>
+          </svg>
+        </div>
+      </div>`;
+  }
+  // มีรูป → แสดง cover + badge ถ้ามีหลายรูป
+  const extra = images.length > 1 ? `<span class="img-count-badge">+${images.length - 1}</span>` : '';
+  return `
+    <div class="product-img-wrap">
+      <img src="${cover.url}" alt="product" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+      <div class="placeholder-icon" style="display:none;">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="8" width="20" height="10" rx="4"/>
+          <path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/>
+        </svg>
+      </div>
+      ${extra}
+    </div>`;
+}
+
+// โหลดสินค้า
 const grid = document.getElementById('productGrid');
 try {
   const { data } = await products.list();
   if (!data.length) {
     grid.innerHTML = `<div class="empty-state" style="padding:50px 20px;text-align:center;color:rgba(255,255,255,0.75);">ยังไม่มีสินค้า</div>`;
   } else {
-    // จัดกลุ่มตาม category โดยรักษาลำดับที่ backend ส่งมา (sort_order)
+    // จัดกลุ่มตาม category รักษาลำดับ sort_order จาก backend
     const grouped = [];
     const seen = new Map();
     for (const p of data) {
-      if (!seen.has(p.category)) {
-        seen.set(p.category, []);
-        grouped.push(p.category);
-      }
+      if (!seen.has(p.category)) { seen.set(p.category, []); grouped.push(p.category); }
       seen.get(p.category).push(p);
     }
 
@@ -153,16 +211,20 @@ try {
         <div class="product-scroll-wrap">
           <div class="product-grid">
             ${seen.get(category).map(p => {
-              const inStock = p.stock_count > 0;
+              const inStock  = p.stock_count > 0;
+              const images   = p.images ?? [];
+              const hasSpec  = !!p.spec;
+              const hasImg   = images.length > 0;
+              // ถ้ามีรูปหรือมี spec → ปุ่มดูรายละเอียด
+              const specBtn  = (hasSpec || hasImg)
+                ? `<button class="spec-link" onclick='openSpecModal(${JSON.stringify(p)})'>ดูรายละเอียด</button>`
+                : `<span class="spec-link" style="visibility:hidden;display:block;">ดูรายละเอียด</span>`;
               const stockLine = inStock
                 ? `<div class="stock-line in-stock">คงเหลือ ${p.stock_count} ชิ้น</div>`
                 : `<div class="stock-line out-of-stock">สินค้าหมดชั่วคราว</div>`;
-              const specBtn = p.spec
-                ? `<button class="spec-link" onclick='openSpecModal(${JSON.stringify(p)})'>ดูรายละเอียด</button>`
-                : `<span class="spec-link" style="visibility:hidden;display:block;">ดูรายละเอียด</span>`;
               return `
               <div class="product-card">
-                <div class="product-img-wrap"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="20" height="10" rx="4"/><path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg></div>
+                ${buildCardImage(images)}
                 <div class="product-info">
                   <div class="product-name">${p.label}</div>
                   <div class="product-price">฿${Number(p.price).toLocaleString()}</div>
@@ -172,8 +234,7 @@ try {
                     ${inStock ? 'ซื้อเลย' : 'สินค้าหมด'}
                   </button>
                 </div>
-              </div>
-            `;
+              </div>`;
             }).join('')}
           </div>
         </div>
@@ -184,18 +245,69 @@ try {
   grid.innerHTML = `<div class="empty-state" style="padding:50px 20px;text-align:center;color:rgba(255,255,255,0.75);">โหลดสินค้าไม่สำเร็จ</div>`;
 }
 
-// ── Modal ดูรายละเอียดสเปค ──────────────────────────────────
+// ── Gallery helper ──────────────────────────────────────────
+const galleryWrap       = document.getElementById('galleryWrap');
+const galleryMain       = document.getElementById('galleryMain');
+const galleryThumbStrip = document.getElementById('galleryThumbStrip');
+
+function buildGallery(images) {
+  if (!images.length) {
+    galleryWrap.classList.remove('has-images');
+    galleryThumbStrip.classList.remove('has-images');
+    galleryThumbStrip.style.display = 'none';
+    return;
+  }
+
+  // ปก = is_cover=true หรือรูปแรกถ้าไม่มี
+  const coverIdx = images.findIndex(img => img.is_cover);
+  const startIdx = coverIdx >= 0 ? coverIdx : 0;
+
+  galleryMain.src = images[startIdx].url;
+  galleryWrap.classList.add('has-images');
+
+  // Thumbnails (ซ่อนถ้ามีรูปเดียว)
+  if (images.length > 1) {
+    galleryThumbStrip.style.display = 'flex';
+    galleryThumbStrip.classList.add('has-images');
+    galleryThumbStrip.innerHTML = images.map((img, i) => `
+      <img class="gallery-thumb ${i === startIdx ? 'active' : ''}"
+           src="${img.url}" alt="thumb ${i + 1}" loading="lazy"
+           data-idx="${i}">
+    `).join('');
+
+    galleryThumbStrip.querySelectorAll('.gallery-thumb').forEach(thumb => {
+      thumb.addEventListener('click', () => {
+        const idx = Number(thumb.dataset.idx);
+        galleryMain.src = images[idx].url;
+        galleryThumbStrip.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+        thumb.classList.add('active');
+        // scroll thumbnail ให้อยู่กึ่งกลาง
+        thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      });
+    });
+  } else {
+    galleryThumbStrip.style.display = 'none';
+    galleryThumbStrip.classList.remove('has-images');
+  }
+}
+
+// ── Modal ดูรายละเอียดสเปค + Gallery ──────────────────────
 const specBackdrop = document.getElementById('specModalBackdrop');
 
 window.openSpecModal = (product) => {
+  const images = product.images ?? [];
   document.getElementById('specModalTitle').textContent = product.label;
   document.getElementById('specModalPrice').textContent = `฿${Number(product.price).toLocaleString()}`;
-  document.getElementById('specModalBody').textContent = product.spec;
+  document.getElementById('specModalBody').textContent = product.spec ?? '';
+  buildGallery(images);
   specBackdrop.classList.add('show');
 };
 
 function closeSpecModal() {
   specBackdrop.classList.remove('show');
+  // reset gallery state ป้องกัน flicker เมื่อเปิดสินค้าใหม่
+  galleryMain.src = '';
+  galleryThumbStrip.innerHTML = '';
 }
 
 document.getElementById('specModalCloseBtn').addEventListener('click', closeSpecModal);
@@ -209,7 +321,6 @@ let pendingProduct = null;
 
 window.buyProduct = (product) => {
   if (!session) return window.location.href = '/pages/login.html';
-
   pendingProduct = product;
   document.getElementById('confirmModalProduct').textContent = product.label;
   document.getElementById('confirmModalPrice').textContent = `฿${Number(product.price).toLocaleString()}`;
@@ -231,7 +342,6 @@ document.getElementById('confirmModalOkBtn').addEventListener('click', async () 
   const product = pendingProduct;
   const btn = document.getElementById('confirmModalOkBtn');
   btn.disabled = true; btn.textContent = 'กำลังสั่งซื้อ...';
-
   try {
     const { data } = await orders.create(product.key);
     window.location.href = `/pages/checkout.html?order_id=${data.id}`;
