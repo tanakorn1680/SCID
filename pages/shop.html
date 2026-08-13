@@ -21,16 +21,16 @@
   .hero-banner::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;background:rgba(217,163,48,0.18);border-radius:50%;}
   .product-scroll-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 16px 8px;}
   .product-scroll-wrap::-webkit-scrollbar{display:none;}
-  .product-grid{display:grid;grid-template-columns:repeat(auto-fill,155px);grid-auto-flow:column;grid-auto-columns:155px;gap:12px;width:max-content;}
-  .product-card{background:rgba(255,255,255,0.97);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,40,80,0.14);display:flex;flex-direction:column;width:155px;}
-  .product-img-wrap{width:100%;aspect-ratio:1;background:linear-gradient(135deg,#E8F2FA,#D4E9F7);display:flex;align-items:center;justify-content:center;color:#9DBDD6;}
+  .product-grid{display:inline-flex;flex-direction:row;gap:12px;align-items:stretch;}
+  .product-card{background:rgba(255,255,255,0.97);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,40,80,0.14);display:flex;flex-direction:column;width:155px;flex-shrink:0;}
+  .product-img-wrap{width:100%;aspect-ratio:4/3;background:linear-gradient(135deg,#E8F2FA,#D4E9F7);display:flex;align-items:center;justify-content:center;color:#9DBDD6;flex-shrink:0;}
   .product-info{padding:10px 11px 12px;display:flex;flex-direction:column;flex:1;}
-  .product-name{font-size:13.5px;font-weight:700;margin-bottom:4px;line-height:1.3;}
-  .product-price{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:17px;margin-bottom:2px;}
-  .stock-line{font-size:11px;margin-bottom:8px;}
+  .product-name{font-size:13px;font-weight:700;margin-bottom:6px;line-height:1.35;min-height:2.7em;}
+  .product-price{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:17px;margin-bottom:4px;}
+  .stock-line{font-size:11px;margin-bottom:6px;min-height:1.4em;}
   .stock-line.in-stock{color:var(--green-go);}
   .stock-line.out-of-stock{color:var(--danger);font-weight:600;}
-  .spec-link{background:none;border:none;color:var(--sky);font-size:11px;font-weight:600;text-decoration:underline;cursor:pointer;padding:0 0 8px;text-align:left;font-family:'IBM Plex Sans Thai',sans-serif;}
+  .spec-link{background:none;border:none;color:var(--sky);font-size:11px;font-weight:600;text-decoration:underline;cursor:pointer;padding:0 0 8px;text-align:left;font-family:'IBM Plex Sans Thai',sans-serif;min-height:1.6em;}
   .buy-btn{margin-top:auto;width:100%;padding:9px 0;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:12.5px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
   .buy-btn:active{opacity:0.85;}
   .buy-btn:disabled{background:rgba(26,58,82,0.25);cursor:not-allowed;}
@@ -159,7 +159,7 @@ try {
                 : `<div class="stock-line out-of-stock">สินค้าหมดชั่วคราว</div>`;
               const specBtn = p.spec
                 ? `<button class="spec-link" onclick='openSpecModal(${JSON.stringify(p)})'>ดูรายละเอียด</button>`
-                : '';
+                : `<span class="spec-link" style="visibility:hidden;display:block;">ดูรายละเอียด</span>`;
               return `
               <div class="product-card">
                 <div class="product-img-wrap"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="20" height="10" rx="4"/><path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg></div>
