@@ -118,7 +118,6 @@ if (!orderId) {
       const instBody  = order.credential.instruction_body  || '';
       const instHtml  = (instTitle || instBody) ? `
         <div class="inst-card">
-          <div class="inst-card-label">วิธีใช้ไอดี</div>
           ${instTitle ? `<div class="inst-card-heading">${escHtml(instTitle)}</div>` : ''}
           ${instBody  ? `<div class="inst-card-body">${escHtml(instBody)}</div>`    : ''}
         </div>
