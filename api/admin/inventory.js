@@ -2,8 +2,9 @@
 // Admin only — จัดการคลังไอดี
 //
 // GET    ?product_key=xxx&status=ready   → list พร้อม filter
-// GET    ?id=xxx                         → ดู credential (email+password) แบบ lazy-load (decrypt เฉพาะแถวที่ขอ)
-// POST   { product_key, lines }          → bulk เพิ่ม (lines = "email:password" ต่อบรรทัด)
+// GET    ?id=xxx                         → ดู credential (email+password+instruction) แบบ lazy-load
+// POST   { product_key, gmail, password, instruction_title?, instruction_body? }
+//                                        → เพิ่มทีละ 1 ไอดี พร้อม instruction ที่ลูกค้าจะเห็น
 // DELETE { id }                          → ลบรายการที่ยัง status='ready' เท่านั้น
 // DELETE { id, force: true }             → force delete ไอดีที่มี order ผูกอยู่ (สำหรับลบไอดีทดสอบ)
 
@@ -31,7 +32,7 @@ export async function GET(req) {
 export async function POST(req) {
   try {
     await requireAdmin(req);
-    return await bulkAddInventory(req);
+    return await singleAddInventory(req);
   } catch (err) {
     console.error('POST /api/admin/inventory failed:', err);
     return errorResponse(err);
@@ -85,7 +86,7 @@ async function getCredential(url) {
 
   const { data, error } = await supabaseAdmin
     .from('inventory')
-    .select('id, gmail, password_enc, status, order_id, sold_at')
+    .select('id, gmail, password_enc, status, order_id, sold_at, instruction_title, instruction_body')
     .eq('id', id)
     .single();
 
@@ -109,22 +110,26 @@ async function getCredential(url) {
   return Response.json({
     success: true,
     data: {
-      id:       data.id,
-      gmail:    data.gmail,
+      id:                  data.id,
+      gmail:               data.gmail,
       password,
-      status:   data.status,
-      order_id: data.order_id,
-      sold_at:  data.sold_at,
+      status:              data.status,
+      order_id:            data.order_id,
+      sold_at:             data.sold_at,
+      instruction_title:   data.instruction_title ?? null,
+      instruction_body:    data.instruction_body  ?? null,
     },
   });
 }
 
-async function bulkAddInventory(req) {
-  const { product_key, lines } = await req.json();
+async function singleAddInventory(req) {
+  const body = await req.json();
+  const { product_key, gmail, password, instruction_title, instruction_body } = body;
 
-  if (!product_key || !lines?.trim()) {
+  // --- validation ---
+  if (!product_key || !gmail?.trim() || !password?.trim()) {
     return Response.json(
-      { success: false, error: 'กรุณาระบุสินค้าและรายการไอดี' },
+      { success: false, error: 'กรุณาระบุสินค้า, Gmail และรหัสผ่าน' },
       { status: 400 }
     );
   }
@@ -143,56 +148,22 @@ async function bulkAddInventory(req) {
     );
   }
 
-  // แต่ละบรรทัด: email:password (แยกด้วย : ตัวแรกที่เจอ เผื่อ password มี : อยู่ในตัว)
-  const rawLines = lines.split('\n').map(l => l.trim()).filter(Boolean);
-
-  if (!rawLines.length) {
-    return Response.json(
-      { success: false, error: 'ไม่พบรายการที่ถูกต้อง' },
-      { status: 400 }
-    );
-  }
-
-  const rows = [];
-  const invalidLines = [];
-
-  for (const line of rawLines) {
-    const sepIndex = line.indexOf(':');
-    if (sepIndex === -1) {
-      invalidLines.push(line);
-      continue;
-    }
-    const gmail    = line.slice(0, sepIndex).trim();
-    const password = line.slice(sepIndex + 1).trim();
-    if (!gmail || !password) {
-      invalidLines.push(line);
-      continue;
-    }
-    rows.push({
-      product_key,
-      gmail,
-      password_enc: encrypt(password),
-      status: 'ready',
-    });
-  }
-
-  if (invalidLines.length) {
-    return Response.json(
-      {
-        success: false,
-        error: `พบ ${invalidLines.length} บรรทัดที่รูปแบบไม่ถูกต้อง (ต้องเป็น email:password)`,
-      },
-      { status: 400 }
-    );
-  }
+  const row = {
+    product_key,
+    gmail:         gmail.trim(),
+    password_enc:  encrypt(password.trim()),
+    status:        'ready',
+    instruction_title: instruction_title?.trim() || null,
+    instruction_body:  instruction_body?.trim()  || null,
+  };
 
   const { error: insertErr } = await supabaseAdmin
     .from('inventory')
-    .insert(rows);
+    .insert([row]);
 
   if (insertErr) throw insertErr;
 
-  return Response.json({ success: true, added: rows.length });
+  return Response.json({ success: true, added: 1 });
 }
 
 async function deleteInventory(req) {

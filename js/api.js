@@ -193,10 +193,16 @@ export const admin = {
       return apiFetch(`/api/admin/inventory?${params}`);
     },
 
-    async bulkAdd(productKey, lines) {
+    async addOne({ productKey, gmail, password, instructionTitle, instructionBody }) {
       return apiFetch('/api/admin/inventory', {
         method: 'POST',
-        body: JSON.stringify({ product_key: productKey, lines }),
+        body: JSON.stringify({
+          product_key:        productKey,
+          gmail,
+          password,
+          instruction_title:  instructionTitle  || null,
+          instruction_body:   instructionBody   || null,
+        }),
       });
     },
 

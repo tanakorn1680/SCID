@@ -35,6 +35,11 @@
   .cred-value.masked{filter:blur(5px);user-select:none;transition:filter .2s ease;}
   .cred-actions{display:flex;gap:6px;flex-shrink:0;}
   .cred-btn{padding:5px 10px;background:rgba(255,255,255,0.2);border:none;border-radius:7px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
+  /* instruction block */
+  .inst-card{background:rgba(255,255,255,0.12);border-radius:11px;padding:14px;margin-top:10px;}
+  .inst-card-label{font-size:10.5px;color:rgba(255,255,255,0.55);font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-bottom:6px;}
+  .inst-card-heading{font-size:14px;font-weight:700;color:#fff;margin-bottom:8px;}
+  .inst-card-body{font-size:13px;color:rgba(255,255,255,0.88);line-height:1.75;white-space:pre-wrap;}
   .pending-msg{background:rgba(217,163,48,0.08);border:1px solid rgba(217,163,48,0.25);border-radius:10px;padding:14px 16px;text-align:center;}
   .pending-msg .icon{display:flex;justify-content:center;margin-bottom:6px;color:var(--muted);}
   .pending-msg .title{font-size:14px;font-weight:700;color:var(--gold-deep);margin-bottom:4px;}
@@ -74,6 +79,12 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleString('th-TH', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
 }
 
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 if (!orderId) {
   pageBody.innerHTML = `<div class="skeleton">ไม่พบ Order ID</div>`;
 } else {
@@ -102,6 +113,17 @@ if (!orderId) {
             </div>
           </div>`;
 
+      // instruction block (แสดงเฉพาะเมื่อมีข้อมูล)
+      const instTitle = order.credential.instruction_title || '';
+      const instBody  = order.credential.instruction_body  || '';
+      const instHtml  = (instTitle || instBody) ? `
+        <div class="inst-card">
+          <div class="inst-card-label">วิธีใช้ไอดี</div>
+          ${instTitle ? `<div class="inst-card-heading">${escHtml(instTitle)}</div>` : ''}
+          ${instBody  ? `<div class="inst-card-body">${escHtml(instBody)}</div>`    : ''}
+        </div>
+      ` : '';
+
       credHtml = `
         <div class="credential-card" id="credCard">
           <div class="credential-header">
@@ -116,6 +138,7 @@ if (!orderId) {
             </div>
           </div>
           ${pwFieldHtml}
+          ${instHtml}
         </div>
       `;
     } else if (order.status === 'awaiting_review') {
