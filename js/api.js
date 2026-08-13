@@ -206,6 +206,18 @@ export const admin = {
       });
     },
 
+    async update(id, { gmail, password, instructionTitle, instructionBody } = {}) {
+      const body = { id };
+      if (gmail            !== undefined) body.gmail             = gmail;
+      if (password         !== undefined) body.password          = password;
+      if (instructionTitle !== undefined) body.instruction_title = instructionTitle;
+      if (instructionBody  !== undefined) body.instruction_body  = instructionBody;
+      return apiFetch('/api/admin/inventory', {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      });
+    },
+
     async remove(id) {
       return apiFetch('/api/admin/inventory', {
         method: 'DELETE',

@@ -39,6 +39,16 @@ export async function POST(req) {
   }
 }
 
+export async function PUT(req) {
+  try {
+    await requireAdmin(req);
+    return await updateInventory(req);
+  } catch (err) {
+    console.error('PUT /api/admin/inventory failed:', err);
+    return errorResponse(err);
+  }
+}
+
 export async function DELETE(req) {
   try {
     await requireAdmin(req);
@@ -164,6 +174,87 @@ async function singleAddInventory(req) {
   if (insertErr) throw insertErr;
 
   return Response.json({ success: true, added: 1 });
+}
+
+async function updateInventory(req) {
+  const body = await req.json();
+  const { id, gmail, password, instruction_title, instruction_body } = body;
+
+  if (!id) {
+    return Response.json(
+      { success: false, error: 'ไม่ระบุ id' },
+      { status: 400 }
+    );
+  }
+
+  // ตรวจสอบว่า record นี้ยังเป็น ready อยู่ (ไม่ให้แก้ไอดีที่ขายไปแล้ว)
+  const { data: existing, error: fetchErr } = await supabaseAdmin
+    .from('inventory')
+    .select('id, status')
+    .eq('id', id)
+    .single();
+
+  if (fetchErr || !existing) {
+    return Response.json(
+      { success: false, error: 'ไม่พบรายการนี้' },
+      { status: 404 }
+    );
+  }
+
+  if (existing.status !== 'ready') {
+    return Response.json(
+      { success: false, error: 'ไม่สามารถแก้ไขไอดีที่ขายไปแล้วได้' },
+      { status: 400 }
+    );
+  }
+
+  // สร้าง patch object เฉพาะ field ที่ส่งมา (ไม่บังคับครบทุก field)
+  const patch = {};
+
+  if (gmail !== undefined) {
+    if (!gmail?.trim()) {
+      return Response.json(
+        { success: false, error: 'Gmail ไม่ควรเป็นค่าว่าง' },
+        { status: 400 }
+      );
+    }
+    patch.gmail = gmail.trim();
+  }
+
+  if (password !== undefined) {
+    if (!password?.trim()) {
+      return Response.json(
+        { success: false, error: 'รหัสผ่านไม่ควรเป็นค่าว่าง' },
+        { status: 400 }
+      );
+    }
+    patch.password_enc = encrypt(password.trim());
+  }
+
+  // instruction fields ยอมให้ส่ง null เพื่อลบออกได้
+  if (instruction_title !== undefined) {
+    patch.instruction_title = instruction_title?.trim() || null;
+  }
+  if (instruction_body !== undefined) {
+    patch.instruction_body = instruction_body?.trim() || null;
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return Response.json(
+      { success: false, error: 'ไม่มีข้อมูลที่ต้องการแก้ไข' },
+      { status: 400 }
+    );
+  }
+
+  const { error: updateErr } = await supabaseAdmin
+    .from('inventory')
+    .update(patch)
+    .eq('id', id)
+    .eq('status', 'ready'); // double-check status ตอน update ด้วย
+
+  if (updateErr) throw updateErr;
+
+  return Response.json({ success: true });
 }
 
 async function deleteInventory(req) {
