@@ -19,10 +19,11 @@
   .hero-title{font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;position:relative;z-index:1;}
   .hero-sub{font-size:13px;color:rgba(255,255,255,0.85);position:relative;z-index:1;}
   .hero-banner::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;background:rgba(217,163,48,0.18);border-radius:50%;}
-  .product-grid{display:flex;flex-direction:row;gap:12px;padding:0 16px 4px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .product-grid{display:flex;flex-direction:row;gap:12px;padding:0 16px 8px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
   .product-grid::-webkit-scrollbar{display:none;}
-  .product-card{background:rgba(255,255,255,0.97);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,40,80,0.14);display:flex;flex-direction:column;flex:0 0 160px;width:160px;scroll-snap-align:start;}
-  @media(min-width:400px){.product-card{flex:0 0 175px;width:175px;}}
+  .product-grid::after{content:'';flex:0 0 4px;}
+  .product-card{background:rgba(255,255,255,0.97);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,40,80,0.14);display:flex;flex-direction:column;flex:0 0 155px;width:155px;scroll-snap-align:start;}
+  @media(min-width:400px){.product-card{flex:0 0 170px;width:170px;}}
   @media(min-width:640px){.product-card{flex:0 0 210px;width:210px;}}
   .product-img-wrap{width:100%;aspect-ratio:1;background:linear-gradient(135deg,#E8F2FA,#D4E9F7);display:flex;align-items:center;justify-content:center;color:#9DBDD6;}
   .product-info{padding:10px 11px 12px;display:flex;flex-direction:column;flex:1;}
@@ -152,7 +153,7 @@ try {
       <div class="category-section">
         <div class="category-title">${category}</div>
       </div>
-      <div class="product-grid" style="padding:0 16px;">
+      <div class="product-grid">
         ${seen.get(category).map(p => {
           const inStock = p.stock_count > 0;
           const stockLine = inStock
