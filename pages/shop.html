@@ -8,8 +8,8 @@
   @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
   :root{--paper:#FBF8F1;--navy:#1A6BA0;--sky:#2196C9;--gold:#D9A330;--gold-deep:#B9821F;--ink:#1A3A52;--line:rgba(26,106,160,0.18);--muted:rgba(26,58,82,0.55);--green-go:#3F8557;--danger:#E04433;}
   *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{background:#81CFF0;}
-  body{font-family:'IBM Plex Sans Thai',sans-serif;color:var(--ink);min-height:100vh;padding-bottom:30px;-webkit-font-smoothing:antialiased;}
+  html,body{background:#81CFF0;overflow-x:hidden;}
+  body{font-family:'IBM Plex Sans Thai',sans-serif;color:var(--ink);min-height:100vh;padding-bottom:30px;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
   .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;}
   .topbar img{height:34px;}
   .nav-actions{display:flex;gap:14px;align-items:center;font-size:13px;}
@@ -19,9 +19,8 @@
   .hero-title{font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;position:relative;z-index:1;}
   .hero-sub{font-size:13px;color:rgba(255,255,255,0.85);position:relative;z-index:1;}
   .hero-banner::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;background:rgba(217,163,48,0.18);border-radius:50%;}
-  .product-grid{display:flex;flex-direction:row;gap:12px;padding:0 16px 8px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .product-grid{display:flex;flex-direction:row;gap:12px;padding:0 16px 8px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;width:100%;}
   .product-grid::-webkit-scrollbar{display:none;}
-  .product-grid::after{content:'';flex:0 0 4px;}
   .product-card{background:rgba(255,255,255,0.97);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,40,80,0.14);display:flex;flex-direction:column;flex:0 0 155px;width:155px;scroll-snap-align:start;}
   @media(min-width:400px){.product-card{flex:0 0 170px;width:170px;}}
   @media(min-width:640px){.product-card{flex:0 0 210px;width:210px;}}
@@ -55,8 +54,8 @@
   .confirm-modal-cancel{background:rgba(26,58,82,0.08);color:var(--ink);}
   .confirm-modal-ok{background:var(--navy);color:#fff;}
   .loading-state,.empty-state{grid-column:1/-1;text-align:center;padding:50px 20px;color:rgba(255,255,255,0.75);font-size:14px;}
-  .category-section{padding:0 16px;margin-bottom:6px;}
-  .category-title{font-family:'Baloo 2',sans-serif;font-size:15px;font-weight:700;color:#fff;margin:18px 0 10px;text-shadow:0 1px 4px rgba(0,40,80,0.3);}
+  .category-section{margin-bottom:6px;}
+  .category-title{font-family:'Baloo 2',sans-serif;font-size:15px;font-weight:700;color:#fff;margin:18px 0 10px;padding:0 16px;text-shadow:0 1px 4px rgba(0,40,80,0.3);}
 </style>
 </head>
 <body>
@@ -152,31 +151,31 @@ try {
     grid.innerHTML = grouped.map(category => `
       <div class="category-section">
         <div class="category-title">${category}</div>
-      </div>
-      <div class="product-grid">
-        ${seen.get(category).map(p => {
-          const inStock = p.stock_count > 0;
-          const stockLine = inStock
-            ? `<div class="stock-line in-stock">คงเหลือ ${p.stock_count} ชิ้น</div>`
-            : `<div class="stock-line out-of-stock">สินค้าหมดชั่วคราว</div>`;
-          const specBtn = p.spec
-            ? `<button class="spec-link" onclick='openSpecModal(${JSON.stringify(p)})'>ดูรายละเอียด</button>`
-            : '';
-          return `
-          <div class="product-card">
-            <div class="product-img-wrap"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="20" height="10" rx="4"/><path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg></div>
-            <div class="product-info">
-              <div class="product-name">${p.label}</div>
-              <div class="product-price">฿${Number(p.price).toLocaleString()}</div>
-              ${stockLine}
-              ${specBtn}
-              <button class="buy-btn" onclick='buyProduct(${JSON.stringify({ key: p.key, label: p.label, price: p.price })})' ${inStock ? '' : 'disabled'}>
-                ${inStock ? 'ซื้อเลย' : 'สินค้าหมด'}
-              </button>
+        <div class="product-grid">
+          ${seen.get(category).map(p => {
+            const inStock = p.stock_count > 0;
+            const stockLine = inStock
+              ? `<div class="stock-line in-stock">คงเหลือ ${p.stock_count} ชิ้น</div>`
+              : `<div class="stock-line out-of-stock">สินค้าหมดชั่วคราว</div>`;
+            const specBtn = p.spec
+              ? `<button class="spec-link" onclick='openSpecModal(${JSON.stringify(p)})'>ดูรายละเอียด</button>`
+              : '';
+            return `
+            <div class="product-card">
+              <div class="product-img-wrap"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="20" height="10" rx="4"/><path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg></div>
+              <div class="product-info">
+                <div class="product-name">${p.label}</div>
+                <div class="product-price">฿${Number(p.price).toLocaleString()}</div>
+                ${stockLine}
+                ${specBtn}
+                <button class="buy-btn" onclick='buyProduct(${JSON.stringify({ key: p.key, label: p.label, price: p.price })})' ${inStock ? '' : 'disabled'}>
+                  ${inStock ? 'ซื้อเลย' : 'สินค้าหมด'}
+                </button>
+              </div>
             </div>
-          </div>
-        `;
-        }).join('')}
+          `;
+          }).join('')}
+        </div>
       </div>
     `).join('');
   }
