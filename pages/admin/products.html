@@ -34,17 +34,58 @@
   .img-manager.visible{display:block;}
   .img-manager-title{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
   .img-manager-title span{background:rgba(26,106,160,0.1);color:var(--navy);font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;}
-  /* grid ของรูปภาพ */
+
+  /* grid รูปภาพ — card แนวตั้ง รูป + action bar ด้านล่าง */
   .img-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
-  .img-cell{position:relative;aspect-ratio:1;border-radius:9px;overflow:hidden;background:linear-gradient(135deg,#E8F2FA,#D4E9F7);}
-  .img-cell img{width:100%;height:100%;object-fit:cover;display:block;}
-  /* overlay ปุ่มบน thumbnail */
-  .img-cell-overlay{position:absolute;inset:0;background:rgba(0,0,0,0);display:flex;align-items:flex-start;justify-content:flex-end;padding:5px;gap:4px;transition:background 0.15s;}
-  .img-cell:hover .img-cell-overlay,.img-cell:focus-within .img-cell-overlay{background:rgba(0,0,0,0.32);}
-  .img-action-btn{background:rgba(255,255,255,0.92);border:none;border-radius:6px;padding:4px 7px;font-size:11px;font-weight:700;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;color:var(--ink);line-height:1.4;}
-  .img-action-btn.danger{color:var(--danger);}
-  /* badge ปก */
-  .cover-badge{position:absolute;bottom:5px;left:5px;background:var(--gold);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;line-height:1.4;pointer-events:none;}
+  .img-cell{
+    border-radius:10px;overflow:hidden;
+    background:#fff;
+    border:2px solid var(--line);
+    display:flex;flex-direction:column;
+    transition:border-color 0.15s;
+  }
+  .img-cell.is-cover{border-color:var(--gold);}
+
+  /* รูปภาพ — กดเพื่อดูเต็มจอ */
+  .img-thumb-wrap{
+    position:relative;width:100%;aspect-ratio:1;
+    background:linear-gradient(135deg,#E8F2FA,#D4E9F7);
+    cursor:zoom-in;overflow:hidden;
+  }
+  .img-thumb-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
+
+  /* ribbon "ปก" ที่มุมบนซ้าย — แสดงเฉพาะรูปที่เป็นปก */
+  .cover-ribbon{
+    position:absolute;top:0;left:0;
+    background:var(--gold);color:#fff;
+    font-size:10px;font-weight:800;
+    padding:3px 9px 3px 7px;
+    border-radius:0 0 8px 0;
+    line-height:1.4;
+    pointer-events:none;
+  }
+
+  /* action bar ใต้รูป — แสดงถาวร ไม่ต้อง hover */
+  .img-action-bar{
+    display:flex;border-top:1px solid var(--line);
+  }
+  .img-action-bar button{
+    flex:1;border:none;background:#fff;
+    font-family:'IBM Plex Sans Thai',sans-serif;
+    font-size:11.5px;font-weight:700;
+    padding:7px 4px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:4px;
+    transition:background 0.12s;
+  }
+  .img-action-bar button:active{background:rgba(26,106,160,0.07);}
+  .img-action-bar .btn-cover{
+    color:var(--navy);
+    border-right:1px solid var(--line);
+  }
+  .img-action-bar .btn-cover.is-cover{
+    color:var(--gold);cursor:default;
+  }
+  .img-action-bar .btn-del{color:var(--danger);}
   /* upload zone */
   .upload-zone{border:2px dashed var(--line);border-radius:10px;padding:18px 12px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;}
   .upload-zone:hover,.upload-zone.drag-over{border-color:var(--navy);background:rgba(26,106,160,0.04);}
@@ -232,22 +273,25 @@ function renderImageGrid() {
   }
 
   grid.innerHTML = currentImages.map(img => `
-    <div class="img-cell" data-id="${img.id}">
-      <img src="${img.url}" alt="product image" loading="lazy"
-           style="cursor:zoom-in;" data-preview="${img.url}">
-      ${img.is_cover ? '<span class="cover-badge">ปก</span>' : ''}
-      <div class="img-cell-overlay">
-        ${!img.is_cover
-          ? `<button class="img-action-btn" data-set-cover="${img.id}" title="ตั้งเป็นปก">ปก</button>`
-          : ''}
-        <button class="img-action-btn danger" data-del-img="${img.id}" title="ลบรูปนี้">✕</button>
+    <div class="img-cell ${img.is_cover ? 'is-cover' : ''}" data-id="${img.id}">
+      <div class="img-thumb-wrap" data-preview="${img.url}">
+        <img src="${img.url}" alt="product image" loading="lazy">
+        ${img.is_cover ? '<span class="cover-ribbon">⭐ ปก</span>' : ''}
+      </div>
+      <div class="img-action-bar">
+        <button class="btn-cover ${img.is_cover ? 'is-cover' : ''}"
+                ${img.is_cover ? 'disabled' : ''}
+                data-set-cover="${img.id}">
+          ${img.is_cover ? '⭐ ปกอยู่แล้ว' : '☆ ตั้งปก'}
+        </button>
+        <button class="btn-del" data-del-img="${img.id}">🗑 ลบ</button>
       </div>
     </div>
   `).join('');
 
-  // ── Event: ดูรูปเต็ม ──
-  grid.querySelectorAll('[data-preview]').forEach(img => {
-    img.addEventListener('click', () => openLightbox(img.dataset.preview));
+  // ── Event: ดูรูปเต็ม (กดที่ส่วนรูป ไม่ใช่ปุ่ม) ──
+  grid.querySelectorAll('.img-thumb-wrap[data-preview]').forEach(wrap => {
+    wrap.addEventListener('click', () => openLightbox(wrap.dataset.preview));
   });
 
   // ── Event: ตั้งปก ──
