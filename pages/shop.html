@@ -175,8 +175,7 @@ function buildCardImage(images) {
         </div>
       </div>`;
   }
-  // มีรูป → แสดง cover + badge ถ้ามีหลายรูป
-  const extra = images.length > 1 ? `<span class="img-count-badge">+${images.length - 1}</span>` : '';
+  // มีรูป → แสดง cover
   return `
     <div class="product-img-wrap">
       <img src="${cover.url}" alt="product" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
@@ -186,7 +185,6 @@ function buildCardImage(images) {
           <path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/>
         </svg>
       </div>
-      ${extra}
     </div>`;
 }
 
