@@ -212,7 +212,9 @@
 
 <!-- ── Lightbox ดูรูปเต็ม ── -->
 <div class="lightbox-backdrop" id="lightboxBackdrop">
-  <button class="lightbox-close" id="lightboxClose">✕</button>
+  <button class="lightbox-close" id="lightboxClose">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
   <img class="lightbox-img" id="lightboxImg" src="" alt="preview">
 </div>
 
@@ -276,15 +278,19 @@ function renderImageGrid() {
     <div class="img-cell ${img.is_cover ? 'is-cover' : ''}" data-id="${img.id}">
       <div class="img-thumb-wrap" data-preview="${img.url}">
         <img src="${img.url}" alt="product image" loading="lazy">
-        ${img.is_cover ? '<span class="cover-ribbon">⭐ ปก</span>' : ''}
+        ${img.is_cover ? '<span class="cover-ribbon">ปก</span>' : ''}
       </div>
       <div class="img-action-bar">
         <button class="btn-cover ${img.is_cover ? 'is-cover' : ''}"
                 ${img.is_cover ? 'disabled' : ''}
                 data-set-cover="${img.id}">
-          ${img.is_cover ? '⭐ ปกอยู่แล้ว' : '☆ ตั้งปก'}
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="${img.is_cover ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          ${img.is_cover ? 'ปกอยู่แล้ว' : 'ตั้งปก'}
         </button>
-        <button class="btn-del" data-del-img="${img.id}">🗑 ลบ</button>
+        <button class="btn-del" data-del-img="${img.id}">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4h6v2"/></svg>
+          ลบ
+        </button>
       </div>
     </div>
   `).join('');

@@ -288,6 +288,23 @@
   </div>
 </div>
 
+<!-- Modal: ยืนยันลบไอดีพร้อมขาย -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-sheet">
+    <button class="modal-close" id="deleteModalClose">&#x2715;</button>
+    <div class="modal-title">ลบไอดีนี้?</div>
+    <div class="modal-sub">ไอดีที่ยังไม่ได้ขาย</div>
+    <div class="warn-box">
+      <strong>ยืนยันการลบ:</strong> ไอดีนี้จะถูกลบออกจากคลังถาวร ไม่สามารถย้อนกลับได้
+      <div class="warn-email" id="deleteModalEmail"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="deleteCancelBtn">ยกเลิก</button>
+      <button class="modal-btn confirm-del" id="deleteConfirmBtn">ลบออกจากคลัง</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Force Delete ยืนยัน -->
 <div class="modal-overlay" id="forceModal">
   <div class="modal-sheet">
@@ -496,17 +513,10 @@ async function loadInventory() {
       `;
     }).join('');
 
-    // ── ปุ่มลบปกติ
+    // ── ปุ่มลบปกติ → เปิด modal ยืนยันก่อน (ไม่ลบทันที)
     listEl.querySelectorAll('.del-btn').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        btn.disabled = true;
-        try {
-          await admin.inventory.remove(btn.dataset.id);
-          loadInventory();
-        } catch (e) {
-          showInlineErr(btn, e.message);
-          btn.disabled = false;
-        }
+      btn.addEventListener('click', () => {
+        openDeleteModal(btn.dataset.id, btn.dataset.email);
       });
     });
 
@@ -752,6 +762,52 @@ forceConfirmBtn.addEventListener('click', async () => {
 document.getElementById('forceModalClose').addEventListener('click', closeForceModal);
 forceCancelBtn.addEventListener('click', closeForceModal);
 forceModal.addEventListener('click', e => { if (e.target === forceModal) closeForceModal(); });
+
+// ── Modal: ยืนยันลบไอดีพร้อมขาย ─────────────────────────
+const deleteModal      = document.getElementById('deleteModal');
+const deleteModalEmail = document.getElementById('deleteModalEmail');
+const deleteConfirmBtn = document.getElementById('deleteConfirmBtn');
+const deleteCancelBtn  = document.getElementById('deleteCancelBtn');
+let   pendingDeleteId  = null;
+
+function openDeleteModal(id, email) {
+  pendingDeleteId = id;
+  deleteModalEmail.textContent = email;
+  deleteConfirmBtn.disabled    = false;
+  deleteConfirmBtn.textContent = 'ลบออกจากคลัง';
+  deleteModal.classList.add('open');
+}
+function closeDeleteModal() {
+  deleteModal.classList.remove('open');
+  pendingDeleteId = null;
+}
+
+deleteConfirmBtn.addEventListener('click', async () => {
+  if (!pendingDeleteId) return;
+  deleteConfirmBtn.disabled    = true;
+  deleteConfirmBtn.textContent = 'กำลังลบ...';
+  try {
+    await admin.inventory.remove(pendingDeleteId);
+    closeDeleteModal();
+    loadInventory();
+  } catch (e) {
+    deleteConfirmBtn.disabled    = false;
+    deleteConfirmBtn.textContent = 'ลบออกจากคลัง';
+    // แสดง error ใน warn-box
+    let errEl = deleteModal.querySelector('.delete-err');
+    if (!errEl) {
+      errEl = document.createElement('div');
+      errEl.className = 'delete-err';
+      errEl.style.cssText = 'color:var(--danger);font-size:12px;margin-top:8px;';
+      deleteModal.querySelector('.warn-box').appendChild(errEl);
+    }
+    errEl.textContent = e.message;
+  }
+});
+
+document.getElementById('deleteModalClose').addEventListener('click', closeDeleteModal);
+deleteCancelBtn.addEventListener('click', closeDeleteModal);
+deleteModal.addEventListener('click', e => { if (e.target === deleteModal) closeDeleteModal(); });
 
 // ── Filters ───────────────────────────────────────────────
 document.getElementById('filterProduct').addEventListener('change', loadInventory);
