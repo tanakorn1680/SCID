@@ -208,34 +208,6 @@ export async function adminDeleteImage({ id }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Admin: เรียงลำดับรูปภาพใหม่
-// รับ { product_key, order: [{id, sort_order}] }
-// ลำดับ sort_order=0 จะถูก set เป็น cover อัตโนมัติ
-// ─────────────────────────────────────────────────────────────
-export async function adminReorderImages({ product_key, order }) {
-  if (!product_key || !Array.isArray(order) || !order.length) {
-    return { httpStatus: 400, body: { success: false, error: 'ข้อมูลไม่ครบ' } };
-  }
-
-  // อัป sort_order และ is_cover ทีละ row ใน parallel
-  // is_cover = true เฉพาะ sort_order === 0 (ลำดับแรก = ปก)
-  await Promise.all(
-    order.map(({ id, sort_order }) =>
-      supabaseAdmin
-        .from('product_images')
-        .update({
-          sort_order,
-          is_cover: sort_order === 0,
-        })
-        .eq('id', id)
-        .eq('product_key', product_key) // double-check ownership
-    )
-  );
-
-  return { httpStatus: 200, body: { success: true } };
-}
-
-// ─────────────────────────────────────────────────────────────
 // Admin: เปลี่ยน cover (unset เดิม → set ใหม่)
 // ─────────────────────────────────────────────────────────────
 export async function adminSetCover({ id, product_key }) {
