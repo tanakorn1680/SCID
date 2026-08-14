@@ -35,57 +35,63 @@
   .img-manager-title{font-size:13px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
   .img-manager-title span{background:rgba(26,106,160,0.1);color:var(--navy);font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;}
 
-  /* grid รูปภาพ — card แนวตั้ง รูป + action bar ด้านล่าง */
-  .img-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+  /* ── drag-and-drop image grid ── */
+  .img-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:6px;}
   .img-cell{
     border-radius:10px;overflow:hidden;
-    background:#fff;
-    border:2px solid var(--line);
+    background:#fff;border:2px solid var(--line);
     display:flex;flex-direction:column;
-    transition:border-color 0.15s;
+    transition:border-color 0.15s,opacity 0.15s,transform 0.15s;
+    cursor:grab;-webkit-user-select:none;user-select:none;
+    touch-action:none;
   }
+  .img-cell:active{cursor:grabbing;}
   .img-cell.is-cover{border-color:var(--gold);}
+  .img-cell.dragging{opacity:0.3;transform:scale(0.96);}
+  .img-cell.drag-over{border-color:var(--navy);border-style:dashed;background:rgba(26,106,160,0.04);}
 
-  /* รูปภาพ — กดเพื่อดูเต็มจอ */
   .img-thumb-wrap{
     position:relative;width:100%;aspect-ratio:1;
     background:linear-gradient(135deg,#E8F2FA,#D4E9F7);
-    cursor:zoom-in;overflow:hidden;
+    overflow:hidden;pointer-events:none;
   }
   .img-thumb-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
 
-  /* ribbon "ปก" ที่มุมบนซ้าย — แสดงเฉพาะรูปที่เป็นปก */
+  /* badge ลำดับมุมบนซ้าย */
+  .order-badge{
+    position:absolute;top:5px;left:5px;
+    width:20px;height:20px;
+    background:rgba(0,0,0,0.52);color:#fff;
+    font-size:10px;font-weight:800;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    line-height:1;pointer-events:none;
+  }
+  /* ribbon ปก — เฉพาะรูปแรก */
   .cover-ribbon{
     position:absolute;top:0;left:0;
     background:var(--gold);color:#fff;
     font-size:10px;font-weight:800;
-    padding:3px 9px 3px 7px;
-    border-radius:0 0 8px 0;
-    line-height:1.4;
-    pointer-events:none;
+    padding:3px 9px 3px 7px;border-radius:0 0 8px 0;
+    line-height:1.4;pointer-events:none;
   }
 
-  /* action bar ใต้รูป — แสดงถาวร ไม่ต้อง hover */
-  .img-action-bar{
-    display:flex;border-top:1px solid var(--line);
-  }
+  /* action bar — ปุ่มลบอย่างเดียว (ปกกำหนดจากลำดับ) */
+  .img-action-bar{display:flex;border-top:1px solid var(--line);}
   .img-action-bar button{
     flex:1;border:none;background:#fff;
     font-family:'IBM Plex Sans Thai',sans-serif;
-    font-size:11.5px;font-weight:700;
-    padding:7px 4px;cursor:pointer;
+    font-size:11.5px;font-weight:700;padding:7px 4px;cursor:pointer;
     display:flex;align-items:center;justify-content:center;gap:4px;
     transition:background 0.12s;
   }
-  .img-action-bar button:active{background:rgba(26,106,160,0.07);}
-  .img-action-bar .btn-cover{
-    color:var(--navy);
-    border-right:1px solid var(--line);
-  }
-  .img-action-bar .btn-cover.is-cover{
-    color:var(--gold);cursor:default;
-  }
+  .img-action-bar button:active{background:rgba(224,68,51,0.06);}
   .img-action-bar .btn-del{color:var(--danger);}
+
+  /* hint */
+  .drag-hint{
+    font-size:11px;color:rgba(26,58,82,0.42);
+    text-align:center;margin-bottom:10px;
+  }
   /* upload zone */
   .upload-zone{border:2px dashed var(--line);border-radius:10px;padding:18px 12px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;}
   .upload-zone:hover,.upload-zone.drag-over{border-color:var(--navy);background:rgba(26,106,160,0.04);}
@@ -175,6 +181,7 @@
     </div>
 
     <!-- grid รูปที่มีอยู่ -->
+    <div class="drag-hint" id="dragHint" style="display:none;">ลากเพื่อเรียงลำดับ &mdash; รูปแรกคือปก</div>
     <div class="img-grid" id="imgGrid"></div>
 
     <!-- upload zone -->
@@ -267,69 +274,99 @@ async function loadImages() {
 function renderImageGrid() {
   const grid    = document.getElementById('imgGrid');
   const countEl = document.getElementById('imgCount');
+  const hint    = document.getElementById('dragHint');
   countEl.textContent = `${currentImages.length} / 10`;
 
   if (!currentImages.length) {
     grid.innerHTML = '';
+    hint.style.display = 'none';
     return;
   }
 
-  grid.innerHTML = currentImages.map(img => `
-    <div class="img-cell ${img.is_cover ? 'is-cover' : ''}" data-id="${img.id}">
-      <div class="img-thumb-wrap" data-preview="${img.url}">
+  hint.style.display = currentImages.length > 1 ? 'block' : 'none';
+
+  grid.innerHTML = currentImages.map((img, idx) => `
+    <div class="img-cell ${idx === 0 ? 'is-cover' : ''}"
+         data-id="${img.id}" draggable="true">
+      <div class="img-thumb-wrap">
         <img src="${img.url}" alt="product image" loading="lazy">
-        ${img.is_cover ? '<span class="cover-ribbon">ปก</span>' : ''}
+        <span class="order-badge">${idx + 1}</span>
+        ${idx === 0 ? '<span class="cover-ribbon">ปก</span>' : ''}
       </div>
       <div class="img-action-bar">
-        <button class="btn-cover ${img.is_cover ? 'is-cover' : ''}"
-                ${img.is_cover ? 'disabled' : ''}
-                data-set-cover="${img.id}">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="${img.is_cover ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          ${img.is_cover ? 'ปกอยู่แล้ว' : 'ตั้งปก'}
-        </button>
-        <button class="btn-del" data-del-img="${img.id}">
+        <button class="btn-del" data-del-img="${img.id}" data-preview="${img.url}">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M9 6V4h6v2"/></svg>
           ลบ
+        </button>
+        <button class="btn-zoom" data-preview="${img.url}" style="border-left:1px solid var(--line);color:var(--navy);">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          ดู
         </button>
       </div>
     </div>
   `).join('');
 
-  // ── Event: ดูรูปเต็ม (กดที่ส่วนรูป ไม่ใช่ปุ่ม) ──
-  grid.querySelectorAll('.img-thumb-wrap[data-preview]').forEach(wrap => {
-    wrap.addEventListener('click', () => openLightbox(wrap.dataset.preview));
-  });
+  // ── Drag-and-drop (HTML5 Pointer Events — ทำงานบน mobile + desktop) ──
+  let dragSrcId = null;
 
-  // ── Event: ตั้งปก ──
-  grid.querySelectorAll('[data-set-cover]').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      btn.disabled = true;
-      try {
-        const r = await fetch('/api/admin/catalog-products?resource=product-image', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ id: btn.dataset.setCover, product_key: editingKey }),
-        });
-        const body = await r.json();
-        if (!body.success) throw new Error(body.error);
-        showImgAlert('ตั้งปกสำเร็จ', 'success');
-        await loadImages();
-      } catch (err) {
-        showImgAlert(err.message ?? 'ตั้งปกไม่สำเร็จ');
-        btn.disabled = false;
+  grid.querySelectorAll('.img-cell').forEach(cell => {
+    // Desktop: HTML5 drag
+    cell.addEventListener('dragstart', (e) => {
+      dragSrcId = cell.dataset.id;
+      cell.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    cell.addEventListener('dragend', () => {
+      cell.classList.remove('dragging');
+      grid.querySelectorAll('.img-cell').forEach(c => c.classList.remove('drag-over'));
+    });
+    cell.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (cell.dataset.id !== dragSrcId) cell.classList.add('drag-over');
+    });
+    cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'));
+    cell.addEventListener('drop', (e) => {
+      e.preventDefault();
+      cell.classList.remove('drag-over');
+      if (!dragSrcId || dragSrcId === cell.dataset.id) return;
+      reorderAndSave(dragSrcId, cell.dataset.id);
+    });
+
+    // Mobile: Pointer Events
+    let pointerStartY = 0, pointerMoved = false;
+    cell.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button')) return; // ไม่ drag ถ้ากดปุ่ม
+      pointerStartY = e.clientY;
+      pointerMoved  = false;
+      dragSrcId     = cell.dataset.id;
+    });
+    cell.addEventListener('pointermove', (e) => {
+      if (Math.abs(e.clientY - pointerStartY) > 8) pointerMoved = true;
+    });
+    cell.addEventListener('pointerup', (e) => {
+      if (!pointerMoved) return; // tap = ไม่ใช่ drag
+      // หา cell ที่อยู่ใต้นิ้ว
+      const el = document.elementFromPoint(e.clientX, e.clientY)?.closest('.img-cell');
+      if (el && el.dataset.id !== dragSrcId) {
+        reorderAndSave(dragSrcId, el.dataset.id);
       }
+      dragSrcId = null; pointerMoved = false;
     });
   });
 
-  // ── Event: ลบรูป ──
-  grid.querySelectorAll('[data-del-img]').forEach(btn => {
+  // ── ดูรูปเต็ม ──
+  grid.querySelectorAll('.btn-zoom').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openLightbox(btn.dataset.preview);
+    });
+  });
+
+  // ── ลบรูป ──
+  grid.querySelectorAll('.btn-del').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (!confirm('ลบรูปภาพนี้?')) return;
       btn.disabled = true;
       try {
         const r = await fetch('/api/admin/catalog-products?resource=product-image', {
@@ -350,6 +387,43 @@ function renderImageGrid() {
       }
     });
   });
+}
+
+// ── reorder: สลับตำแหน่ง + บันทึก DB ───────────────────────
+async function reorderAndSave(srcId, targetId) {
+  // หา index ของทั้งคู่ใน currentImages
+  const srcIdx = currentImages.findIndex(img => img.id === srcId);
+  const tgtIdx = currentImages.findIndex(img => img.id === targetId);
+  if (srcIdx === -1 || tgtIdx === -1) return;
+
+  // สลับใน array (splice out แล้วแทรกตำแหน่งใหม่)
+  const [moved] = currentImages.splice(srcIdx, 1);
+  currentImages.splice(tgtIdx, 0, moved);
+
+  // อัป UI ทันทีก่อน API ตอบ (optimistic)
+  renderImageGrid();
+
+  // build payload [{id, sort_order}]
+  const order = currentImages.map((img, i) => ({ id: img.id, sort_order: i }));
+
+  try {
+    const r = await fetch('/api/admin/catalog-products?resource=product-image', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ product_key: editingKey, order }),
+    });
+    const body = await r.json();
+    if (!body.success) throw new Error(body.error);
+    // reload เพื่อ sync ปก ใน product list ด้านล่าง
+    loadProducts();
+  } catch (err) {
+    showImgAlert('บันทึกลำดับไม่สำเร็จ — ' + (err.message ?? ''), 'error');
+    // rollback: โหลดจาก DB ใหม่
+    await loadImages();
+  }
 }
 
 // ── Upload zone: click ──────────────────────────────────────

@@ -1,190 +1,149 @@
-// api/_lib/handlers/catalog-products.js
-// Business logic สำหรับสินค้า — รวมจาก admin/products.js + public products.js เดิม
-// เหตุผลที่รวม: ทั้งคู่แตะตาราง `products` เดียวกัน ต่างกันแค่ scope ของสิทธิ์
-// (public เห็นเฉพาะ is_active=true, admin เห็น/แก้ได้ทุกอย่าง)
+// api/admin/catalog-products.js
+// Router เท่านั้น — business logic อยู่ที่ _lib/handlers/
 //
-// สำคัญ: publicListProducts ไม่ต้อง auth เลย ต้องแยกจาก admin function ให้ชัด
-// ที่ router — ห้ามเรียก requireAdmin ก่อนเข้าถึงฟังก์ชันนี้
+// GET    ?scope=public                        → public list (ไม่ต้อง login)
+// GET                                         → admin list สินค้าทั้งหมด
+// GET    ?resource=product-image&product_key= → list รูปของสินค้า
+// POST                                        → create product (JSON)
+// POST   ?resource=product-image             → upload รูป (FormData)
+// PATCH  ?resource=product-image             → reorder รูป (JSON) ← ลำดับ 0 = ปกอัตโนมัติ
+// PUT                                         → update product (JSON)
+// DELETE                                      → delete product (JSON)
+// DELETE ?resource=product-image             → ลบรูป (JSON)
+//
+// ⚠️ scope=public ต้องเช็คก่อน requireAdmin เสมอ
 
-import { supabaseAdmin } from '../supabase.js';
-import { getImagesByKeys } from './catalog-product-images.js';
+import { requireAdmin, errorResponse } from '../_lib/auth.js';
+import {
+  publicListProducts,
+  adminListProducts,
+  adminCreateProduct,
+  adminUpdateProduct,
+  adminDeleteProduct,
+} from '../_lib/handlers/catalog-products.js';
+import {
+  adminListImages,
+  adminUploadImage,
+  adminDeleteImage,
+  adminSetCover,
+  adminReorderImages,
+} from '../_lib/handlers/catalog-product-images.js';
+import { parseRequestUrl } from '../_lib/request-url.js';
 
-/**
- * public — สินค้าที่เปิดขายเท่านั้น ไม่ต้อง login
- * เดิมคือ GET /api/products
- * รวม stock_count (จำนวนไอดีพร้อมขายในคลัง) เพื่อให้หน้าร้านแสดง
- * "คงเหลือ X ชิ้น" และปิดปุ่มซื้อถ้าหมด — ใช้ RPC เดิมจาก Phase 5
- * (inventory_ready_counts) แทนการ query inventory ทีละสินค้า (N+1)
- *
- * v2: เพิ่ม images[] ต่อสินค้า — batch query 1 ครั้ง ไม่เป็น N+1
- */
-export async function publicListProducts() {
-  const [productsResult, countsResult] = await Promise.all([
-    supabaseAdmin
-      .from('products')
-      .select('key, label, category, price, spec')
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true }),
-    supabaseAdmin.rpc('inventory_ready_counts'),
-  ]);
+export const config = { runtime: 'nodejs' };
 
-  if (productsResult.error) throw productsResult.error;
-  if (countsResult.error) throw countsResult.error;
+// ─────────────────────────────────────────────────────────────
+export async function GET(req) {
+  const url = parseRequestUrl(req);
 
-  const productKeys = productsResult.data.map(p => p.key);
-
-  const [stockByKey, imagesByKey] = await Promise.all([
-    Promise.resolve(
-      new Map(countsResult.data.map(row => [row.product_key, Number(row.ready_count)]))
-    ),
-    getImagesByKeys(productKeys),
-  ]);
-
-  const data = productsResult.data.map(p => ({
-    ...p,
-    stock_count: stockByKey.get(p.key) ?? 0,
-    images:      imagesByKey.get(p.key) ?? [],
-  }));
-
-  return { httpStatus: 200, body: { success: true, data } };
-}
-
-/**
- * admin: list — ทุกสินค้ารวม is_active=false + images[]
- */
-export async function adminListProducts() {
-  const { data, error } = await supabaseAdmin
-    .from('products')
-    .select('id, key, label, category, price, spec, is_active, sort_order, created_at')
-    .order('sort_order', { ascending: true });
-
-  if (error) throw error;
-
-  const productKeys = data.map(p => p.key);
-  const imagesByKey = await getImagesByKeys(productKeys);
-
-  const enriched = data.map(p => ({
-    ...p,
-    images: imagesByKey.get(p.key) ?? [],
-  }));
-
-  return { httpStatus: 200, body: { success: true, data: enriched } };
-}
-
-/**
- * admin: create
- */
-export async function adminCreateProduct({ key, label, category, price, spec, sort_order }) {
-  if (!key || !label || !category || price == null) {
-    return {
-      httpStatus: 400,
-      body: { success: false, error: 'กรุณากรอกข้อมูลให้ครบ (รหัสสินค้า, ชื่อ, ประเภท, ราคา)' },
-    };
-  }
-
-  if (!/^[a-z0-9_]+$/.test(key)) {
-    return {
-      httpStatus: 400,
-      body: { success: false, error: 'รหัสสินค้าต้องเป็นตัวอักษรภาษาอังกฤษพิมพ์เล็ก ตัวเลข และ _ เท่านั้น' },
-    };
-  }
-
-  if (Number(price) < 0) {
-    return { httpStatus: 400, body: { success: false, error: 'ราคาต้องไม่ติดลบ' } };
-  }
-
-  const { data, error } = await supabaseAdmin
-    .from('products')
-    .insert({
-      key, label, category,
-      price: Number(price),
-      spec: spec?.trim() || null,
-      sort_order: sort_order ?? 0,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    if (error.code === '23505') {
-      return { httpStatus: 400, body: { success: false, error: 'รหัสสินค้านี้มีอยู่แล้ว' } };
+  // ── public path: ไม่ต้อง auth ──
+  if (url.searchParams.get('scope') === 'public') {
+    try {
+      const { httpStatus, body } = await publicListProducts();
+      return Response.json(body, { status: httpStatus });
+    } catch (err) {
+      console.error('GET catalog-products?scope=public failed:', err);
+      return Response.json({ success: false, error: 'โหลดสินค้าไม่สำเร็จ' }, { status: 500 });
     }
-    throw error;
   }
 
-  return { httpStatus: 200, body: { success: true, data } };
-}
+  // ── admin เท่านั้น ──
+  try {
+    await requireAdmin(req);
 
-/**
- * admin: update
- */
-export async function adminUpdateProduct({ id, label, category, price, spec, is_active, sort_order }) {
-  if (!id) {
-    return { httpStatus: 400, body: { success: false, error: 'ไม่ระบุ id' } };
-  }
-
-  const updates = {};
-  if (label      !== undefined) updates.label      = label;
-  if (category   !== undefined) updates.category   = category;
-  if (spec       !== undefined) updates.spec       = spec?.trim() || null;
-  if (is_active  !== undefined) updates.is_active  = is_active;
-  if (sort_order !== undefined) updates.sort_order = sort_order;
-  if (price      !== undefined) {
-    if (Number(price) < 0) {
-      return { httpStatus: 400, body: { success: false, error: 'ราคาต้องไม่ติดลบ' } };
+    if (url.searchParams.get('resource') === 'product-image') {
+      const product_key = url.searchParams.get('product_key');
+      const { httpStatus, body } = await adminListImages({ product_key });
+      return Response.json(body, { status: httpStatus });
     }
-    updates.price = Number(price);
+
+    const { httpStatus, body } = await adminListProducts();
+    return Response.json(body, { status: httpStatus });
+  } catch (err) {
+    console.error('GET catalog-products (admin) failed:', err);
+    return errorResponse(err);
   }
-
-  const { data, error } = await supabaseAdmin
-    .from('products')
-    .update(updates)
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) throw error;
-  if (!data) {
-    return { httpStatus: 404, body: { success: false, error: 'ไม่พบสินค้า' } };
-  }
-
-  return { httpStatus: 200, body: { success: true, data } };
 }
 
-/**
- * admin: delete — เฉพาะที่ไม่มี inventory ผูกอยู่
- * รูปภาพจะถูกลบ cascade ตาม ON DELETE CASCADE ที่ตั้งใน migration
- */
-export async function adminDeleteProduct({ id }) {
-  if (!id) {
-    return { httpStatus: 400, body: { success: false, error: 'ไม่ระบุ id' } };
+// ─────────────────────────────────────────────────────────────
+export async function POST(req) {
+  try {
+    await requireAdmin(req);
+    const url = parseRequestUrl(req);
+
+    if (url.searchParams.get('resource') === 'product-image') {
+      const form = await req.formData();
+      const { httpStatus, body } = await adminUploadImage(form);
+      return Response.json(body, { status: httpStatus });
+    }
+
+    const payload = await req.json();
+    const { httpStatus, body } = await adminCreateProduct(payload);
+    return Response.json(body, { status: httpStatus });
+  } catch (err) {
+    console.error('POST catalog-products failed:', err);
+    return errorResponse(err);
   }
+}
 
-  const { data: product, error: productErr } = await supabaseAdmin
-    .from('products')
-    .select('key')
-    .eq('id', id)
-    .single();
+// ─────────────────────────────────────────────────────────────
+// PATCH — เรียงลำดับรูปภาพ · ลำดับ sort_order=0 = ปกอัตโนมัติ
+export async function PATCH(req) {
+  try {
+    await requireAdmin(req);
+    const url = parseRequestUrl(req);
 
-  if (productErr || !product) {
-    return { httpStatus: 404, body: { success: false, error: 'ไม่พบสินค้า' } };
+    if (url.searchParams.get('resource') === 'product-image') {
+      const payload = await req.json();
+      const { httpStatus, body } = await adminReorderImages(payload);
+      return Response.json(body, { status: httpStatus });
+    }
+
+    return Response.json({ success: false, error: 'ไม่รู้จัก resource' }, { status: 400 });
+  } catch (err) {
+    console.error('PATCH catalog-products failed:', err);
+    return errorResponse(err);
   }
+}
 
-  const { count, error: invErr } = await supabaseAdmin
-    .from('inventory')
-    .select('id', { count: 'exact', head: true })
-    .eq('product_key', product.key);
+// ─────────────────────────────────────────────────────────────
+export async function PUT(req) {
+  try {
+    await requireAdmin(req);
+    const url = parseRequestUrl(req);
 
-  if (invErr) throw invErr;
+    if (url.searchParams.get('resource') === 'product-image') {
+      const payload = await req.json();
+      const { httpStatus, body } = await adminSetCover(payload);
+      return Response.json(body, { status: httpStatus });
+    }
 
-  if (count > 0) {
-    return {
-      httpStatus: 400,
-      body: { success: false, error: `สินค้านี้มีไอดีในคลัง ${count} รายการ ไม่สามารถลบได้ กรุณาปิดขายแทน` },
-    };
+    const payload = await req.json();
+    const { httpStatus, body } = await adminUpdateProduct(payload);
+    return Response.json(body, { status: httpStatus });
+  } catch (err) {
+    console.error('PUT catalog-products failed:', err);
+    return errorResponse(err);
   }
+}
 
-  const { error: deleteErr } = await supabaseAdmin.from('products').delete().eq('id', id);
-  if (deleteErr) throw deleteErr;
+// ─────────────────────────────────────────────────────────────
+export async function DELETE(req) {
+  try {
+    await requireAdmin(req);
+    const url = parseRequestUrl(req);
 
-  return { httpStatus: 200, body: { success: true } };
+    if (url.searchParams.get('resource') === 'product-image') {
+      const payload = await req.json();
+      const { httpStatus, body } = await adminDeleteImage(payload);
+      return Response.json(body, { status: httpStatus });
+    }
+
+    const payload = await req.json();
+    const { httpStatus, body } = await adminDeleteProduct(payload);
+    return Response.json(body, { status: httpStatus });
+  } catch (err) {
+    console.error('DELETE catalog-products failed:', err);
+    return errorResponse(err);
+  }
 }
