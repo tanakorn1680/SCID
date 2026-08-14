@@ -115,9 +115,21 @@ export async function adminCreateProduct({ key, label, category, price, spec, so
 }
 
 /**
- * admin: update
+ * admin: update (single row)
+ * รองรับ batch_sort: [{id, sort_order}] สำหรับ drag-and-drop reorder
  */
-export async function adminUpdateProduct({ id, label, category, price, spec, is_active, sort_order }) {
+export async function adminUpdateProduct({ id, label, category, price, spec, is_active, sort_order, batch_sort }) {
+  // ── batch sort_order update (drag reorder) ──
+  if (Array.isArray(batch_sort) && batch_sort.length) {
+    await Promise.all(
+      batch_sort.map(({ id: pid, sort_order: so }) =>
+        supabaseAdmin.from('products').update({ sort_order: so }).eq('id', pid)
+      )
+    );
+    return { httpStatus: 200, body: { success: true } };
+  }
+
+  // ── single update ──
   if (!id) {
     return { httpStatus: 400, body: { success: false, error: 'ไม่ระบุ id' } };
   }
