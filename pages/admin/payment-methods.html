@@ -4,15 +4,45 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ช่องทางชำระเงิน — Admin</title>
-<link rel="stylesheet" href="/css/admin-theme.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+  :root{--navy:#1A6BA0;--gold:#D9A330;--ink:#1A3A52;--green-go:#3F8557;--danger:#E04433;--line:rgba(26,106,160,0.15);}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'IBM Plex Sans Thai',sans-serif;background:#F0F4F8;color:var(--ink);min-height:100vh;padding:16px 14px 40px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .back-link{font-size:13px;font-weight:600;color:var(--navy);text-decoration:none;}
+  .page-title{font-family:'Baloo 2',sans-serif;font-size:18px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .page-title svg{width:20px;height:20px;flex-shrink:0;}
+  .card{background:#fff;border-radius:13px;padding:16px;box-shadow:0 2px 10px rgba(0,40,80,0.08);margin-bottom:14px;}
+  .card-title{font-size:14px;font-weight:700;margin-bottom:12px;}
+  .field{margin-bottom:12px;}
+  .field label{font-size:12.5px;font-weight:600;display:block;margin-bottom:5px;}
+  .field input,.field select{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-family:'IBM Plex Sans Thai',sans-serif;background:#fff;}
+  .submit-btn{width:100%;padding:12px 0;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
+  .submit-btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .form-alert{padding:9px 11px;border-radius:8px;font-size:12.5px;margin-top:10px;display:none;}
+  .form-alert.show{display:block;}
+  .form-alert.error{background:rgba(224,68,51,0.1);color:var(--danger);}
+  .form-alert.success{background:rgba(63,133,87,0.1);color:var(--green-go);}
+  .method-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dotted var(--line);gap:10px;}
+  .method-row:last-child{border-bottom:none;}
+  .method-info{flex:1;}
+  .method-label{font-size:13px;font-weight:700;}
+  .method-meta{font-size:11.5px;color:rgba(26,58,82,0.5);margin-top:2px;}
+  .row-actions{display:flex;gap:6px;flex-shrink:0;}
+  .icon-btn{background:rgba(26,106,160,0.08);border:none;border-radius:7px;padding:7px 10px;font-size:12px;cursor:pointer;color:var(--navy);font-family:'IBM Plex Sans Thai',sans-serif;}
+  .icon-btn.danger{background:rgba(224,68,51,0.1);color:var(--danger);}
+  .inactive{opacity:0.5;}
+  .empty-state{text-align:center;padding:30px 20px;color:rgba(26,58,82,0.5);font-size:13px;}
+</style>
 </head>
 <body>
 
-<header class="admin-topbar">
-  <a href="/pages/admin/dashboard.html" class="back-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>Dashboard</a>
-  <span class="topbar-title">ช่องทางชำระเงิน</span>
-</header>
-<div class="admin-page">
+<div class="topbar">
+  <a href="/pages/admin/dashboard.html" class="back-link">← Dashboard</a>
+</div>
+<div class="page-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> ช่องทางชำระเงิน</div>
+
 <div class="card">
   <div class="card-title" id="formTitle">เพิ่มช่องทางใหม่</div>
   <div class="field">
@@ -31,19 +61,17 @@
 
   <div id="typeFields"></div>
 
-  <button class="btn btn-primary btn-full" id="saveBtn">บันทึกช่องทางใหม่</button>
-  <button class="btn btn-primary btn-full" id="cancelEditBtn" style="display:none;background:rgba(26,58,82,0.15);color:var(--ink);margin-top:8px;">ยกเลิกแก้ไข</button>
-  <div class="inline-alert" id="formAlert"></div>
+  <button class="submit-btn" id="saveBtn">บันทึกช่องทางใหม่</button>
+  <button class="submit-btn" id="cancelEditBtn" style="display:none;background:rgba(26,58,82,0.15);color:var(--ink);margin-top:8px;">ยกเลิกแก้ไข</button>
+  <div class="form-alert" id="formAlert"></div>
 </div>
 
 <div class="card">
   <div class="card-title">ช่องทางทั้งหมด</div>
   <div id="methodList"><div class="empty-state">กำลังโหลด...</div></div>
-
 </div>
 
 <script type="module">
-import { toast } from '/js/admin-toast.js';
 import { auth, admin } from '../../js/api.js';
 
 const session = await auth.getSession();
@@ -121,7 +149,6 @@ function renderQrUploadUI() {
       renderQrUploadUI();
     } catch (err) {
       alertEl.textContent = err.message;
-    toast.error('เกิดข้อผิดพลาด', err.message);
       alertEl.className = 'form-alert show error';
     }
   });
@@ -237,7 +264,6 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 
   if (!label) {
     alertEl.textContent = 'กรุณากรอกชื่อที่แสดงให้ลูกค้าเห็น';
-    toast.error('เกิดข้อผิดพลาด', 'กรุณากรอกชื่อที่แสดงให้ลูกค้าเห็น');
     alertEl.className = 'form-alert show error';
     return;
   }
@@ -250,13 +276,11 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
       await admin.paymentMethods.create({ type, label, details });
     }
     alertEl.textContent = 'บันทึกสำเร็จ';
-    toast.error('เกิดข้อผิดพลาด', 'บันทึกสำเร็จ');
     alertEl.className = 'form-alert show success';
     resetForm();
     loadMethods();
   } catch (e) {
     alertEl.textContent = e.message;
-    toast.error('เกิดข้อผิดพลาด', e.message);
     alertEl.className = 'form-alert show error';
     btn.disabled = false;
     btn.textContent = editingId ? 'บันทึกการแก้ไข' : 'บันทึกช่องทางใหม่';
