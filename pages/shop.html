@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>สินค้าทั้งหมด</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
-  :root{--paper:#FBF8F1;--navy:#1A6BA0;--sky:#2196C9;--gold:#D9A330;--gold-deep:#B9821F;--ink:#1A3A52;--line:rgba(26,106,160,0.18);--muted:rgba(26,58,82,0.55);--green-go:#3F8557;--danger:#E04433;}
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  :root{--paper:#FBF8F1;--navy:#1A6BA0;--sky:#2196C9;--gold:#D9A330;--gold-deep:#B9821F;--ink:#1A3A52;--line:rgba(26,106,160,0.18);--muted:rgba(26,58,82,0.55);--green-go:#3F8557;--danger:#E04433;--card:rgba(255,255,255,0.93);}
   *{box-sizing:border-box;margin:0;padding:0;}
   html,body{background:#81CFF0;overflow-x:hidden;}
   body{font-family:'IBM Plex Sans Thai',sans-serif;color:var(--ink);min-height:100vh;padding-bottom:30px;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
@@ -15,36 +15,37 @@
   .nav-actions{display:flex;gap:14px;align-items:center;font-size:13px;}
   .nav-actions a{color:var(--navy);text-decoration:none;font-weight:600;}
   .nav-actions button{background:none;border:none;color:var(--navy);font-size:13px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;}
-  .hero-banner{margin:0 16px 18px;background:linear-gradient(135deg,#1A6BA0 0%,#0E4C7A 100%);border-radius:18px;padding:26px 22px;color:#fff;box-shadow:0 10px 28px rgba(0,40,80,0.28);position:relative;overflow:hidden;}
+  /* hero — gradient เหมือน x-main summary bar */
+  .hero-banner{margin:0 16px 18px;background:linear-gradient(135deg,#1A6BA0 0%,#0E4C7A 100%);border-radius:14px;padding:26px 22px;color:#fff;box-shadow:0 6px 24px rgba(0,90,160,0.22),0 2px 6px rgba(0,80,140,0.14);position:relative;overflow:hidden;}
   .hero-title{font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;position:relative;z-index:1;}
   .hero-sub{font-size:13px;color:rgba(255,255,255,0.85);position:relative;z-index:1;}
   .hero-banner::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;background:rgba(217,163,48,0.18);border-radius:50%;}
   .product-scroll-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 16px 8px;}
   .product-scroll-wrap::-webkit-scrollbar{display:none;}
   .product-grid{display:inline-flex;flex-direction:row;gap:12px;align-items:stretch;}
-  .product-card{background:rgba(255,255,255,0.97);border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,40,80,0.14);display:flex;flex-direction:column;width:155px;flex-shrink:0;}
-  /* รูปภาพสินค้า — ถ้ามีรูปจริงจะซ่อน placeholder SVG */
+  /* card — ใช้ var(--card) + backdrop-filter เหมือน .menu-card ของ x-main */
+  .product-card{background:var(--card);border-radius:14px;overflow:hidden;box-shadow:0 6px 24px rgba(0,90,160,0.15),0 2px 6px rgba(0,80,140,0.10);backdrop-filter:blur(4px);display:flex;flex-direction:column;width:155px;flex-shrink:0;}
   .product-img-wrap{width:100%;aspect-ratio:4/3;background:linear-gradient(135deg,#E8F2FA,#D4E9F7);display:flex;align-items:center;justify-content:center;color:#9DBDD6;flex-shrink:0;overflow:hidden;position:relative;}
   .product-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;}
   .product-img-wrap .placeholder-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9DBDD6;}
-  /* badge จำนวนรูปเพิ่มเติม */
   .img-count-badge{position:absolute;bottom:5px;right:6px;background:rgba(0,0,0,0.48);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px;line-height:1.4;pointer-events:none;}
   .product-info{padding:10px 11px 12px;display:flex;flex-direction:column;flex:1;}
-  .product-name{font-size:13px;font-weight:700;margin-bottom:6px;line-height:1.35;min-height:2.7em;}
-  .product-price{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:17px;margin-bottom:4px;}
+  .product-name{font-size:13px;font-weight:700;margin-bottom:6px;line-height:1.35;min-height:2.7em;color:var(--ink);}
+  /* ราคา — Space Mono สีฟ้า เหมือน .item-price-tag ของ x-main */
+  .product-price{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--sky);margin-bottom:4px;}
   .stock-line{font-size:11px;margin-bottom:6px;min-height:1.4em;}
   .stock-line.in-stock{color:var(--green-go);}
   .stock-line.out-of-stock{color:var(--danger);font-weight:600;}
   .spec-link{background:none;border:none;color:var(--sky);font-size:11px;font-weight:600;text-decoration:underline;cursor:pointer;padding:0 0 8px;text-align:left;font-family:'IBM Plex Sans Thai',sans-serif;min-height:1.6em;}
-  .buy-btn{margin-top:auto;width:100%;padding:9px 0;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:12.5px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
-  .buy-btn:active{opacity:0.85;}
-  .buy-btn:disabled{background:rgba(26,58,82,0.25);cursor:not-allowed;}
+  /* buy button — สีเขียว var(--green-go) เหมือน .oc-btn-confirm ของ x-main */
+  .buy-btn{margin-top:auto;width:100%;padding:9px 0;background:var(--green-go);color:#fff;border:none;border-radius:9px;font-size:12.5px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;box-shadow:0 3px 10px rgba(63,133,87,0.25);transition:transform .1s,opacity .1s;-webkit-tap-highlight-color:transparent;}
+  .buy-btn:active{transform:scale(0.97);}
+  .buy-btn:disabled{background:rgba(26,58,82,0.2);color:rgba(26,58,82,0.4);cursor:not-allowed;box-shadow:none;}
 
-  /* ── Spec Modal (รายละเอียด + gallery) ── */
+  /* ── Spec Modal — พื้น var(--paper) เหมือน x-main bottom sheet ── */
   .spec-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(10,25,40,0.55);z-index:50;align-items:flex-end;justify-content:center;}
   .spec-modal-backdrop.show{display:flex;}
-  .spec-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:520px;max-height:82vh;display:flex;flex-direction:column;padding:0 0 calc(16px + env(safe-area-inset-bottom));}
-  /* Gallery strip ด้านบน modal */
+  .spec-modal{background:var(--paper);border-radius:18px 18px 0 0;width:100%;max-width:520px;max-height:82vh;display:flex;flex-direction:column;padding:0 0 calc(16px + env(safe-area-inset-bottom));}
   .gallery-wrap{flex-shrink:0;background:#000;border-radius:18px 18px 0 0;overflow:hidden;position:relative;aspect-ratio:4/3;display:none;}
   .gallery-wrap.has-images{display:block;}
   .gallery-main{width:100%;height:100%;object-fit:contain;background:#0d1c2b;}
@@ -54,29 +55,33 @@
   .gallery-thumb-strip{display:none;}
   .gallery-thumb{width:52px;height:52px;object-fit:cover;border-radius:7px;cursor:pointer;border:2.5px solid transparent;flex-shrink:0;transition:border-color 0.15s;}
   .gallery-thumb.active{border-color:var(--navy);}
-  /* Modal body scroll */
   .spec-modal-body-wrap{padding:16px 18px 0;overflow-y:auto;flex:1;}
-  .spec-modal-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;margin-bottom:4px;}
-  .spec-modal-price{color:var(--gold);font-weight:800;font-size:14px;margin-bottom:12px;}
+  .spec-modal-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;margin-bottom:4px;color:var(--ink);}
+  /* ราคาใน modal — Space Mono สีฟ้า */
+  .spec-modal-price{font-family:'Space Mono',monospace;font-size:12.5px;font-weight:700;color:var(--sky);margin-bottom:12px;}
   .spec-modal-body{white-space:pre-line;font-size:13px;line-height:1.75;color:var(--ink);}
-  .spec-modal-close{margin:14px 18px 0;width:calc(100% - 36px);padding:11px 0;background:rgba(26,58,82,0.08);color:var(--ink);border:none;border-radius:9px;font-size:13px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;flex-shrink:0;}
+  .spec-modal-close{margin:14px 18px 0;width:calc(100% - 36px);padding:11px 0;background:rgba(26,58,82,0.08);color:var(--muted);border:none;border-radius:9px;font-size:13px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;flex-shrink:0;transition:transform .1s;-webkit-tap-highlight-color:transparent;}
+  .spec-modal-close:active{transform:scale(0.97);}
 
-  /* ── Confirm Modal ── */
+  /* ── Confirm Modal — พื้น var(--paper), ปุ่ม ok สีเขียว เหมือน x-main ── */
   .confirm-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(10,25,40,0.55);z-index:60;align-items:flex-end;justify-content:center;}
   .confirm-modal-backdrop.show{display:flex;}
-  .confirm-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:420px;padding:22px 20px calc(20px + env(safe-area-inset-bottom));}
-  .confirm-modal-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;margin-bottom:14px;}
-  .confirm-modal-summary{background:rgba(26,106,160,0.05);border-radius:12px;padding:14px;margin-bottom:18px;}
-  .confirm-modal-product{font-size:14px;font-weight:700;margin-bottom:4px;}
-  .confirm-modal-price{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:18px;}
+  .confirm-modal{background:var(--paper);border-radius:18px 18px 0 0;width:100%;max-width:420px;padding:22px 20px calc(20px + env(safe-area-inset-bottom));}
+  .confirm-modal-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;margin-bottom:14px;color:var(--ink);}
+  .confirm-modal-summary{background:rgba(26,106,160,0.07);border-radius:12px;padding:14px;margin-bottom:18px;border:1.5px solid var(--line);}
+  .confirm-modal-product{font-size:14px;font-weight:700;margin-bottom:4px;color:var(--ink);}
+  /* ราคาใน confirm — Space Mono สีทอง เหมือน .oc-total-amount */
+  .confirm-modal-price{font-family:'Space Mono',monospace;font-weight:700;color:var(--gold);font-size:17px;}
   .confirm-modal-actions{display:flex;gap:10px;}
-  .confirm-modal-actions button{flex:1;padding:12px 0;border:none;border-radius:9px;font-size:13.5px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
-  .confirm-modal-cancel{background:rgba(26,58,82,0.08);color:var(--ink);}
-  .confirm-modal-ok{background:var(--navy);color:#fff;}
+  .confirm-modal-actions button{flex:1;padding:12px 0;border:none;border-radius:9px;font-size:13.5px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;transition:transform .1s,opacity .1s;-webkit-tap-highlight-color:transparent;}
+  .confirm-modal-actions button:active{transform:scale(0.97);}
+  .confirm-modal-cancel{background:rgba(26,58,82,0.08);color:var(--muted);}
+  .confirm-modal-ok{background:var(--green-go);color:#fff;box-shadow:0 4px 14px rgba(63,133,87,0.32);}
 
   .loading-state,.empty-state{grid-column:1/-1;text-align:center;padding:50px 20px;color:rgba(255,255,255,0.75);font-size:14px;}
   .category-section{margin-bottom:6px;}
-  .category-title{font-family:'Baloo 2',sans-serif;font-size:15px;font-weight:700;color:#fff;margin:18px 0 10px;padding:0 16px;text-shadow:0 1px 4px rgba(0,40,80,0.3);}
+  /* category title — เหมือน .cat-label .name ของ x-main แต่คง layout เดิม */
+  .category-title{font-family:'Baloo 2',sans-serif;font-size:15px;font-weight:700;color:#fff;margin:18px 0 10px;padding:0 16px;text-shadow:0 2px 8px rgba(0,40,80,0.35);}
 </style>
 </head>
 <body>
