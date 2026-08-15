@@ -103,14 +103,14 @@
   .topbar{position:relative;}
   .menu-btn{background:none;border:none;cursor:pointer;padding:7px;color:#fff;display:flex;align-items:center;justify-content:center;border-radius:9px;transition:background .15s;}
   .menu-btn:active{background:rgba(255,255,255,0.15);}
-  .menu-dropdown{position:absolute;top:calc(100% + 4px);right:16px;background:rgba(200,220,240,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1.5px solid rgba(26,106,160,0.15);border-radius:18px;box-shadow:0 4px 18px rgba(0,90,160,0.12);min-width:180px;overflow:hidden;opacity:0;pointer-events:none;transform:translateY(-8px);transition:opacity .18s,transform .18s;z-index:200;}
+  .menu-dropdown{position:absolute;top:calc(100% + 4px);right:16px;background:rgba(200,220,240,0.45);backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);border:1.5px solid rgba(255,255,255,0.35);border-radius:18px;box-shadow:0 4px 18px rgba(0,90,160,0.10);min-width:180px;overflow:hidden;opacity:0;pointer-events:none;transform:translateY(-8px);transition:opacity .18s,transform .18s;z-index:200;}
   .menu-dropdown.open{opacity:1;pointer-events:all;transform:translateY(0);}
   .menu-item{display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:14px;font-weight:600;color:var(--ink);text-decoration:none;font-family:'IBM Plex Sans Thai',sans-serif;cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:background .12s;}
-  .menu-item:hover,.menu-item:active{background:rgba(26,106,160,0.1);}
-  .menu-item svg{flex-shrink:0;opacity:0.7;}
-  .menu-item.admin-item svg,.menu-item.admin-item{color:var(--navy);}
+  .menu-item:hover,.menu-item:active{background:rgba(255,255,255,0.25);}
+  .menu-item svg{flex-shrink:0;opacity:0.8;}
+  .menu-item.admin-item{color:var(--navy);}
   .menu-item.danger{color:var(--danger);}
-  .menu-divider{height:1px;background:rgba(26,106,160,0.15);margin:3px 0;}
+  .menu-divider{height:1px;background:rgba(255,255,255,0.3);margin:3px 0;}
   .category-section{margin-bottom:6px;}
   .category-title{font-family:'Baloo 2',sans-serif;font-size:15px;font-weight:700;color:#fff;margin:18px 0 10px;padding:0 16px;text-shadow:0 1px 4px rgba(0,40,80,0.3);}
 </style>
