@@ -15,43 +15,28 @@
   .nav-actions{display:flex;gap:14px;align-items:center;font-size:13px;}
   .nav-actions a{color:var(--navy);text-decoration:none;font-weight:600;}
   .nav-actions button{background:none;border:none;color:var(--navy);font-size:13px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;}
-  /* ── Liquid Glass Hero ── */
+  /* ── Hero Banner — card style เดียวกับ index.html ── */
   .hero-banner{
     margin:0 16px 18px;
-    border-radius:22px;
+    border-radius:18px;
     padding:26px 22px;
-    color:#fff;
     position:relative;
     overflow:hidden;
-    /* glass base */
-    background:rgba(255,255,255,0.18);
-    backdrop-filter:blur(22px) saturate(1.6);
-    -webkit-backdrop-filter:blur(22px) saturate(1.6);
-    /* border highlight */
-    border:1px solid rgba(255,255,255,0.38);
-    box-shadow:
-      0 2px 0 0 rgba(255,255,255,0.55) inset,
-      0 -1px 0 0 rgba(255,255,255,0.12) inset,
-      0 12px 32px rgba(0,50,100,0.18);
+    background:rgba(255,255,255,0.93);
+    backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);
+    box-shadow:0 6px 24px rgba(0,90,160,0.15), 0 2px 6px rgba(0,80,140,0.10);
   }
-  /* specular streak บนสุด */
-  .hero-banner::before{
-    content:'';position:absolute;top:0;left:0;right:0;height:44%;
-    background:linear-gradient(180deg,rgba(255,255,255,0.22) 0%,rgba(255,255,255,0) 100%);
-    border-radius:22px 22px 0 0;pointer-events:none;
-  }
-  /* วงกลม blob สีน้ำเงิน */
+  /* วงกลม blob มุมขวา */
   .hero-banner::after{
     content:'';position:absolute;right:-28px;top:-28px;
-    width:140px;height:140px;
-    background:rgba(26,58,82,0.22);
+    width:130px;height:130px;
+    background:rgba(26,106,160,0.08);
     border-radius:50%;
-    backdrop-filter:blur(8px);
-    -webkit-backdrop-filter:blur(8px);
-    border:1px solid rgba(255,255,255,0.12);
+    pointer-events:none;
   }
-  .hero-title{font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;position:relative;z-index:1;text-shadow:0 1px 6px rgba(0,30,70,0.25);}
-  .hero-sub{font-size:13px;color:rgba(255,255,255,0.9);position:relative;z-index:1;text-shadow:0 1px 4px rgba(0,30,70,0.2);}
+  .hero-title{font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;position:relative;z-index:1;color:var(--ink);text-shadow:0 2px 8px rgba(255,255,255,0.6);}
+  .hero-sub{font-size:13px;color:rgba(26,58,82,0.7);position:relative;z-index:1;}
   .product-scroll-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 16px 8px;}
   .product-scroll-wrap::-webkit-scrollbar{display:none;}
   .product-grid{display:inline-flex;flex-direction:row;gap:12px;align-items:stretch;}
