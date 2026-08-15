@@ -15,10 +15,43 @@
   .nav-actions{display:flex;gap:14px;align-items:center;font-size:13px;}
   .nav-actions a{color:var(--navy);text-decoration:none;font-weight:600;}
   .nav-actions button{background:none;border:none;color:var(--navy);font-size:13px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;}
-  .hero-banner{margin:0 16px 18px;background:linear-gradient(135deg,#1A6BA0 0%,#0E4C7A 100%);border-radius:18px;padding:26px 22px;color:#fff;box-shadow:0 10px 28px rgba(0,40,80,0.28);position:relative;overflow:hidden;}
-  .hero-title{font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;position:relative;z-index:1;}
-  .hero-sub{font-size:13px;color:rgba(255,255,255,0.85);position:relative;z-index:1;}
-  .hero-banner::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;background:rgba(217,163,48,0.18);border-radius:50%;}
+  /* ── Liquid Glass Hero ── */
+  .hero-banner{
+    margin:0 16px 18px;
+    border-radius:22px;
+    padding:26px 22px;
+    color:#fff;
+    position:relative;
+    overflow:hidden;
+    /* glass base */
+    background:rgba(255,255,255,0.18);
+    backdrop-filter:blur(22px) saturate(1.6);
+    -webkit-backdrop-filter:blur(22px) saturate(1.6);
+    /* border highlight */
+    border:1px solid rgba(255,255,255,0.38);
+    box-shadow:
+      0 2px 0 0 rgba(255,255,255,0.55) inset,
+      0 -1px 0 0 rgba(255,255,255,0.12) inset,
+      0 12px 32px rgba(0,50,100,0.18);
+  }
+  /* specular streak บนสุด */
+  .hero-banner::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:44%;
+    background:linear-gradient(180deg,rgba(255,255,255,0.22) 0%,rgba(255,255,255,0) 100%);
+    border-radius:22px 22px 0 0;pointer-events:none;
+  }
+  /* วงกลม blob สีน้ำเงิน */
+  .hero-banner::after{
+    content:'';position:absolute;right:-28px;top:-28px;
+    width:140px;height:140px;
+    background:rgba(26,58,82,0.22);
+    border-radius:50%;
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,0.12);
+  }
+  .hero-title{font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px;position:relative;z-index:1;text-shadow:0 1px 6px rgba(0,30,70,0.25);}
+  .hero-sub{font-size:13px;color:rgba(255,255,255,0.9);position:relative;z-index:1;text-shadow:0 1px 4px rgba(0,30,70,0.2);}
   .product-scroll-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 16px 8px;}
   .product-scroll-wrap::-webkit-scrollbar{display:none;}
   .product-grid{display:inline-flex;flex-direction:row;gap:12px;align-items:stretch;}
@@ -31,7 +64,7 @@
   .img-count-badge{position:absolute;bottom:5px;right:6px;background:rgba(0,0,0,0.48);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px;line-height:1.4;pointer-events:none;}
   .product-info{padding:10px 11px 12px;display:flex;flex-direction:column;flex:1;}
   .product-name{font-size:13px;font-weight:700;margin-bottom:6px;line-height:1.35;min-height:2.7em;}
-  .product-price{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:17px;margin-bottom:4px;}
+  .product-price{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:15px;margin-bottom:4px;}
   .stock-line{font-size:11px;margin-bottom:6px;min-height:1.4em;}
   .stock-line.in-stock{color:var(--green-go);}
   .stock-line.out-of-stock{color:var(--danger);font-weight:600;}
@@ -271,7 +304,7 @@ try {
                 ${buildCardImage(images)}
                 <div class="product-info">
                   <div class="product-name">${p.label}</div>
-                  <div class="product-price">฿${Number(p.price).toLocaleString()}</div>
+                  <div class="product-price">ราคา ${Number(p.price).toLocaleString()} บาท</div>
                   ${stockLine}
                   ${specBtn}
                   <button class="buy-btn" onclick='buyProduct(${JSON.stringify({ key: p.key, label: p.label, price: p.price })})' ${inStock ? '' : 'disabled'}>
@@ -341,7 +374,7 @@ const specBackdrop = document.getElementById('specModalBackdrop');
 window.openSpecModal = (product) => {
   const images = product.images ?? [];
   document.getElementById('specModalTitle').textContent = product.label;
-  document.getElementById('specModalPrice').textContent = `฿${Number(product.price).toLocaleString()}`;
+  document.getElementById('specModalPrice').textContent = `ราคา ${Number(product.price).toLocaleString()} บาท`;
   document.getElementById('specModalBody').textContent = product.spec ?? '';
   buildGallery(images);
   specBackdrop.classList.add('show');
@@ -369,7 +402,7 @@ window.buyProduct = (product) => {
   if (!session) return window.location.href = '/pages/login.html';
   pendingProduct = product;
   document.getElementById('confirmModalProduct').textContent = product.label;
-  document.getElementById('confirmModalPrice').textContent = `฿${Number(product.price).toLocaleString()}`;
+  document.getElementById('confirmModalPrice').textContent = `ราคา ${Number(product.price).toLocaleString()} บาท`;
   confirmBackdrop.classList.add('show');
 };
 
