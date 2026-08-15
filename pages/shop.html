@@ -40,10 +40,14 @@
   .buy-btn:active{opacity:0.85;}
   .buy-btn:disabled{background:rgba(26,58,82,0.25);cursor:not-allowed;}
 
-  /* ── Spec Modal (รายละเอียด + gallery) ── */
-  .spec-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(10,25,40,0.55);z-index:50;align-items:flex-end;justify-content:center;}
-  .spec-modal-backdrop.show{display:flex;}
-  .spec-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:520px;max-height:82vh;display:flex;flex-direction:column;padding:0 0 calc(16px + env(safe-area-inset-bottom));}
+  /* ── ตัด tap highlight flash ทั้งหน้า ── */
+  *{-webkit-tap-highlight-color:transparent;}
+
+  /* ── Spec Modal ── */
+  .spec-modal-backdrop{position:fixed;inset:0;background:rgba(10,25,40,0.55);z-index:50;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s ease;}
+  .spec-modal-backdrop.show{opacity:1;pointer-events:all;}
+  .spec-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:520px;max-height:82vh;display:flex;flex-direction:column;padding:0 0 calc(16px + env(safe-area-inset-bottom));transform:translateY(48px);transition:transform .26s cubic-bezier(.32,.72,0,1);}
+  .spec-modal-backdrop.show .spec-modal{transform:translateY(0);}
   /* Gallery strip ด้านบน modal */
   .gallery-wrap{flex-shrink:0;background:#000;border-radius:18px 18px 0 0;overflow:hidden;position:relative;aspect-ratio:4/3;display:none;}
   .gallery-wrap.has-images{display:block;}
@@ -62,9 +66,10 @@
   .spec-modal-close{margin:14px 18px 0;width:calc(100% - 36px);padding:11px 0;background:rgba(26,58,82,0.08);color:var(--ink);border:none;border-radius:9px;font-size:13px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;flex-shrink:0;}
 
   /* ── Confirm Modal ── */
-  .confirm-modal-backdrop{display:none;position:fixed;inset:0;background:rgba(10,25,40,0.55);z-index:60;align-items:flex-end;justify-content:center;}
-  .confirm-modal-backdrop.show{display:flex;}
-  .confirm-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:420px;padding:22px 20px calc(20px + env(safe-area-inset-bottom));}
+  .confirm-modal-backdrop{position:fixed;inset:0;background:rgba(10,25,40,0.55);z-index:60;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s ease;}
+  .confirm-modal-backdrop.show{opacity:1;pointer-events:all;}
+  .confirm-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:420px;padding:22px 20px calc(20px + env(safe-area-inset-bottom));transform:translateY(48px);transition:transform .26s cubic-bezier(.32,.72,0,1);}
+  .confirm-modal-backdrop.show .confirm-modal{transform:translateY(0);}
   .confirm-modal-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;margin-bottom:14px;}
   .confirm-modal-summary{background:rgba(26,106,160,0.05);border-radius:12px;padding:14px;margin-bottom:18px;}
   .confirm-modal-product{font-size:14px;font-weight:700;margin-bottom:4px;}
@@ -344,9 +349,11 @@ window.openSpecModal = (product) => {
 
 function closeSpecModal() {
   specBackdrop.classList.remove('show');
-  // reset gallery state ป้องกัน flicker เมื่อเปิดสินค้าใหม่
-  galleryMain.src = '';
-  galleryThumbStrip.innerHTML = '';
+  // รอ transition จบ (~260ms) แล้วค่อย reset gallery state
+  setTimeout(() => {
+    galleryMain.src = '';
+    galleryThumbStrip.innerHTML = '';
+  }, 280);
 }
 
 document.getElementById('specModalCloseBtn').addEventListener('click', closeSpecModal);
