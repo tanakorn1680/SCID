@@ -5,57 +5,143 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
-  :root{--navy:#1A6BA0;--gold:#D9A330;--ink:#1A3A52;--green-go:#3F8557;--danger:#E04433;}
+  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  :root{--navy:#1A6BA0;--gold:#D9A330;--ink:#1A3A52;--green-go:#3F8557;--danger:#E04433;--line:rgba(26,106,160,0.15);}
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'IBM Plex Sans Thai',sans-serif;background:#F0F4F8;color:var(--ink);min-height:100vh;padding:20px 16px 40px;}
-  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+  body{font-family:'IBM Plex Sans Thai',sans-serif;background:#F0F4F8;color:var(--ink);min-height:100vh;padding:16px 14px 50px;}
+
+  /* ── Topbar ── */
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
   .page-title{font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;}
   .logout-btn{background:none;border:none;color:rgba(26,58,82,0.5);font-size:13px;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;}
-  .nav-links{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
-  .nav-link{padding:9px 16px;background:var(--navy);color:#fff;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:7px;}
-  .nav-link svg{width:15px;height:15px;flex-shrink:0;}
-  .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;}
-  @media(min-width:600px){.stat-grid{grid-template-columns:repeat(3,1fr);}}
-  .stat-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 10px rgba(0,40,80,0.08);}
-  .stat-card.urgent::before{content:'';display:block;width:4px;height:100%;position:absolute;left:0;top:0;background:var(--danger);border-radius:12px 0 0 12px;}
-  .stat-card{position:relative;overflow:hidden;}
-  .stat-label{font-size:12px;color:rgba(26,58,82,0.55);margin-bottom:6px;}
-  .stat-value{font-family:'Baloo 2',sans-serif;font-size:26px;font-weight:800;}
+
+  /* ── Stat row ── */
+  .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px;}
+  @media(min-width:520px){.stat-grid{grid-template-columns:repeat(3,1fr);}}
+  .stat-card{background:#fff;border-radius:12px;padding:14px 14px 12px;box-shadow:0 2px 10px rgba(0,40,80,0.08);position:relative;overflow:hidden;}
+  .stat-card.urgent::before{content:'';position:absolute;left:0;top:0;width:4px;height:100%;background:var(--danger);border-radius:12px 0 0 12px;}
+  .stat-label{font-size:11.5px;color:rgba(26,58,82,0.55);margin-bottom:5px;}
+  .stat-value{font-family:'Baloo 2',sans-serif;font-size:24px;font-weight:800;}
   .stat-value.go{color:var(--green-go);}
   .stat-value.urgent{color:var(--danger);}
-  .loading{color:rgba(26,58,82,0.4);font-size:13px;}
+
+  /* ── Filter pills (แบบในรูป Mayor Service) ── */
+  .pills-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-bottom:14px;padding-bottom:4px;}
+  .pills-scroll::-webkit-scrollbar{display:none;}
+  .pills-row{display:inline-flex;gap:8px;white-space:nowrap;}
+  .pill-btn{
+    position:relative;
+    display:inline-flex;align-items:center;gap:6px;
+    padding:9px 16px;
+    background:#fff;
+    border:1.5px solid var(--line);
+    border-radius:50px;
+    font-size:13px;font-weight:600;
+    font-family:'IBM Plex Sans Thai',sans-serif;
+    color:var(--ink);cursor:pointer;
+    transition:background .15s,border-color .15s,color .15s;
+    white-space:nowrap;
+  }
+  .pill-btn.active{background:var(--navy);border-color:var(--navy);color:#fff;}
+  .pill-btn svg{width:14px;height:14px;flex-shrink:0;}
+  /* badge เลขแจ้งเตือน */
+  .pill-badge{
+    position:absolute;top:-6px;right:-6px;
+    min-width:18px;height:18px;
+    background:var(--danger);color:#fff;
+    font-size:10px;font-weight:800;
+    border-radius:20px;
+    display:flex;align-items:center;justify-content:center;
+    padding:0 4px;line-height:1;
+    border:2px solid #F0F4F8;
+  }
+  .pill-badge.hide{display:none;}
+
+  /* ── Order list ── */
+  .order-list{display:flex;flex-direction:column;gap:10px;}
+  .order-card{
+    background:#fff;border-radius:13px;padding:14px;
+    box-shadow:0 2px 10px rgba(0,40,80,0.08);
+    border-left:4px solid transparent;
+    cursor:pointer;transition:opacity .15s;
+  }
+  .order-card:active{opacity:.82;}
+  .order-card.pending        {border-left-color:rgba(26,58,82,0.18);}
+  .order-card.awaiting_review{border-left-color:var(--gold);}
+  .order-card.delivered      {border-left-color:var(--green-go);}
+  .order-card.cancelled      {border-left-color:var(--danger);}
+  .order-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+  .order-id{font-size:11px;color:rgba(26,58,82,0.45);font-family:'Space Mono',monospace;}
+  .status-pill{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:11px;}
+  .status-pill.pending        {background:rgba(26,58,82,0.08);color:rgba(26,58,82,0.6);}
+  .status-pill.awaiting_review{background:rgba(217,163,48,0.15);color:#B9821F;}
+  .status-pill.delivered      {background:rgba(63,133,87,0.12);color:var(--green-go);}
+  .status-pill.cancelled      {background:rgba(224,68,51,0.12);color:var(--danger);}
+  .order-email{font-size:12px;color:rgba(26,58,82,0.55);margin-bottom:3px;}
+  .order-product{font-size:13px;font-weight:700;margin-bottom:5px;}
+  .order-amount{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:17px;}
+  .order-time{font-size:11px;color:rgba(26,58,82,0.38);margin-top:4px;}
+
+  .empty-state{text-align:center;padding:48px 20px;color:rgba(26,58,82,0.42);font-size:13px;}
+  .empty-state svg{width:38px;height:38px;margin-bottom:10px;color:rgba(26,58,82,0.2);display:block;margin-left:auto;margin-right:auto;}
+
+  /* ── Nav links ── */
+  .section-label{font-size:11px;font-weight:700;color:rgba(26,58,82,0.42);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;margin-top:24px;}
+  .nav-links{display:flex;gap:8px;flex-wrap:wrap;}
+  .nav-link{padding:9px 14px;background:#fff;color:var(--navy);border-radius:9px;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:7px;box-shadow:0 1px 6px rgba(0,40,80,0.07);}
+  .nav-link svg{width:15px;height:15px;flex-shrink:0;}
+  .nav-link:active{opacity:.8;}
 </style>
 </head>
 <body>
 
 <div class="topbar">
-  <div class="page-title">Admin Dashboard</div>
+  <div class="page-title">Dashboard</div>
   <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
 </div>
 
+<!-- Stat cards -->
+<div class="stat-grid" id="statGrid">
+  <div class="stat-card"><div class="stat-label">กำลังโหลด...</div></div>
+</div>
+
+<!-- Filter pills -->
+<div class="pills-scroll">
+  <div class="pills-row" id="pillsRow">
+    <!-- render จาก JS -->
+  </div>
+</div>
+
+<!-- Order list -->
+<div id="orderList">
+  <div class="empty-state">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    กำลังโหลด...
+  </div>
+</div>
+
+<!-- Nav links -->
+<div class="section-label">เมนูจัดการ</div>
 <div class="nav-links">
   <a href="/pages/admin/orders.html" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg> ออเดอร์</a>
   <a href="/pages/admin/products.html" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="8" width="20" height="10" rx="4"/><path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/></svg> สินค้า</a>
   <a href="/pages/admin/inventory.html" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg> คลังไอดี</a>
   <a href="/pages/admin/customers.html" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> สมาชิก</a>
-  <a href="/pages/admin/payment-methods.html" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> ช่องทางชำระเงิน</a>
-  <a href="/pages/admin/settings.html" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> ตั้งค่าเว็บไซต์</a>
-  <a href="/pages/admin/admin-settings.html" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> ตั้งค่าผู้ดูแลระบบ</a>
-</div>
-
-<div class="stat-grid" id="statGrid">
-  <div class="stat-card"><div class="stat-label">กำลังโหลด...</div></div>
+  <a href="/pages/admin/payment-methods.html" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> ช่องทาง</a>
+  <a href="/pages/admin/settings.html" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> ตั้งค่า</a>
+  <a href="/pages/admin/admin-settings.html" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> แอดมิน</a>
 </div>
 
 <script type="module">
 import { auth, admin } from '../../js/api.js';
 
+// ── Auth ────────────────────────────────────────────────────
 const session = await auth.getSession();
 if (!session) { window.location.href = '/pages/login.html'; }
 
-// ตรวจ admin role
-const res = await fetch('/api/auth/profile', { headers: { Authorization: `Bearer ${session.access_token}` } });
+const res = await fetch('/api/auth/profile', {
+  headers: { Authorization: `Bearer ${session.access_token}` }
+});
 const { data: profile } = await res.json();
 if (profile?.role !== 'admin') { window.location.href = '/pages/shop.html'; }
 
@@ -64,7 +150,31 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   window.location.href = '/pages/login.html';
 });
 
-// โหลด stats
+// ── Config ──────────────────────────────────────────────────
+const STATUS_LABEL = {
+  pending:         'รอชำระเงิน',
+  awaiting_review: 'รอตรวจสลิป',
+  delivered:       'ส่งแล้ว',
+  cancelled:       'ยกเลิก',
+};
+
+const TABS = [
+  { key: 'awaiting_review', label: 'รอตรวจสลิป',
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>` },
+  { key: 'pending', label: 'รอชำระเงิน',
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>` },
+  { key: 'delivered', label: 'ส่งแล้ว',
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` },
+  { key: 'cancelled', label: 'ยกเลิก',
+    icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>` },
+];
+
+// นับจำนวนต่อ status — จะ fetch พร้อม stats
+let counts = {};
+let currentTab = 'awaiting_review';
+let allOrdersCache = {}; // cache ต่อ status ไม่ต้อง refetch ซ้ำ
+
+// ── Load stats ──────────────────────────────────────────────
 try {
   const { data: s } = await admin.stats();
   document.getElementById('statGrid').innerHTML = `
@@ -77,7 +187,7 @@ try {
       <div class="stat-value go">฿${Number(s.revenue_month).toLocaleString()}</div>
     </div>
     <div class="stat-card urgent">
-      <div class="stat-label">ออเดอร์รออนุมัติ</div>
+      <div class="stat-label">รออนุมัติ</div>
       <div class="stat-value urgent">${s.pending_review}</div>
     </div>
     <div class="stat-card">
@@ -85,17 +195,100 @@ try {
       <div class="stat-value">${s.inventory_ready}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">สมาชิกทั้งหมด</div>
+      <div class="stat-label">สมาชิก</div>
       <div class="stat-value">${s.total_customers}</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">จำนวนสินค้า</div>
+      <div class="stat-label">สินค้า</div>
       <div class="stat-value">${s.product_count}</div>
     </div>
   `;
+  // เอา counts จาก stats ที่มีอยู่แล้ว
+  counts['awaiting_review'] = Number(s.pending_review) || 0;
 } catch {
-  document.getElementById('statGrid').innerHTML = `<div class="loading">โหลด stats ไม่สำเร็จ</div>`;
+  document.getElementById('statGrid').innerHTML = `<div class="stat-label">โหลด stats ไม่สำเร็จ</div>`;
 }
+
+// ── Render pills ────────────────────────────────────────────
+function renderPills() {
+  document.getElementById('pillsRow').innerHTML = TABS.map(tab => {
+    const cnt = counts[tab.key] ?? 0;
+    const isActive = tab.key === currentTab;
+    return `
+      <button class="pill-btn ${isActive ? 'active' : ''}" data-tab="${tab.key}">
+        ${tab.icon}
+        ${tab.label}
+        <span class="pill-badge ${cnt === 0 ? 'hide' : ''}">${cnt > 99 ? '99+' : cnt}</span>
+      </button>`;
+  }).join('');
+
+  document.querySelectorAll('.pill-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentTab = btn.dataset.tab;
+      renderPills();
+      loadOrders(currentTab);
+    });
+  });
+}
+
+// ── Load orders ─────────────────────────────────────────────
+async function loadOrders(status) {
+  const listEl = document.getElementById('orderList');
+  listEl.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>กำลังโหลด...</div>`;
+
+  try {
+    // ใช้ cache ถ้ามี
+    if (!allOrdersCache[status]) {
+      const { data } = await admin.orders({ status });
+      allOrdersCache[status] = data;
+      // อัป badge count จากผลจริง
+      counts[status] = data.length;
+      renderPills();
+    }
+
+    const data = allOrdersCache[status];
+
+    if (!data.length) {
+      listEl.innerHTML = `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          ไม่มีออเดอร์ในหมวดนี้
+        </div>`;
+      return;
+    }
+
+    listEl.innerHTML = `<div class="order-list">` + data.map(o => {
+      const dt = new Date(o.created_at);
+      const timeStr = dt.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'2-digit' })
+                    + ' ' + dt.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+      return `
+        <div class="order-card ${o.status}" data-id="${o.id}">
+          <div class="order-top">
+            <span class="order-id">#${o.id.slice(0,7).toUpperCase()}</span>
+            <span class="status-pill ${o.status}">${STATUS_LABEL[o.status] ?? o.status}</span>
+          </div>
+          <div class="order-email">${o.user_email}</div>
+          <div class="order-product">${o.product_label}</div>
+          <div class="order-amount">฿${Number(o.amount).toLocaleString()}</div>
+          <div class="order-time">${timeStr}</div>
+        </div>`;
+    }).join('') + `</div>`;
+
+    // กดที่ card → ไปหน้า orders พร้อม highlight
+    listEl.querySelectorAll('.order-card').forEach(card => {
+      card.addEventListener('click', () => {
+        window.location.href = `/pages/admin/orders.html?highlight=${card.dataset.id}`;
+      });
+    });
+
+  } catch {
+    listEl.innerHTML = `<div class="empty-state">โหลดไม่สำเร็จ</div>`;
+  }
+}
+
+// ── Init ────────────────────────────────────────────────────
+renderPills();
+loadOrders(currentTab);
 </script>
 </body>
 </html>
