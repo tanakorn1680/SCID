@@ -293,7 +293,7 @@ try {
                   ${stockLine}
                   ${specBtn}
                   <button class="buy-btn" onclick='buyProduct(${JSON.stringify({ key: p.key, label: p.label, price: p.price })})' ${inStock ? '' : 'disabled'}>
-                    ${inStock ? 'ซื้อเลย' : 'สินค้าหมด'}
+                    ${inStock ? 'ซื้อ' : 'สินค้าหมด'}
                   </button>
                 </div>
               </div>`;
