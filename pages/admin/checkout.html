@@ -49,7 +49,6 @@
   .method-detail-box .detail-row{display:flex;justify-content:space-between;}
   .method-detail-box .detail-row .val{font-family:'Space Mono',monospace;font-weight:700;}
 </style>
-<link rel="stylesheet" href="/css/shared-theme.css">
 </head>
 <body>
 
@@ -61,7 +60,6 @@
 </div>
 
 <script type="module">
-import { toast } from '/js/toast.js';
 import { auth, orders, paymentMethods } from '../js/api.js';
 
 const session = await auth.getSession();
@@ -192,7 +190,6 @@ function renderPayment(order) {
     const file = fileInput.files[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) return showAlert('ไฟล์ใหญ่เกิน 5MB');
-    toast.error('ไฟล์ใหญ่เกิน 5MB');
     selectedFile = file;
     renderPreview(file);
     checkReadyToSubmit();
@@ -208,7 +205,6 @@ function renderPayment(order) {
       renderSuccess();
     } catch (e) {
       showAlert(e.message);
-    toast.error(e.message);
       submitBtn.disabled = false;
       submitBtn.textContent = 'ส่งสลิป';
     }
@@ -263,8 +259,7 @@ async function loadPaymentMethods(order) {
 
   } catch (e) {
     alertEl.textContent = 'โหลดช่องทางชำระเงินไม่สำเร็จ';
-    alertEl.className = 'form-alert show error'
-    toast.error('โหลดช่องทางชำระเงินไม่สำเร็จ');;
+    alertEl.className = 'form-alert show error';
   }
 }
 
