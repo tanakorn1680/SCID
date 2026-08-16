@@ -37,6 +37,7 @@
   .empty-state{text-align:center;padding:70px 20px;color:rgba(255,255,255,0.8);font-size:14px;}
   .loading-state{text-align:center;padding:50px 20px;color:rgba(255,255,255,0.8);}
 </style>
+<link rel="stylesheet" href="/css/shared-theme.css">
 </head>
 <body>
 
@@ -55,6 +56,7 @@
 </div>
 
 <script type="module">
+import { toast } from '/js/toast.js';
 import { auth, orders, settings } from '../js/api.js';
 
 settings.get().then(({ data }) => {

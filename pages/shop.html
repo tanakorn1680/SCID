@@ -114,6 +114,7 @@
   .category-section{margin-bottom:6px;}
   .category-title{font-family:'Baloo 2',sans-serif;font-size:15px;font-weight:700;color:#fff;margin:18px 0 10px;padding:0 16px;text-shadow:0 1px 4px rgba(0,40,80,0.3);}
 </style>
+<link rel="stylesheet" href="/css/shared-theme.css">
 </head>
 <body>
 
@@ -170,6 +171,7 @@
 </div>
 
 <script type="module">
+import { toast } from '/js/toast.js';
 import { auth, products, orders, settings } from '../js/api.js';
 
 // โหลด logo/ข้อความหน้าแรกจาก Website Settings
