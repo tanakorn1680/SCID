@@ -7,7 +7,7 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
   :root{--navy:#1A6BA0;--sky:#2196C9;--gold:#D9A330;--gold-deep:#B9821F;--ink:#1A3A52;--line:rgba(26,106,160,0.18);--muted:rgba(26,58,82,0.55);--green-go:#3F8557;--danger:#E04433;}
-  *{box-sizing:border-box;margin:0;padding:0;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
   html,body{background:#81CFF0;}
   body{font-family:'IBM Plex Sans Thai',sans-serif;color:var(--ink);min-height:100vh;padding:0 0 40px;}
   .topbar{display:flex;align-items:center;gap:10px;padding:14px 16px;background:rgba(255,255,255,0.15);backdrop-filter:blur(8px);position:sticky;top:0;z-index:20;}
@@ -45,6 +45,12 @@
   .pending-msg .title{font-size:14px;font-weight:700;color:var(--gold-deep);margin-bottom:4px;}
   .pending-msg .sub{font-size:12.5px;color:var(--muted);}
   .skeleton{text-align:center;padding:60px 20px;color:rgba(255,255,255,0.8);}
+  .topbar{background:rgba(255,255,255,0.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,0.25);}
+  .section-card{background:rgba(255,255,255,0.92);border:1.5px solid rgba(255,255,255,0.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);box-shadow:0 4px 18px rgba(0,40,80,0.12);}
+  .cred-btn{transition:background .15s,transform .12s cubic-bezier(.32,.72,0,1);}
+  .cred-btn:active{transform:scale(0.93);background:rgba(255,255,255,0.35);}
+  .back-btn{transition:opacity .15s;}
+  .back-btn:active{opacity:0.65;}
 </style>
 </head>
 <body>
