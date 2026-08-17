@@ -95,6 +95,14 @@ export const auth = {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) throw new Error(mapAuthError(error));
   },
+
+  async resendVerification(email) {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+    });
+    if (error) throw new Error(mapAuthError(error));
+  },
 };
 
 // ── Products (รวมเข้า /api/admin/catalog-products แล้ว) ────

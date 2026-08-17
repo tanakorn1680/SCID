@@ -44,6 +44,19 @@
   .submit-btn{transition:opacity .18s,transform .12s cubic-bezier(.32,.72,0,1),box-shadow .18s;box-shadow:0 4px 14px rgba(26,106,160,0.28);}
   .submit-btn:active{transform:scale(0.97);opacity:0.88;box-shadow:0 2px 6px rgba(26,106,160,0.15);}
   .submit-btn:disabled{box-shadow:none;}
+
+  /* ── Email Verify Screen ── */
+  .verify-screen{display:none;text-align:center;padding:8px 0 4px;}
+  .verify-screen.active{display:block;}
+  .verify-icon{width:72px;height:72px;margin:0 auto 18px;background:linear-gradient(135deg,rgba(33,150,201,0.12) 0%,rgba(26,106,160,0.18) 100%);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  .verify-icon svg{width:34px;height:34px;stroke:var(--navy);}
+  .verify-title{font-family:'Baloo 2',sans-serif;font-size:19px;font-weight:700;color:var(--ink);margin-bottom:10px;}
+  .verify-desc{font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:6px;}
+  .verify-email-text{font-weight:700;color:var(--navy);word-break:break-all;}
+  .verify-note{font-size:12px;color:var(--muted);margin-top:14px;padding-top:14px;border-top:1px solid var(--line);}
+  .resend-btn{background:none;border:none;color:var(--sky);font-size:13px;font-family:'IBM Plex Sans Thai',sans-serif;cursor:pointer;text-decoration:underline;padding:0;margin-top:4px;}
+  .resend-btn:disabled{color:var(--muted);text-decoration:none;cursor:not-allowed;}
+  .resend-countdown{font-size:12px;color:var(--muted);margin-top:6px;min-height:18px;}
 </style>
 </head>
 <body>
@@ -94,7 +107,31 @@
     <button class="submit-btn" id="registerBtn" disabled>สมัครสมาชิก</button>
   </div>
 
-  <a href="/" class="back-link">← กลับหน้าแรก</a>
+  <!-- VERIFY EMAIL SCREEN -->
+  <div class="verify-screen" id="verifyScreen">
+    <div class="verify-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="4" width="20" height="16" rx="3"/>
+        <path d="M2 7l10 7 10-7"/>
+      </svg>
+    </div>
+    <div class="verify-title">ตรวจสอบอีเมลของคุณ</div>
+    <div class="verify-desc">
+      เราส่งลิงก์ยืนยันไปที่<br>
+      <span class="verify-email-text" id="verifyEmailDisplay"></span>
+    </div>
+    <div class="verify-desc" style="margin-top:8px;">กรุณาคลิกลิงก์ในอีเมลเพื่อเปิดใช้งานบัญชีของคุณ</div>
+    <div class="verify-note">
+      ไม่เห็นอีเมล? ตรวจสอบโฟลเดอร์ Spam/Junk<br>
+      หรือส่งลิงก์ใหม่ด้านล่าง
+    </div>
+    <div style="margin-top:10px;">
+      <button class="resend-btn" id="resendBtn">ส่งอีเมลยืนยันอีกครั้ง</button>
+      <div class="resend-countdown" id="resendCountdown"></div>
+    </div>
+  </div>
+
+  <a href="/" class="back-link" id="backHomeLink">← กลับหน้าแรก</a>
 </div>
 
 <script type="module">
@@ -209,6 +246,58 @@ document.getElementById('loginBtn').addEventListener('click', async () => {
   }
 });
 
+// ── Verify Email Screen ──
+let pendingEmail = '';
+let resendTimer = null;
+
+function showVerifyScreen(email) {
+  pendingEmail = email;
+  // ซ่อน tab-switch และ panels ทั้งหมด
+  document.querySelector('.tab-switch').style.display = 'none';
+  document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+  hideAlert();
+
+  document.getElementById('verifyEmailDisplay').textContent = email;
+  document.getElementById('verifyScreen').classList.add('active');
+  startResendCooldown();
+}
+
+function startResendCooldown(seconds = 60) {
+  const btn = document.getElementById('resendBtn');
+  const countdown = document.getElementById('resendCountdown');
+  btn.disabled = true;
+  let remaining = seconds;
+  countdown.textContent = `ส่งใหม่ได้ใน ${remaining} วินาที`;
+  if (resendTimer) clearInterval(resendTimer);
+  resendTimer = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(resendTimer);
+      btn.disabled = false;
+      countdown.textContent = '';
+    } else {
+      countdown.textContent = `ส่งใหม่ได้ใน ${remaining} วินาที`;
+    }
+  }, 1000);
+}
+
+document.getElementById('resendBtn').addEventListener('click', async () => {
+  if (!pendingEmail) return;
+  const btn = document.getElementById('resendBtn');
+  btn.disabled = true;
+  btn.textContent = 'กำลังส่ง...';
+  try {
+    await auth.resendVerification(pendingEmail);
+    btn.textContent = 'ส่งอีเมลยืนยันอีกครั้ง';
+    document.getElementById('resendCountdown').textContent = '✓ ส่งแล้ว!';
+    setTimeout(() => startResendCooldown(60), 1000);
+  } catch (e) {
+    btn.textContent = 'ส่งอีเมลยืนยันอีกครั้ง';
+    btn.disabled = false;
+    document.getElementById('resendCountdown').textContent = 'ส่งไม่สำเร็จ กรุณาลองใหม่';
+  }
+});
+
 // REGISTER
 document.getElementById('registerBtn').addEventListener('click', async () => {
   hideAlert();
@@ -222,12 +311,8 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = 'กำลังสมัคร...';
   try {
     await auth.register(email, password);
-    showAlert('สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ', 'success');
     btn.textContent = 'สมัครสมาชิก';
-    setTimeout(() => {
-      document.querySelector('.tab-btn[data-tab="login"]').click();
-      document.getElementById('loginEmail').value = email;
-    }, 1200);
+    showVerifyScreen(email);
   } catch (e) {
     showAlert(e.message);
     btn.disabled = false; btn.textContent = 'สมัครสมาชิก';
