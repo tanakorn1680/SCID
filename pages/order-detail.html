@@ -160,7 +160,8 @@ if (!orderId) {
       <div class="section-card">
         <span class="status-badge-lg ${order.status}">${s.label}</span>
         <div class="detail-row"><span class="lbl">สินค้า</span><span class="val">${order.product_label}</span></div>
-        <div class="detail-row"><span class="lbl">ยอดเงิน</span><span class="val" style="color:var(--gold);font-family:'Baloo 2',sans-serif;font-size:16px;">฿${Number(order.amount).toLocaleString()}</span></div>
+        <div class="detail-row"><span class="lbl">ยอดสินค้า</span><span class="val" style="color:var(--gold);font-family:'Baloo 2',sans-serif;font-size:16px;">฿${Number(order.amount).toLocaleString()}</span></div>
+        ${order.unique_amount && order.status === 'pending' ? `<div class="detail-row"><span class="lbl" style="color:var(--danger);">โอนยอดนี้</span><span class="val" style="color:var(--danger);font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;">฿${Number(order.unique_amount).toFixed(2)}</span></div>` : ''}
         <div class="detail-row"><span class="lbl">วันที่สั่ง</span><span class="val">${fmtDate(order.created_at)}</span></div>
         <div class="detail-row"><span class="lbl">อัปเดตล่าสุด</span><span class="val">${fmtDate(order.updated_at)}</span></div>
         ${order.reject_reason ? `<div class="detail-row"><span class="lbl" style="color:var(--danger);">เหตุผลปฏิเสธ</span><span class="val" style="color:var(--danger);">${order.reject_reason}</span></div>` : ''}
