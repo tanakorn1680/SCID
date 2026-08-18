@@ -36,14 +36,51 @@ async function expirePendingOrders(userId) {
 }
 
 /**
+ * generateUniqueAmount — สร้างยอดเงินเฉพาะสำหรับ order นี้
+ *
+ * ตัวอย่าง: ราคาสินค้า 150 บาท → ยอดโอน 150.24 บาท
+ * เลข .XX คือเลขสุ่ม 01-98 เพื่อให้จับคู่กับ notification ธนาคารได้
+ *
+ * ตรวจ collision: ถ้า unique_amount นี้มี order pending อยู่แล้ว → สุ่มใหม่
+ * (ป้องกันกรณีลูกค้า 2 คนสั่งพร้อมกันได้ยอดซ้ำกัน)
+ */
+async function generateUniqueAmount(basePrice) {
+  const MAX_TRIES = 10;
+
+  for (let i = 0; i < MAX_TRIES; i++) {
+    const cents = Math.floor(Math.random() * 98) + 1; // 01-98
+    const uniqueAmount = parseFloat(`${basePrice}.${String(cents).padStart(2, '0')}`);
+
+    // ตรวจว่ายอดนี้ไม่มีใช้อยู่แล้วใน order pending (ภายใน 30 นาที)
+    const { count } = await supabaseAdmin
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('unique_amount', uniqueAmount)
+      .eq('status', 'pending')
+      .gt('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString());
+
+    if ((count ?? 0) === 0) return uniqueAmount;
+  }
+
+  // fallback: ถ้าสุ่มชนทุกครั้ง (ไม่น่าเกิด) ใช้ timestamp แทน
+  const fallbackCents = Date.now() % 98 + 1;
+  return parseFloat(`${basePrice}.${String(fallbackCents).padStart(2, '0')}`);
+}
+
+/**
  * create — สร้าง order ใหม่ ราคาคำนวณ server-side เสมอ
  * เดิมคือ POST /api/orders/create
+ *
+ * v2: เพิ่ม unique_amount เพื่อให้แอป Bank Amount Reader จับคู่ได้อัตโนมัติ
  */
 export async function createOrder(profile, { product_key }) {
   const product = await getProduct(product_key);
   if (!product) {
     return { httpStatus: 400, body: { success: false, error: 'ไม่พบสินค้า' } };
   }
+
+  // สร้างยอดเฉพาะ เช่น ราคา 150 → unique_amount = 150.24
+  const uniqueAmount = await generateUniqueAmount(product.price);
 
   const { data: order, error } = await supabaseAdmin
     .from('orders')
@@ -53,9 +90,10 @@ export async function createOrder(profile, { product_key }) {
       product_key:   product.key,
       product_label: product.label,
       amount:        product.price,
+      unique_amount: uniqueAmount,
       status:        'pending',
     })
-    .select('id, product_label, amount, status, created_at')
+    .select('id, product_label, amount, unique_amount, status, created_at')
     .single();
 
   if (error) throw error;
@@ -76,7 +114,7 @@ export async function getOrderDetail(profile, orderId) {
 
   const { data: order, error } = await supabaseAdmin
     .from('orders')
-    .select('id, product_key, product_label, amount, status, reject_reason, created_at, updated_at, user_id')
+    .select('id, product_key, product_label, amount, unique_amount, status, reject_reason, created_at, updated_at, user_id')
     .eq('id', orderId)
     .single();
 
@@ -150,6 +188,7 @@ export async function getOrderDetail(profile, orderId) {
         id:            order.id,
         product_label: order.product_label,
         amount:        order.amount,
+        unique_amount: order.unique_amount,
         status:        order.status,
         reject_reason: order.reject_reason,
         created_at:    order.created_at,
