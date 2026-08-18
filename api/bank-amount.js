@@ -15,12 +15,7 @@ export const config = { runtime: 'nodejs' };
 
 const DEVICE_TOKEN = process.env.DEVICE_TOKEN;
 
-export default async function handler(req) {
-  // เฉพาะ POST
-  if (req.method !== 'POST') {
-    return Response.json({ error: 'Method not allowed' }, { status: 405 });
-  }
-
+export async function POST(req) {
   // ตรวจ token
   const auth = req.headers.get('authorization') || '';
   if (!DEVICE_TOKEN || auth !== `Bearer ${DEVICE_TOKEN}`) {
