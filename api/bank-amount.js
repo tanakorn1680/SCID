@@ -1,24 +1,76 @@
 // api/bank-amount.js
-// รับ notification จากแอป Bank Amount Reader
-// → บันทึกลง bank_notifications
-// → จับคู่กับ order ที่ unique_amount ตรงกัน
-// → approve (deliver_order) อัตโนมัติ
+// รับ notification จากแอป Bank Amount Reader และ serve ข้อมูลออเดอร์ที่รอจับคู่
+//
+// GET  /api/bank-amount?action=pending
+//   Authorization: Bearer {DEVICE_TOKEN}
+//   → คืนออเดอร์ที่สถานะ pending_payment เรียงตาม created_at
+//   → แอพ Android ดึงทุก 10 วินาที เพื่อแสดงรายการรอจับคู่
 //
 // POST /api/bank-amount
-// Authorization: Bearer {DEVICE_TOKEN}
-// Body: { amount, currency, bank, timestamp, notification_id, is_test }
+//   Authorization: Bearer {DEVICE_TOKEN}
+//   Body: { amount, currency, bank, timestamp, notification_id, is_test }
+//   → บันทึก bank_notification → auto_match → approve
 
 import { supabaseAdmin } from './_lib/supabase.js';
 import { approveOrder }  from './_lib/handlers/admin-orders.js';
+import { parseRequestUrl } from './_lib/request-url.js';
 
 export const config = { runtime: 'nodejs' };
 
 const DEVICE_TOKEN = process.env.DEVICE_TOKEN;
 
-export async function POST(req) {
-  // ตรวจ token
+// ─── Token check (shared) ─────────────────────────────────────────────────
+function checkToken(req) {
   const auth = req.headers.get('authorization') || '';
-  if (!DEVICE_TOKEN || auth !== `Bearer ${DEVICE_TOKEN}`) {
+  return DEVICE_TOKEN && auth === `Bearer ${DEVICE_TOKEN}`;
+}
+
+// ─── GET: รายการออเดอร์ที่รอจับคู่ ─────────────────────────────────────────
+export async function GET(req) {
+  if (!checkToken(req)) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const url    = parseRequestUrl(req);
+  const action = url.searchParams.get('action');
+
+  if (action !== 'pending') {
+    return Response.json({ error: `Unknown action: ${action}` }, { status: 400 });
+  }
+
+  // ดึงออเดอร์ที่ยังรอชำระ (pending_payment) ใน 2 ชั่วโมงล่าสุด
+  // จำกัด 2 ชั่วโมง: ออเดอร์เก่ากว่านี้ไม่น่า match แล้ว + ลด payload
+  const since = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await supabaseAdmin
+    .from('orders')
+    .select('id, product_label, amount, unique_amount, status, created_at, user_email')
+    .eq('status', 'pending_payment')
+    .gte('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error('GET /api/bank-amount?action=pending error:', error);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+
+  return Response.json({
+    success: true,
+    count:   data.length,
+    orders:  data.map(o => ({
+      id:            o.id,
+      product_label: o.product_label,
+      amount:        o.amount,
+      unique_amount: o.unique_amount,
+      created_at:    o.created_at,
+      user_email:    o.user_email,  // แอดมินเห็นได้เพราะ device เท่านั้น
+    })),
+  });
+}
+
+export async function POST(req) {
+  if (!checkToken(req)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
