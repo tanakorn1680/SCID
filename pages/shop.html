@@ -84,18 +84,19 @@
   .spec-modal-close{margin:14px 18px 0;width:calc(100% - 36px);padding:11px 0;background:rgba(26,58,82,0.08);color:var(--ink);border:none;border-radius:9px;font-size:13px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;flex-shrink:0;}
 
   /* ── Confirm Modal ── */
-  .confirm-modal-backdrop{position:fixed;inset:0;background:rgba(10,25,40,0.55);z-index:60;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s ease;}
+  .confirm-modal-backdrop{position:fixed;inset:0;background:rgba(10,25,40,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .18s ease;}
   .confirm-modal-backdrop.show{opacity:1;pointer-events:all;}
-  .confirm-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:420px;padding:22px 20px calc(20px + env(safe-area-inset-bottom));transform:translateY(48px);transition:transform .26s cubic-bezier(.32,.72,0,1);}
-  .confirm-modal-backdrop.show .confirm-modal{transform:translateY(0);}
-  .confirm-modal-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;margin-bottom:14px;}
-  .confirm-modal-summary{background:rgba(26,106,160,0.05);border-radius:12px;padding:14px;margin-bottom:18px;}
-  .confirm-modal-product{font-size:14px;font-weight:700;margin-bottom:4px;}
+  .confirm-modal{background:rgba(255,255,255,0.97);border:1.5px solid rgba(255,255,255,0.7);border-radius:18px;width:100%;max-width:320px;padding:24px 20px 18px;box-shadow:0 8px 32px rgba(0,40,80,0.18);transform:scale(0.94) translateY(8px);transition:transform .22s cubic-bezier(.32,.72,0,1);}
+  .confirm-modal-backdrop.show .confirm-modal{transform:scale(1) translateY(0);}
+  .confirm-modal-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;color:#1A3A52;margin-bottom:12px;}
+  .confirm-modal-summary{background:rgba(26,106,160,0.06);border-radius:12px;padding:14px;margin-bottom:18px;}
+  .confirm-modal-product{font-size:14px;font-weight:700;color:#1A3A52;margin-bottom:4px;}
   .confirm-modal-price{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:18px;}
-  .confirm-modal-actions{display:flex;gap:10px;}
-  .confirm-modal-actions button{flex:1;padding:12px 0;border:none;border-radius:9px;font-size:13.5px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;}
-  .confirm-modal-cancel{background:rgba(26,58,82,0.08);color:var(--ink);}
-  .confirm-modal-ok{background:var(--green-go);color:#fff;}
+  .confirm-modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+  .confirm-modal-actions button{padding:9px 20px;border:none;border-radius:9px;font-size:13px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif;cursor:pointer;transition:opacity .15s,transform .12s cubic-bezier(.32,.72,0,1);}
+  .confirm-modal-actions button:active{transform:scale(0.96);opacity:0.85;}
+  .confirm-modal-cancel{background:rgba(26,58,82,0.1);color:#1A3A52;}
+  .confirm-modal-ok{background:#3A7D44;color:#fff;}
 
   .loading-state,.empty-state{grid-column:1/-1;text-align:center;padding:50px 20px;color:rgba(255,255,255,0.75);font-size:14px;}
 
@@ -113,6 +114,29 @@
   .menu-divider{height:1px;background:rgba(255,255,255,0.3);margin:3px 0;}
   .category-section{margin-bottom:6px;}
   .category-title{font-family:'Baloo 2',sans-serif;font-size:15px;font-weight:700;color:#fff;margin:18px 0 10px;padding:0 16px;text-shadow:0 1px 4px rgba(0,40,80,0.3);}
+
+  /* ── Dialog overlay (แทน confirm/alert) ── */
+  .sc-overlay{position:fixed;inset:0;background:rgba(10,30,50,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .18s ease;}
+  .sc-overlay.sc-show{opacity:1;pointer-events:all;}
+  .sc-box{background:rgba(255,255,255,0.97);border:1.5px solid rgba(255,255,255,0.7);border-radius:18px;padding:24px 20px 18px;max-width:320px;width:100%;box-shadow:0 8px 32px rgba(0,40,80,0.18);transform:scale(0.94) translateY(8px);transition:transform .22s cubic-bezier(.32,.72,0,1);}
+  .sc-overlay.sc-show .sc-box{transform:scale(1) translateY(0);}
+  .sc-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;color:#1A3A52;margin-bottom:8px;}
+  .sc-msg{font-size:13px;color:rgba(26,58,82,0.75);line-height:1.6;margin-bottom:18px;}
+  .sc-actions{display:flex;gap:8px;justify-content:flex-end;}
+  .sc-btn{padding:9px 20px;border-radius:9px;border:none;font-size:13px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif;cursor:pointer;transition:opacity .15s,transform .12s cubic-bezier(.32,.72,0,1);}
+  .sc-btn:active{transform:scale(0.96);opacity:0.85;}
+  .sc-btn.sc-cancel{background:rgba(26,58,82,0.1);color:#1A3A52;}
+  .sc-btn.sc-danger{background:#E04433;color:#fff;}
+  .sc-btn.sc-ok{background:#1A6BA0;color:#fff;}
+  /* ── Toast ── */
+  .sc-toast-wrap{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;width:max-content;max-width:calc(100vw - 32px);}
+  .sc-toast{padding:11px 18px;border-radius:12px;font-size:13.5px;font-weight:600;font-family:'IBM Plex Sans Thai',sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.18);display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(12px) scale(0.96);transition:opacity .22s ease,transform .22s cubic-bezier(.32,.72,0,1);white-space:nowrap;}
+  .sc-toast.sc-in{opacity:1;transform:translateY(0) scale(1);}
+  .sc-toast.sc-out{opacity:0;transform:translateY(8px) scale(0.96);}
+  .sc-toast.sc-success{background:#1F6B3A;color:#fff;}
+  .sc-toast.sc-error{background:#C0392B;color:#fff;}
+  .sc-toast.sc-info{background:#1A6BA0;color:#fff;}
+  .sc-toast svg{width:15px;height:15px;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -172,6 +196,54 @@
 <script type="module">
 import { auth, products, orders, settings } from '../js/api.js';
 
+
+// ── UI helpers (dialog + toast) ─────────────────────────────
+const _ICONS = {
+  success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  error:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  info:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+};
+function _toastWrap() {
+  let w = document.getElementById('_scTW');
+  if (!w) { w = document.createElement('div'); w.id = '_scTW'; w.className = 'sc-toast-wrap'; document.body.appendChild(w); }
+  return w;
+}
+function showToast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `sc-toast sc-${type}`;
+  el.innerHTML = (_ICONS[type] ?? _ICONS.info) + msg;
+  _toastWrap().appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('sc-in')));
+  const dur = type === 'error' ? 3500 : 2500;
+  setTimeout(() => {
+    el.classList.remove('sc-in'); el.classList.add('sc-out');
+    el.addEventListener('transitionend', () => el.remove(), { once: true });
+  }, dur);
+}
+function _mkOverlay() {
+  const o = document.createElement('div'); o.className = 'sc-overlay'; document.body.appendChild(o);
+  requestAnimationFrame(() => requestAnimationFrame(() => o.classList.add('sc-show')));
+  return o;
+}
+function _closeOverlay(o) {
+  o.classList.remove('sc-show');
+  o.addEventListener('transitionend', () => o.remove(), { once: true });
+}
+function showDialog({ title, msg, confirmLabel = 'ยืนยัน', confirmClass = 'sc-danger', onConfirm }) {
+  const o = _mkOverlay();
+  o.innerHTML = `<div class="sc-box"><div class="sc-title">${title}</div><div class="sc-msg">${msg}</div><div class="sc-actions"><button class="sc-btn sc-cancel" id="_scC">ยกเลิก</button><button class="sc-btn ${confirmClass}" id="_scOk">${confirmLabel}</button></div></div>`;
+  o.addEventListener('click', e => { if (e.target === o) _closeOverlay(o); });
+  o.querySelector('#_scC').addEventListener('click', () => _closeOverlay(o));
+  o.querySelector('#_scOk').addEventListener('click', () => { _closeOverlay(o); onConfirm?.(); });
+}
+function showInfo(title, msg) {
+  const o = _mkOverlay();
+  o.innerHTML = `<div class="sc-box"><div class="sc-title">${title}</div><div class="sc-msg">${msg}</div><div class="sc-actions"><button class="sc-btn sc-ok" id="_scOk">ตกลง</button></div></div>`;
+  o.addEventListener('click', e => { if (e.target === o) _closeOverlay(o); });
+  o.querySelector('#_scOk').addEventListener('click', () => _closeOverlay(o));
+}
+
+
 // โหลด logo/ข้อความหน้าแรกจาก Website Settings
 settings.get().then(({ data }) => {
   if (data.logo_url)  document.getElementById('siteLogo').src = data.logo_url;
@@ -209,9 +281,14 @@ if (!session) {
     <button class="menu-item danger" id="logoutBtn">${iconLogout} ออกจากระบบ</button>
   `;
 
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await auth.logout();
-    window.location.reload();
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    showDialog({
+      title: 'ยืนยันออกจากระบบ',
+      msg: 'ต้องการออกจากระบบหรือไม่?',
+      confirmLabel: 'ออกจากระบบ',
+      confirmClass: 'sc-danger',
+      onConfirm: async () => { await auth.logout(); window.location.reload(); },
+    });
   });
 }
 
@@ -410,9 +487,8 @@ document.getElementById('confirmModalOkBtn').addEventListener('click', async () 
     const { data } = await orders.create(product.key);
     window.location.href = `/pages/checkout.html?order_id=${data.id}`;
   } catch (e) {
-    alert(e.message);
+    showToast(e.message, 'error');
     btn.disabled = false; btn.textContent = 'ยืนยัน';
-    closeConfirmModal();
   }
 });
 </script>
