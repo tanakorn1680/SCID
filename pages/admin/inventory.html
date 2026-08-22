@@ -29,10 +29,6 @@
   .hint{font-size:11.5px;color:rgba(26,58,82,0.5);margin-top:5px;}
   .submit-btn{width:100%;padding:12px 0;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;transition:opacity .15s;}
   .submit-btn:disabled{opacity:0.5;cursor:not-allowed;}
-  .form-alert{padding:9px 11px;border-radius:8px;font-size:12.5px;margin-top:10px;display:none;}
-  .form-alert.show{display:block;}
-  .form-alert.error{background:rgba(224,68,51,0.1);color:var(--danger);}
-  .form-alert.success{background:rgba(63,133,87,0.1);color:var(--green-go);}
 
   /* ── Section divider inside card ──────────────────────────── */
   .section-sep{height:1px;background:var(--line);margin:14px 0;}
@@ -88,10 +84,6 @@
   .btn-edit:hover{background:rgba(63,133,87,0.16);}
 
   /* ── Edit modal specifics ──────────────────────────────── */
-  .edit-form-alert{padding:9px 11px;border-radius:8px;font-size:12.5px;margin-top:12px;display:none;}
-  .edit-form-alert.show{display:block;}
-  .edit-form-alert.error{background:rgba(224,68,51,0.1);color:var(--danger);}
-  .edit-form-alert.success{background:rgba(63,133,87,0.1);color:var(--green-go);}
   .edit-tpl-bar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;}
   .modal-btn.confirm-edit{background:var(--navy);color:#fff;}
 
@@ -145,6 +137,29 @@
   .field select:focus,.field input:focus,.field textarea:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(33,150,201,0.15);}
   .back-link{transition:opacity .15s;}
   .back-link:active{opacity:0.65;}
+
+  /* ── Dialog overlay (แทน confirm/alert) ── */
+  .sc-overlay{position:fixed;inset:0;background:rgba(10,30,50,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .18s ease;}
+  .sc-overlay.sc-show{opacity:1;pointer-events:all;}
+  .sc-box{background:rgba(255,255,255,0.97);border:1.5px solid rgba(255,255,255,0.7);border-radius:18px;padding:24px 20px 18px;max-width:320px;width:100%;box-shadow:0 8px 32px rgba(0,40,80,0.18);transform:scale(0.94) translateY(8px);transition:transform .22s cubic-bezier(.32,.72,0,1);}
+  .sc-overlay.sc-show .sc-box{transform:scale(1) translateY(0);}
+  .sc-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;color:#1A3A52;margin-bottom:8px;}
+  .sc-msg{font-size:13px;color:rgba(26,58,82,0.75);line-height:1.6;margin-bottom:18px;}
+  .sc-actions{display:flex;gap:8px;justify-content:flex-end;}
+  .sc-btn{padding:9px 20px;border-radius:9px;border:none;font-size:13px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif;cursor:pointer;transition:opacity .15s,transform .12s cubic-bezier(.32,.72,0,1);}
+  .sc-btn:active{transform:scale(0.96);opacity:0.85;}
+  .sc-btn.sc-cancel{background:rgba(26,58,82,0.1);color:#1A3A52;}
+  .sc-btn.sc-danger{background:#E04433;color:#fff;}
+  .sc-btn.sc-ok{background:#1A6BA0;color:#fff;}
+  /* ── Toast ── */
+  .sc-toast-wrap{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;width:max-content;max-width:calc(100vw - 32px);}
+  .sc-toast{padding:11px 18px;border-radius:12px;font-size:13.5px;font-weight:600;font-family:'IBM Plex Sans Thai',sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.18);display:flex;align-items:center;gap:8px;opacity:0;transform:translateY(12px) scale(0.96);transition:opacity .22s ease,transform .22s cubic-bezier(.32,.72,0,1);white-space:nowrap;}
+  .sc-toast.sc-in{opacity:1;transform:translateY(0) scale(1);}
+  .sc-toast.sc-out{opacity:0;transform:translateY(8px) scale(0.96);}
+  .sc-toast.sc-success{background:#1F6B3A;color:#fff;}
+  .sc-toast.sc-error{background:#C0392B;color:#fff;}
+  .sc-toast.sc-info{background:#1A6BA0;color:#fff;}
+  .sc-toast svg{width:15px;height:15px;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -228,7 +243,6 @@
   </div>
 
   <button class="submit-btn" id="addBtn">เพิ่มเข้าคลัง</button>
-  <div class="form-alert" id="addAlert"></div>
 </div>
 
 <!-- Inventory list -->
@@ -296,7 +310,6 @@
         <button class="modal-btn cancel" id="editCancelBtn">ยกเลิก</button>
         <button class="modal-btn confirm-edit" id="editConfirmBtn">บันทึก</button>
       </div>
-      <div class="edit-form-alert" id="editAlert"></div>
     </div>
   </div>
 </div>
@@ -338,6 +351,54 @@
 
 <script type="module">
 import { auth, admin } from '../../js/api.js';
+
+
+// ── UI helpers (dialog + toast) ─────────────────────────────
+const _ICONS = {
+  success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  error:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  info:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+};
+function _toastWrap() {
+  let w = document.getElementById('_scTW');
+  if (!w) { w = document.createElement('div'); w.id = '_scTW'; w.className = 'sc-toast-wrap'; document.body.appendChild(w); }
+  return w;
+}
+function showToast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `sc-toast sc-${type}`;
+  el.innerHTML = (_ICONS[type] ?? _ICONS.info) + msg;
+  _toastWrap().appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('sc-in')));
+  const dur = type === 'error' ? 3500 : 2500;
+  setTimeout(() => {
+    el.classList.remove('sc-in'); el.classList.add('sc-out');
+    el.addEventListener('transitionend', () => el.remove(), { once: true });
+  }, dur);
+}
+function _mkOverlay() {
+  const o = document.createElement('div'); o.className = 'sc-overlay'; document.body.appendChild(o);
+  requestAnimationFrame(() => requestAnimationFrame(() => o.classList.add('sc-show')));
+  return o;
+}
+function _closeOverlay(o) {
+  o.classList.remove('sc-show');
+  o.addEventListener('transitionend', () => o.remove(), { once: true });
+}
+function showDialog({ title, msg, confirmLabel = 'ยืนยัน', confirmClass = 'sc-danger', onConfirm }) {
+  const o = _mkOverlay();
+  o.innerHTML = `<div class="sc-box"><div class="sc-title">${title}</div><div class="sc-msg">${msg}</div><div class="sc-actions"><button class="sc-btn sc-cancel" id="_scC">ยกเลิก</button><button class="sc-btn ${confirmClass}" id="_scOk">${confirmLabel}</button></div></div>`;
+  o.addEventListener('click', e => { if (e.target === o) _closeOverlay(o); });
+  o.querySelector('#_scC').addEventListener('click', () => _closeOverlay(o));
+  o.querySelector('#_scOk').addEventListener('click', () => { _closeOverlay(o); onConfirm?.(); });
+}
+function showInfo(title, msg) {
+  const o = _mkOverlay();
+  o.innerHTML = `<div class="sc-box"><div class="sc-title">${title}</div><div class="sc-msg">${msg}</div><div class="sc-actions"><button class="sc-btn sc-ok" id="_scOk">ตกลง</button></div></div>`;
+  o.addEventListener('click', e => { if (e.target === o) _closeOverlay(o); });
+  o.querySelector('#_scOk').addEventListener('click', () => _closeOverlay(o));
+}
+
 
 const session = await auth.getSession();
 if (!session) { window.location.href = '/pages/login.html'; }
@@ -422,23 +483,27 @@ tplSaveBtn.addEventListener('click', () => {
   const name  = tplNameInput.value.trim();
   const title = inputInstTitle.value.trim();
   const body  = inputInstBody.value.trim();
-  if (!name)  { alert('กรุณาใส่ชื่อ Template'); return; }
-  if (!title && !body) { alert('กรุณากรอกหัวข้อหรือเนื้อหาก่อนบันทึก'); return; }
+  if (!name)  { showToast('กรุณาใส่ชื่อ Template', 'error'); return; }
+  if (!title && !body) { showToast('กรุณากรอกหัวข้อหรือเนื้อหาก่อนบันทึก', 'error'); return; }
   const list = tplLoad();
   // ถ้าชื่อซ้ำให้ถาม overwrite
   const dup = list.findIndex(t => t.name === name);
-  if (dup >= 0) {
-    if (!confirm(`Template "${name}" มีอยู่แล้ว ต้องการเขียนทับหรือไม่?`)) return;
-    list[dup] = { name, title, body };
-  } else {
-    list.push({ name, title, body });
+  function doSave() {
+    tplSave(list); renderTplOptions(); tplNameInput.value = '';
+    tplSaveBtn.textContent = 'บันทึกแล้ว!';
+    setTimeout(() => { tplSaveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> บันทึก Template`; }, 1500);
   }
-  tplSave(list);
-  renderTplOptions();
-  tplNameInput.value = '';
-  // flash feedback
-  tplSaveBtn.textContent = 'บันทึกแล้ว!';
-  setTimeout(() => { tplSaveBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> บันทึก Template`; }, 1500);
+  if (dup >= 0) {
+    showDialog({
+      title: 'เขียนทับ Template?',
+      msg: `Template "${name}" มีอยู่แล้ว ต้องการเขียนทับหรือไม่?`,
+      confirmLabel: 'เขียนทับ',
+      confirmClass: 'sc-danger',
+      onConfirm: () => { list[dup] = { name, title, body }; doSave(); },
+    });
+  } else {
+    list.push({ name, title, body }); doSave();
+  }
 });
 
 // ลบ template
@@ -446,10 +511,16 @@ tplDeleteBtn.addEventListener('click', () => {
   const idx  = Number(tplSelect.value);
   const list = tplLoad();
   if (!list[idx]) return;
-  if (!confirm(`ลบ Template "${list[idx].name}" ?`)) return;
-  list.splice(idx, 1);
-  tplSave(list);
-  renderTplOptions();
+  showDialog({
+    title: 'ยืนยันการลบ Template',
+    msg: `ลบ Template "${list[idx].name}" ออก?`,
+    confirmLabel: 'ลบ Template',
+    confirmClass: 'sc-danger',
+    onConfirm: () => {
+      list.splice(idx, 1); tplSave(list); renderTplOptions();
+      showToast('ลบ Template แล้ว', 'success');
+    },
+  });
 });
 
 // ── Load products ─────────────────────────────────────────
@@ -627,7 +698,6 @@ const editInstTitle   = document.getElementById('editInstTitle');
 const editInstBody    = document.getElementById('editInstBody');
 const editConfirmBtn  = document.getElementById('editConfirmBtn');
 const editCancelBtn   = document.getElementById('editCancelBtn');
-const editAlert       = document.getElementById('editAlert');
 const editTplSelect   = document.getElementById('editTplSelect');
 const editTplLoadBtn  = document.getElementById('editTplLoadBtn');
 let pendingEditId     = null;
@@ -660,8 +730,6 @@ function openEditModal(id, email) {
   editPassword.value   = '';
   editInstTitle.value  = '';
   editInstBody.value   = '';
-  editAlert.className  = 'edit-form-alert';
-  editAlert.textContent = '';
   editConfirmBtn.disabled    = false;
   editConfirmBtn.textContent = 'บันทึก';
 
@@ -692,14 +760,12 @@ editConfirmBtn.addEventListener('click', async () => {
   const password = editPassword.value.trim();
 
   if (!gmail) {
-    editAlert.textContent = 'Gmail ไม่ควรเป็นค่าว่าง';
-    editAlert.className   = 'edit-form-alert show error';
+    showToast('Gmail ไม่ควรเป็นค่าว่าง', 'error');
     return;
   }
 
   editConfirmBtn.disabled    = true;
   editConfirmBtn.textContent = 'กำลังบันทึก...';
-  editAlert.className        = 'edit-form-alert';
 
   try {
     const fields = {
@@ -712,15 +778,11 @@ editConfirmBtn.addEventListener('click', async () => {
 
     await admin.inventory.update(pendingEditId, fields);
 
-    editAlert.textContent = 'บันทึกสำเร็จ';
-    editAlert.className   = 'edit-form-alert show success';
-    setTimeout(() => {
-      closeEditModal();
-      loadInventory();
-    }, 800);
+    showToast('บันทึกสำเร็จ', 'success');
+    closeEditModal();
+    loadInventory();
   } catch (e) {
-    editAlert.textContent = e.message;
-    editAlert.className   = 'edit-form-alert show error';
+    showToast(e.message, 'error');
     editConfirmBtn.disabled    = false;
     editConfirmBtn.textContent = 'บันทึก';
   }
@@ -755,6 +817,7 @@ forceConfirmBtn.addEventListener('click', async () => {
   forceConfirmBtn.textContent = 'กำลังลบ...';
   try {
     await admin.inventory.forceDelete(pendingForceId);
+    showToast('ลบไอดีสำเร็จ (force)', 'success');
     closeForceModal();
     loadInventory();
   } catch (e) {
@@ -768,7 +831,7 @@ forceConfirmBtn.addEventListener('click', async () => {
       errEl.style.cssText = 'color:var(--danger);font-size:12px;margin-top:8px;';
       warnBox.appendChild(errEl);
     }
-    errEl.textContent = e.message;
+    showToast(e.message, 'error');
   }
 });
 
@@ -801,6 +864,7 @@ deleteConfirmBtn.addEventListener('click', async () => {
   deleteConfirmBtn.textContent = 'กำลังลบ...';
   try {
     await admin.inventory.remove(pendingDeleteId);
+    showToast('ลบไอดีสำเร็จ', 'success');
     closeDeleteModal();
     loadInventory();
   } catch (e) {
@@ -833,33 +897,21 @@ document.getElementById('addBtn').addEventListener('click', async () => {
   const password       = document.getElementById('inputPassword').value.trim();
   const instructionTitle = inputInstTitle.value.trim();
   const instructionBody  = inputInstBody.value.trim();
-  const alertEl  = document.getElementById('addAlert');
   const btn      = document.getElementById('addBtn');
 
-  if (!productKey) {
-    alertEl.textContent = 'กรุณาเลือกสินค้า';
-    alertEl.className = 'form-alert show error'; return;
-  }
-  if (!gmail) {
-    alertEl.textContent = 'กรุณากรอก Gmail';
-    alertEl.className = 'form-alert show error'; return;
-  }
-  if (!password) {
-    alertEl.textContent = 'กรุณากรอกรหัสผ่าน';
-    alertEl.className = 'form-alert show error'; return;
-  }
+  if (!productKey) { showToast('กรุณาเลือกสินค้า', 'error'); return; }
+  if (!gmail)      { showToast('กรุณากรอก Gmail', 'error'); return; }
+  if (!password)   { showToast('กรุณากรอกรหัสผ่าน', 'error'); return; }
 
   btn.disabled = true; btn.textContent = 'กำลังเพิ่ม...';
   try {
     await admin.inventory.addOne({ productKey, gmail, password, instructionTitle, instructionBody });
-    alertEl.textContent = 'เพิ่มไอดีเข้าคลังสำเร็จ';
-    alertEl.className = 'form-alert show success';
+    showToast('เพิ่มไอดีเข้าคลังสำเร็จ', 'success');
     document.getElementById('inputGmail').value    = '';
     document.getElementById('inputPassword').value = '';
     loadInventory();
   } catch (e) {
-    alertEl.textContent = e.message;
-    alertEl.className = 'form-alert show error';
+    showToast(e.message, 'error');
   }
   btn.disabled = false; btn.textContent = 'เพิ่มเข้าคลัง';
 });
