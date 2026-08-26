@@ -48,9 +48,9 @@
   /* promptpay QR box */
   .promptpay-qr-box{text-align:center;padding:4px 0 8px;}
   .promptpay-qr-box canvas,.promptpay-qr-box img{border-radius:12px;max-width:200px;width:100%;display:block;margin:0 auto 10px;}
-  .promptpay-qr-label{font-size:11.5px;color:var(--muted);margin-bottom:4px;}
-  .promptpay-qr-phone{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--ink);margin-bottom:10px;}
-  .promptpay-qr-amount{font-family:'Baloo 2',sans-serif;font-size:22px;font-weight:800;color:var(--gold-deep);}
+  .promptpay-qr-label{font-size:11.5px;color:var(--muted);margin-bottom:6px;}
+  .promptpay-qr-name{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:10px;letter-spacing:-.1px;}
+  .promptpay-qr-amount{font-family:'Baloo 2',sans-serif;font-size:24px;font-weight:800;color:var(--gold-deep);margin-bottom:2px;}
 
   /* slip upload */
   .slip-upload-zone{border:2px dashed var(--line);border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;}
@@ -497,12 +497,9 @@ function renderMethodDetail(method, order) {
     return `
       <div class="method-detail-box">
         <div class="promptpay-qr-box">
-          <div class="promptpay-qr-label">สแกนจ่ายด้วยแอปธนาคาร</div>
           <div id="promptpay-qr-canvas"></div>
-          <div class="promptpay-qr-label">พร้อมเพย์</div>
-          <div class="promptpay-qr-phone">${phoneId}</div>
+          ${d.account_name ? `<div class="promptpay-qr-name">${d.account_name}</div>` : ''}
           <div class="promptpay-qr-amount">฿${uniqueAmt}</div>
-          <div class="promptpay-qr-label" style="margin-top:4px;">ยอดนี้ถูกฝังใน QR แล้ว — สแกนแล้วยอดขึ้นอัตโนมัติ</div>
         </div>
       </div>`;
   }
