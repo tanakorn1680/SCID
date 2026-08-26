@@ -336,10 +336,19 @@ function renderPayment(order) {
     submitBtn.disabled = true;
     submitBtn.textContent = 'กำลังส่งสลิป...';
     try {
-      await orders.setPaymentMethod(orderId, selectedMethodId);
       await orders.uploadSlip(orderId, selectedFile);
-      stopPolling();
-      renderAwaitingReview();
+      // ส่งสลิปสำเร็จ — polling ยังทำงานต่อ รอ auto-approve
+      const slipCard = document.getElementById('slipCard');
+      if (slipCard) {
+        slipCard.innerHTML = `
+          <div style="text-align:center;padding:16px 0;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--green-go)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:8px;"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+            <div style="font-size:14px;font-weight:700;margin-bottom:4px;">ส่งสลิปสำเร็จ</div>
+            <div style="font-size:12px;color:var(--muted);">กำลังรอยืนยันจากระบบ...</div>
+          </div>`;
+      }
+      const divider = document.querySelector('.divider-text');
+      if (divider) divider.style.display = 'none';
     } catch (e) {
       showAlert(e.message);
       submitBtn.disabled = false;
@@ -353,7 +362,7 @@ function renderPayment(order) {
 // ================================================================
 function startPolling() {
   let tries = 0;
-  const MAX_TRIES = 360; // 30 นาที
+  const MAX_TRIES = 600; // 30 นาที (600 × 3s)
 
   pollingTimer = setInterval(async () => {
     tries++;
@@ -377,15 +386,19 @@ function startPolling() {
       }
 
       if (order.status === 'awaiting_review') {
-        stopPolling();
-        renderAwaitingReview();
+        // สลิปถูกส่งแล้ว รอ auto-approve — poll ต่อ
+        // หากรอนานเกิน 3 นาที (60 × 3s) ค่อยแสดงหน้า awaiting_review
+        if (tries >= 60) {
+          stopPolling();
+          renderAwaitingReview();
+        }
         return;
       }
 
     } catch (e) {
       // network error — polling ไปต่อ
     }
-  }, 5000);
+  }, 3000);
 }
 
 function stopPolling() {
@@ -440,13 +453,15 @@ async function loadPaymentMethods(order) {
 
     window.__methodsData = methods;
 
-    window.__selectMethod = (id) => {
+    window.__selectMethod = async (id) => {
       document.querySelectorAll('.method-option').forEach(el => {
         el.classList.toggle('selected', el.dataset.methodId === id);
       });
       const method = window.__methodsData.find(m => m.id === id);
       detailEl.innerHTML = renderMethodDetail(method, order);
       window.__checkoutSetMethod(id);
+      // set payment method ทันทีที่เลือก ไม่รอตอนกด submit
+      try { await orders.setPaymentMethod(orderId, id); } catch (_) { /* ไม่ block UI */ }
     };
 
   } catch (e) {
