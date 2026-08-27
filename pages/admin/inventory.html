@@ -40,6 +40,10 @@
   /* ── Template bar ────────────────────────────────────────── */
   .tpl-bar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;}
   .tpl-select{flex:1;min-width:0;padding:8px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;font-family:'IBM Plex Sans Thai',sans-serif;background:#fff;}
+  .tpl-bar .sc-sel-wrap,.edit-tpl-bar .sc-sel-wrap{flex:1;min-width:0;}
+  .tpl-bar .sc-sel-btn,.edit-tpl-bar .sc-sel-btn{padding:8px 32px 8px 10px;font-size:12.5px;}
+  /* category header ใน list */
+  .inv-cat-header{padding:10px 0 4px;font-size:11px;font-weight:700;color:var(--navy);letter-spacing:.5px;text-transform:uppercase;border-bottom:1.5px solid rgba(26,106,160,0.15);margin-bottom:2px;}
   .tpl-btn{padding:7px 12px;border:none;border-radius:8px;font-size:12px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
   .tpl-btn svg{width:12px;height:12px;flex-shrink:0;}
   .tpl-btn.load{background:rgba(26,106,160,0.08);color:var(--navy);}
@@ -258,7 +262,14 @@
 
   <!-- Template row -->
   <div class="tpl-bar">
-    <select id="tplSelect" class="tpl-select"><option value="">— เลือก Template —</option></select>
+    <input type="hidden" id="tplSelect" value="">
+    <div class="sc-sel-wrap" id="tplSelectWrap">
+      <button type="button" class="sc-sel-btn" id="tplSelectBtn" aria-haspopup="listbox" aria-expanded="false">
+        <span class="sc-sel-val">— เลือก Template —</span>
+        <svg class="sc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="sc-sel-dd" id="tplSelectDd" role="listbox"></div>
+    </div>
     <button class="tpl-btn load" id="tplLoadBtn" disabled>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
       ใช้
@@ -346,7 +357,14 @@
         วิธีใช้ไอดี
       </div>
       <div class="edit-tpl-bar">
-        <select id="editTplSelect" class="tpl-select"><option value="">— เลือก Template —</option></select>
+        <input type="hidden" id="editTplSelect" value="">
+        <div class="sc-sel-wrap" id="editTplSelectWrap">
+          <button type="button" class="sc-sel-btn" id="editTplSelectBtn" aria-haspopup="listbox" aria-expanded="false">
+            <span class="sc-sel-val">— เลือก Template —</span>
+            <svg class="sc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="sc-sel-dd" id="editTplSelectDd" role="listbox"></div>
+        </div>
         <button class="tpl-btn load" id="editTplLoadBtn" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
           ใช้
@@ -492,7 +510,6 @@ function tplSave(list) {
   localStorage.setItem(TPL_KEY, JSON.stringify(list));
 }
 
-const tplSelect    = document.getElementById('tplSelect');
 const tplLoadBtn   = document.getElementById('tplLoadBtn');
 const tplSaveBtn   = document.getElementById('tplSaveBtn');
 const tplDeleteBtn = document.getElementById('tplDeleteBtn');
@@ -500,24 +517,33 @@ const tplNameInput = document.getElementById('tplNameInput');
 const inputInstTitle = document.getElementById('inputInstTitle');
 const inputInstBody  = document.getElementById('inputInstBody');
 
+// hidden input — ใช้อ่าน value เหมือนเดิม
+const tplSelect = document.getElementById('tplSelect');
+
+// build options array จาก tplLoad()
+function tplOptions() {
+  const EMPTY = [{ value: '', label: '— เลือก Template —' }];
+  return EMPTY.concat(tplLoad().map((t, i) => ({ value: String(i), label: t.name })));
+}
+
+const tplSelInst = scSelect({
+  wrapperId:    'tplSelectWrap',
+  inputId:      'tplSelect',
+  options:      tplOptions(),
+  defaultValue: '',
+  onChange: (val) => {
+    tplLoadBtn.disabled   = val === '';
+    tplDeleteBtn.disabled = val === '';
+  },
+});
+
 function renderTplOptions() {
-  const list = tplLoad();
-  const opts = list.map((t, i) =>
-    `<option value="${i}">${t.name}</option>`
-  ).join('');
-  tplSelect.innerHTML = `<option value="">— เลือก Template —</option>` + opts;
-  const hasSel = tplSelect.value !== '';
-  tplLoadBtn.disabled   = !hasSel;
-  tplDeleteBtn.disabled = !hasSel;
+  tplSelInst.setOptions(tplOptions(), '');
+  tplLoadBtn.disabled   = true;
+  tplDeleteBtn.disabled = true;
 }
 
 renderTplOptions();
-
-tplSelect.addEventListener('change', () => {
-  const hasSel = tplSelect.value !== '';
-  tplLoadBtn.disabled   = !hasSel;
-  tplDeleteBtn.disabled = !hasSel;
-});
 
 // โหลด template ลงฟิลด์
 tplLoadBtn.addEventListener('click', () => {
@@ -688,8 +714,20 @@ async function loadInventory() {
     }
 
     const productLabel = (key) => products.find(p => p.key === key)?.label ?? key;
+    const productCat   = (key) => products.find(p => p.key === key)?.category ?? '';
 
-    listEl.innerHTML = data.map(row => {
+    // จัดกลุ่มตาม category → product_key เพื่อแสดง header คั่น
+    let lastCat = null;
+    const rows = data.map(row => {
+      const cat = productCat(row.product_key);
+      const catHeader = (cat && cat !== lastCat)
+        ? `<div class="inv-cat-header">${cat}</div>`
+        : '';
+      lastCat = cat;
+      return { row, catHeader };
+    });
+
+    listEl.innerHTML = rows.map(({ row, catHeader }) => {
       const soldAtStr = row.sold_at ? `<div class="inv-sold-at">ขายเมื่อ ${fmtDateTh(row.sold_at)}</div>` : '';
       const isSold    = row.status === 'sold';
       const hasOrder  = !!row.order_id;
@@ -708,7 +746,7 @@ async function loadInventory() {
         ? `<span class="inv-has-inst">${iconDoc} มีวิธีใช้</span>`
         : '';
 
-      return `
+      return catHeader + `
         <div class="inv-row">
           <div class="inv-row-top">
             <div class="inv-row-meta">
@@ -833,16 +871,18 @@ const editTplSelect   = document.getElementById('editTplSelect');
 const editTplLoadBtn  = document.getElementById('editTplLoadBtn');
 let pendingEditId     = null;
 
+const editTplSelInst = scSelect({
+  wrapperId:    'editTplSelectWrap',
+  inputId:      'editTplSelect',
+  options:      tplOptions(),
+  defaultValue: '',
+  onChange: (val) => { editTplLoadBtn.disabled = val === ''; },
+});
+
 function syncEditTplOptions() {
-  const list = tplLoad();
-  const opts = list.map((t, i) => `<option value="${i}">${t.name}</option>`).join('');
-  editTplSelect.innerHTML = `<option value="">— เลือก Template —</option>` + opts;
+  editTplSelInst.setOptions(tplOptions(), '');
   editTplLoadBtn.disabled = true;
 }
-
-editTplSelect.addEventListener('change', () => {
-  editTplLoadBtn.disabled = editTplSelect.value === '';
-});
 
 editTplLoadBtn.addEventListener('click', () => {
   const idx  = Number(editTplSelect.value);
