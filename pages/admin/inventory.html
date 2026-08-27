@@ -716,11 +716,16 @@ async function loadInventory() {
     const productLabel = (key) => products.find(p => p.key === key)?.label ?? key;
     const productCat   = (key) => products.find(p => p.key === key)?.category ?? '';
 
-    // จัดกลุ่มตาม category → product_key เพื่อแสดง header คั่น
+    // sort ตาม category ก่อน แล้วค่อยใส่ header คั่น
+    data.sort((a, b) => {
+      const ca = productCat(a.product_key);
+      const cb = productCat(b.product_key);
+      return ca.localeCompare(cb, 'th');
+    });
     let lastCat = null;
     const rows = data.map(row => {
       const cat = productCat(row.product_key);
-      const catHeader = (cat && cat !== lastCat)
+      const catHeader = (cat !== lastCat)
         ? `<div class="inv-cat-header">${cat}</div>`
         : '';
       lastCat = cat;
