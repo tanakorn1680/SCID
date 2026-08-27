@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+  <link rel="icon" href="/api/favicon">
+  <link rel="apple-touch-icon" href="/api/favicon">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>สินค้า — Admin</title>
@@ -251,7 +253,7 @@
 </div>
 
 <script type="module">
-import { auth, admin } from '../../js/api.js';
+import { auth, admin, settings} from '../../js/api.js';
 
 
 // ── UI helpers (dialog + toast) ─────────────────────────────
@@ -891,6 +893,7 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
 });
 
 loadProducts();
+
 </script>
 </body>
 </html>

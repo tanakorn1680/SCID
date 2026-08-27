@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+  <link rel="icon" href="/api/favicon">
+  <link rel="apple-touch-icon" href="/api/favicon">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>คลังไอดี — Admin</title>
@@ -177,6 +179,24 @@
   .prod-picker-option .check-icon{width:15px;height:15px;color:var(--navy);flex-shrink:0;opacity:0;}
   .prod-picker-option.selected .check-icon{opacity:1;}
 
+
+  /* ── SC Custom Select ───────────────────────────────────── */
+  .sc-sel-wrap{position:relative;}
+  .sc-sel-btn{width:100%;padding:10px 36px 10px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-family:'IBM Plex Sans Thai',sans-serif;background:#fff;outline:none;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:border-color .15s,box-shadow .15s;color:var(--ink);}
+  .sc-sel-btn:focus,.sc-sel-btn.open{border-color:var(--navy);box-shadow:0 0 0 3px rgba(33,150,201,0.15);}
+  .sc-sel-btn .sc-chev{flex-shrink:0;width:16px;height:16px;color:rgba(26,58,82,0.4);transition:transform .18s;}
+  .sc-sel-btn.open .sc-chev{transform:rotate(180deg);}
+  .sc-sel-val{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sc-sel-dd{position:absolute;top:calc(100% + 5px);left:0;right:0;background:rgba(255,255,255,0.98);border:1.5px solid rgba(26,106,160,0.18);border-radius:12px;box-shadow:0 8px 28px rgba(0,40,80,0.14);z-index:500;overflow:hidden;opacity:0;pointer-events:none;transform:translateY(-6px);transition:opacity .18s,transform .18s;}
+  .sc-sel-dd.open{opacity:1;pointer-events:all;transform:translateY(0);}
+  .sc-sel-grp{padding:7px 12px 3px;font-size:10.5px;font-weight:700;color:var(--navy);letter-spacing:.5px;text-transform:uppercase;background:rgba(26,106,160,0.04);border-bottom:1px solid rgba(26,106,160,0.08);}
+  .sc-sel-opt{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink);transition:background .12s;gap:8px;}
+  .sc-sel-opt:hover{background:rgba(26,106,160,0.06);}
+  .sc-sel-opt.sel{background:rgba(26,106,160,0.09);color:var(--navy);}
+  .sc-sel-opt .sc-check{width:15px;height:15px;flex-shrink:0;opacity:0;}
+  .sc-sel-opt.sel .sc-check{opacity:1;}
+  .sc-sel-btn:disabled,.sc-sel-btn[aria-disabled="true"]{opacity:0.45;cursor:not-allowed;pointer-events:none;}
+
 </style>
 </head>
 <body>
@@ -272,13 +292,23 @@
 <!-- Inventory list -->
 <div class="card">
   <div class="card-title">รายการในคลัง</div>
-  <div class="filter-bar">
-    <select id="filterProduct"><option value="">ทุกสินค้า</option></select>
-    <select id="filterStatus">
-      <option value="ready" selected>พร้อมขาย</option>
-      <option value="sold">ขายแล้ว</option>
-      <option value="">ทั้งหมด</option>
-    </select>
+  <div class="filter-bar" style="display:flex;gap:8px;">
+    <input type="hidden" id="filterProduct" value="">
+    <div class="sc-sel-wrap" id="filterProductWrap" style="flex:1;">
+      <button type="button" class="sc-sel-btn" id="filterProductBtn" aria-haspopup="listbox" aria-expanded="false">
+        <span class="sc-sel-val">ทุกสินค้า</span>
+        <svg class="sc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="sc-sel-dd" id="filterProductDd" role="listbox"></div>
+    </div>
+    <input type="hidden" id="filterStatus" value="ready">
+    <div class="sc-sel-wrap" id="filterStatusWrap" style="flex:1;">
+      <button type="button" class="sc-sel-btn" id="filterStatusBtn" aria-haspopup="listbox" aria-expanded="false">
+        <span class="sc-sel-val">พร้อมขาย</span>
+        <svg class="sc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="sc-sel-dd" id="filterStatusDd" role="listbox"></div>
+    </div>
   </div>
   <div id="invList"><div class="empty-state">กำลังโหลด...</div></div>
 </div>
@@ -548,10 +578,13 @@ async function loadProducts() {
   const { data } = await admin.products.list();
   products = data;
 
-  // filter bar — native select ปกติ (ไม่ต้องสวยพิเศษ)
-  const options = data.map(p => `<option value="${p.key}">${p.label}</option>`).join('');
-  document.getElementById('filterProduct').innerHTML =
-    `<option value="">ทุกสินค้า</option>` + options;
+  // filter product custom select — build grouped options
+  const filterOpts = [{ value: '', label: 'ทุกสินค้า', group: '' }].concat(
+    data.map(p => ({ value: p.key, label: p.label, group: p.category }))
+  );
+  if (typeof filterProductSel !== 'undefined') {
+    filterProductSel.setOptions(filterOpts, '');
+  }
 
   // ── build custom picker ──
   buildProdPicker(data);
@@ -967,8 +1000,24 @@ deleteCancelBtn.addEventListener('click', closeDeleteModal);
 deleteModal.addEventListener('click', e => { if (e.target === deleteModal) closeDeleteModal(); });
 
 // ── Filters ───────────────────────────────────────────────
-document.getElementById('filterProduct').addEventListener('change', loadInventory);
-document.getElementById('filterStatus').addEventListener('change', loadInventory);
+const filterProductSel = scSelect({
+  wrapperId:    'filterProductWrap',
+  inputId:      'filterProduct',
+  options:      [{ value: '', label: 'ทุกสินค้า' }],
+  defaultValue: '',
+  onChange:     () => loadInventory(),
+});
+const filterStatusSel = scSelect({
+  wrapperId:    'filterStatusWrap',
+  inputId:      'filterStatus',
+  options: [
+    { value: 'ready', label: 'พร้อมขาย' },
+    { value: 'sold',  label: 'ขายแล้ว' },
+    { value: '',      label: 'ทั้งหมด' },
+  ],
+  defaultValue: 'ready',
+  onChange:     () => loadInventory(),
+});
 
 // ── Add one ID ────────────────────────────────────────────
 document.getElementById('addBtn').addEventListener('click', async () => {
@@ -1006,6 +1055,54 @@ function escHtml(s) {
 // ── Init ──────────────────────────────────────────────────
 await loadProducts();
 await loadInventory();
+
+function scSelect(cfg) {
+  const CHECK = '<svg class="sc-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  const wrap  = document.getElementById(cfg.wrapperId);
+  const input = document.getElementById(cfg.inputId);
+  const btn   = wrap.querySelector('.sc-sel-btn');
+  const valEl = wrap.querySelector('.sc-sel-val');
+  const dd    = wrap.querySelector('.sc-sel-dd');
+  function build(opts) {
+    let h = '';
+    if (opts.some(o => o.group)) {
+      const g = new Map();
+      for (const o of opts) { if (!g.has(o.group)) g.set(o.group,[]); g.get(o.group).push(o); }
+      for (const [grp, items] of g) {
+        if (grp) h += `<div class="sc-sel-grp">${grp}</div>`;
+        for (const o of items) h += `<div class="sc-sel-opt" data-val="${o.value}"><span>${o.label}</span>${CHECK}</div>`;
+      }
+    } else {
+      for (const o of opts) h += `<div class="sc-sel-opt" data-val="${o.value}"><span>${o.label}</span>${CHECK}</div>`;
+    }
+    dd.innerHTML = h;
+    dd.querySelectorAll('.sc-sel-opt').forEach(o =>
+      o.addEventListener('click', () => { pick(o.dataset.val); close(); })
+    );
+  }
+  build(cfg.options);
+  function pick(val, silent) {
+    const found = cfg.options.find(o => o.value === val) ?? cfg.options[0];
+    if (!found) return;
+    input.value = found.value;
+    valEl.textContent = found.label;
+    dd.querySelectorAll('.sc-sel-opt').forEach(o => o.classList.toggle('sel', o.dataset.val === found.value));
+    if (!silent) cfg.onChange?.(found.value);
+  }
+  pick(cfg.defaultValue ?? cfg.options[0]?.value, true);
+  function open()  { btn.classList.add('open'); dd.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+  function close() { btn.classList.remove('open'); dd.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+  btn.addEventListener('click', e => { e.stopPropagation(); btn.classList.contains('open') ? close() : open(); });
+  document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
+  return {
+    getValue()         { return input.value; },
+    setValue(v, s)     { pick(v, s); },
+    setOptions(o, def) { cfg.options = o; build(o); pick(def ?? o[0]?.value, true); },
+    disable()          { btn.setAttribute('aria-disabled','true'); btn.disabled = true; },
+    enable()           { btn.removeAttribute('aria-disabled'); btn.disabled = false; },
+  };
+}
+
 </script>
 </body>
 </html>

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+  <link rel="icon" href="/api/favicon">
+  <link rel="apple-touch-icon" href="/api/favicon">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ตั้งค่าผู้ดูแลระบบ — Admin</title>
@@ -93,7 +95,7 @@
 </div>
 
 <script type="module">
-import { auth } from '../../js/api.js';
+import { auth, settings} from '../../js/api.js';
 import { showToast, showDialog } from '../shared/ui.js';
 
 
@@ -231,6 +233,7 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
     },
   });
 });
+
 </script>
 </body>
 </html>
