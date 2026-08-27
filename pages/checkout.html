@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+  <link rel="icon" href="/api/favicon">
+  <link rel="apple-touch-icon" href="/api/favicon">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ชำระเงิน</title>
@@ -109,7 +111,7 @@
 </div>
 
 <script type="module">
-import { auth, orders, paymentMethods } from '../js/api.js';
+import { auth, orders, paymentMethods, settings } from '../js/api.js';
 
 
 // ── UI helpers (dialog + toast) ─────────────────────────────
@@ -582,6 +584,7 @@ function buildPromptPayPayload(phone, amount) {
   ].join('');
   return body + crc16(body).toString(16).toUpperCase().padStart(4, '0');
 }
+
 </script>
 </body>
 </html>
