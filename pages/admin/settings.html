@@ -3,230 +3,310 @@
 <head>
   <link rel="icon" type="image/png" href="/images/favicon.png">
   <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ตั้งค่าเว็บไซต์ — Admin</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
-  :root{--navy:#1A6BA0;--gold:#D9A330;--ink:#1A3A52;--green-go:#3F8557;--danger:#E04433;--line:rgba(26,106,160,0.15);}
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  body{font-family:'IBM Plex Sans Thai',sans-serif;background:#81CFF0;color:var(--ink);min-height:100vh;padding:16px 14px 40px;}
-  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-  .back-link{font-size:13px;font-weight:600;color:var(--navy);text-decoration:none;}
-  .page-title{font-family:'Baloo 2',sans-serif;font-size:18px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
-  .page-title svg{width:20px;height:20px;flex-shrink:0;}
-  .card{background:#fff;border-radius:13px;padding:16px;box-shadow:0 2px 10px rgba(0,40,80,0.08);margin-bottom:14px;}
-  .card-title{font-size:14px;font-weight:700;margin-bottom:12px;}
-  .field{margin-bottom:14px;}
-  .field label{font-size:12.5px;font-weight:600;display:block;margin-bottom:5px;}
-  .field input[type=text],.field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-family:'IBM Plex Sans Thai',sans-serif;background:#fff;}
-  .field textarea{min-height:70px;resize:vertical;}
-  .field input[type=color]{width:60px;height:38px;border:1.5px solid var(--line);border-radius:8px;padding:2px;cursor:pointer;}
-  .asset-preview{width:100%;max-width:220px;border-radius:10px;margin-bottom:10px;background:rgba(26,106,160,0.05);display:block;}
-  .asset-preview.empty{padding:30px;text-align:center;color:rgba(26,58,82,0.4);font-size:12px;}
-  .upload-btn{padding:9px 14px;background:rgba(26,106,160,0.08);color:var(--navy);border:none;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;}
-  .submit-btn{width:100%;padding:12px 0;background:var(--navy);color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;margin-top:6px;}
-  .submit-btn:disabled{opacity:0.5;cursor:not-allowed;}
-  .card{background:rgba(255,255,255,0.92);border:1.5px solid rgba(255,255,255,0.65);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
-  .submit-btn{transition:opacity .18s,transform .12s cubic-bezier(.32,.72,0,1),box-shadow .18s;box-shadow:0 3px 10px rgba(26,106,160,0.2);}
-  .submit-btn:active{transform:scale(0.97);opacity:0.88;box-shadow:0 1px 4px rgba(26,106,160,0.12);}
-  .submit-btn:disabled{box-shadow:none;}
-  .upload-btn{transition:background .15s,transform .12s cubic-bezier(.32,.72,0,1);}
-  .upload-btn:active{transform:scale(0.95);background:rgba(26,106,160,0.14);}
-  .field input[type=text]:focus,.field textarea:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(33,150,201,0.15);}
-  .back-link{transition:opacity .15s;}
-  .back-link:active{opacity:0.65;}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตั้งค่าเว็บไซต์ — Admin</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap');
+    :root{--navy:#1A6BA0;--gold:#D9A330;--ink:#1A3A52;--green-go:#3F8557;--danger:#E04433;--line:rgba(26,106,160,0.15);--muted:rgba(26,58,82,0.5);}
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    body{font-family:'IBM Plex Sans Thai',sans-serif;background:#81CFF0;color:var(--ink);min-height:100vh;padding:16px 14px 60px;}
+    .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+    .back-link{font-size:13px;font-weight:600;color:var(--navy);text-decoration:none;opacity:.85;transition:opacity .15s;}
+    .back-link:active{opacity:.55;}
+    .page-title{font-family:'Baloo 2',sans-serif;font-size:18px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+    .page-title svg{width:20px;height:20px;flex-shrink:0;}
 
-  /* ── Dialog overlay (แทน confirm/alert) ── */
-  .sc-overlay{position:fixed;inset:0;background:rgba(10,30,50,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .18s ease;}
-  .sc-overlay.sc-show{opacity:1;pointer-events:all;}
-  .sc-box{background:rgba(255,255,255,0.97);border:1.5px solid rgba(255,255,255,0.7);border-radius:18px;padding:24px 20px 18px;max-width:320px;width:100%;box-shadow:0 8px 32px rgba(0,40,80,0.18);transform:scale(0.94) translateY(8px);transition:transform .22s cubic-bezier(.32,.72,0,1);}
-  .sc-overlay.sc-show .sc-box{transform:scale(1) translateY(0);}
-  .sc-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;color:#1A3A52;margin-bottom:8px;}
-  .sc-msg{font-size:13px;color:rgba(26,58,82,0.75);line-height:1.6;margin-bottom:18px;}
-  .sc-actions{display:flex;gap:8px;justify-content:flex-end;}
-  .sc-btn{padding:9px 20px;border-radius:9px;border:none;font-size:13px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif;cursor:pointer;transition:opacity .15s,transform .12s cubic-bezier(.32,.72,0,1);}
-  .sc-btn:active{transform:scale(0.96);opacity:0.85;}
-  .sc-btn.sc-cancel{background:rgba(26,58,82,0.1);color:#1A3A52;}
-  .sc-btn.sc-danger{background:#E04433;color:#fff;}
-  .sc-btn.sc-ok{background:#1A6BA0;color:#fff;}
+    /* card */
+    .card{background:rgba(255,255,255,0.93);border:1.5px solid rgba(255,255,255,0.65);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:14px;padding:16px;box-shadow:0 2px 12px rgba(0,40,80,0.08);margin-bottom:14px;}
+    .card-header{display:flex;align-items:center;gap:7px;margin-bottom:14px;}
+    .card-header svg{width:16px;height:16px;color:var(--navy);flex-shrink:0;}
+    .card-title{font-size:13.5px;font-weight:700;color:var(--ink);}
 
-  /* ── Toast ── */
-  #sc-toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(20px);background:#323232;color:#fff;padding:12px 20px;border-radius:8px;font-size:14px;font-family:'IBM Plex Sans Thai',sans-serif;z-index:9999;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 32px);}
-  #sc-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-  #sc-toast.error{background:#d93025;}
-  #sc-toast.success{background:#188038;}
-</style>
+    /* field */
+    .field{margin-bottom:13px;}
+    .field:last-child{margin-bottom:0;}
+    .field label{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:5px;letter-spacing:.2px;}
+    .field input[type=text],.field input[type=url],.field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:13px;font-family:'IBM Plex Sans Thai',sans-serif;background:#fff;color:var(--ink);transition:border-color .15s,box-shadow .15s;}
+    .field input[type=text]:focus,.field input[type=url]:focus,.field textarea:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(33,150,201,0.15);}
+    .field textarea{min-height:68px;resize:vertical;line-height:1.6;}
+    .field-hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5;}
+
+    /* toggle switch */
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:2px 0;}
+    .toggle-label{font-size:13px;font-weight:600;}
+    .toggle-sub{font-size:11.5px;color:var(--muted);margin-top:2px;}
+    .toggle-wrap{position:relative;width:46px;height:26px;flex-shrink:0;}
+    .toggle-wrap input{opacity:0;width:0;height:0;position:absolute;}
+    .toggle-track{position:absolute;inset:0;background:rgba(26,58,82,0.15);border-radius:13px;cursor:pointer;transition:background .2s;}
+    .toggle-wrap input:checked + .toggle-track{background:var(--green-go);}
+    .toggle-thumb{position:absolute;top:3px;left:3px;width:20px;height:20px;background:#fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.2);transition:transform .2s;}
+    .toggle-wrap input:checked ~ .toggle-thumb{transform:translateX(20px);}
+
+    /* asset upload */
+    .asset-box{display:flex;align-items:center;gap:12px;}
+    .asset-preview-wrap{width:72px;height:72px;border-radius:10px;border:1.5px solid var(--line);overflow:hidden;background:rgba(26,106,160,0.04);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .asset-preview-wrap img{width:100%;height:100%;object-fit:cover;display:none;}
+    .asset-preview-wrap img.loaded{display:block;}
+    .asset-preview-wrap .no-img{font-size:10.5px;color:var(--muted);text-align:center;padding:4px;}
+    .asset-preview-wrap.banner-wrap{width:100%;height:72px;margin-bottom:10px;}
+    .asset-preview-wrap.banner-wrap img{object-fit:cover;}
+    .asset-meta{flex:1;min-width:0;}
+    .asset-meta .asset-name{font-size:12px;color:var(--muted);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .upload-btn{padding:8px 14px;background:rgba(26,106,160,0.08);color:var(--navy);border:1.5px solid rgba(26,106,160,0.18);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;transition:background .15s;}
+    .upload-btn:active{background:rgba(26,106,160,0.16);}
+    .upload-spinner{display:none;width:14px;height:14px;border:2px solid rgba(26,106,160,0.3);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-left:6px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* save btn */
+    .save-btn{width:100%;padding:13px 0;background:var(--navy);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;margin-top:4px;box-shadow:0 3px 10px rgba(26,106,160,0.22);transition:opacity .18s,transform .12s,box-shadow .18s;}
+    .save-btn:active{transform:scale(0.97);opacity:.88;box-shadow:0 1px 4px rgba(26,106,160,0.12);}
+    .save-btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;}
+
+    /* open/close status badge */
+    .status-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;margin-left:8px;}
+    .status-badge.open{background:rgba(63,133,87,0.12);color:var(--green-go);}
+    .status-badge.closed{background:rgba(224,68,51,0.1);color:var(--danger);}
+
+    /* dialog + toast */
+    .sc-overlay{position:fixed;inset:0;background:rgba(10,30,50,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .18s;}
+    .sc-overlay.sc-show{opacity:1;pointer-events:all;}
+    .sc-box{background:rgba(255,255,255,0.97);border-radius:18px;padding:24px 20px 18px;max-width:320px;width:100%;box-shadow:0 8px 32px rgba(0,40,80,0.18);transform:scale(0.94) translateY(8px);transition:transform .22s cubic-bezier(.32,.72,0,1);}
+    .sc-overlay.sc-show .sc-box{transform:scale(1) translateY(0);}
+    .sc-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:800;color:#1A3A52;margin-bottom:8px;}
+    .sc-msg{font-size:13px;color:rgba(26,58,82,0.75);line-height:1.6;margin-bottom:18px;}
+    .sc-actions{display:flex;gap:8px;justify-content:flex-end;}
+    .sc-btn{padding:9px 20px;border-radius:9px;border:none;font-size:13px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif;cursor:pointer;}
+    .sc-btn.sc-cancel{background:rgba(26,58,82,0.1);color:#1A3A52;}
+    .sc-btn.sc-ok{background:#1A6BA0;color:#fff;}
+    #sc-toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(20px);background:#323232;color:#fff;padding:12px 20px;border-radius:8px;font-size:14px;font-family:'IBM Plex Sans Thai',sans-serif;z-index:9999;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 32px);}
+    #sc-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+    #sc-toast.error{background:#d93025;}
+    #sc-toast.success{background:#188038;}
+  </style>
 </head>
 <body>
 
 <div class="topbar">
   <a href="/pages/admin/dashboard.html" class="back-link">← Dashboard</a>
 </div>
-<div class="page-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> ตั้งค่าเว็บไซต์</div>
-
-<div class="card">
-  <div class="card-title">โลโก้</div>
-  <img class="asset-preview" id="logoPreview" alt="Logo">
-  <input type="file" id="logoFile" accept="image/jpeg,image/png,image/webp" style="display:none;">
-  <button class="upload-btn" id="logoUploadBtn">อัปโหลดโลโก้ใหม่</button>
+<div class="page-title">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9"/></svg>
+  ตั้งค่าเว็บไซต์
 </div>
 
+<!-- ── 1. สถานะร้าน ── -->
 <div class="card">
-  <div class="card-title">แบนเนอร์</div>
-  <img class="asset-preview" id="bannerPreview" alt="Banner">
-  <input type="file" id="bannerFile" accept="image/jpeg,image/png,image/webp" style="display:none;">
-  <button class="upload-btn" id="bannerUploadBtn">อัปโหลดแบนเนอร์ใหม่</button>
+  <div class="card-header">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span class="card-title">สถานะร้าน</span>
+  </div>
+  <div class="toggle-row">
+    <div>
+      <div class="toggle-label">เปิดรับออเดอร์ <span class="status-badge open" id="shopStatusBadge">เปิดอยู่</span></div>
+      <div class="toggle-sub">ปิดเพื่อหยุดรับออเดอร์ชั่วคราว ลูกค้ายังเข้าดูสินค้าได้</div>
+    </div>
+    <label class="toggle-wrap">
+      <input type="checkbox" id="fIsOpen" checked>
+      <div class="toggle-track"></div>
+      <div class="toggle-thumb"></div>
+    </label>
+  </div>
+  <div class="field" style="margin-top:12px;">
+    <label>ข้อความแจ้งปิดร้าน (แสดงเมื่อปิดรับออเดอร์)</label>
+    <input type="text" id="fClosedMsg" placeholder="เช่น ขณะนี้ปิดรับออเดอร์ชั่วคราว จะกลับมาเร็วๆ นี้">
+  </div>
 </div>
 
+<!-- ── 2. ข้อมูลร้าน ── -->
 <div class="card">
-  <div class="card-title">ข้อความและเนื้อหา</div>
-  <div class="field">
-    <label>สีหลักของเว็บไซต์</label>
-    <input type="color" id="fColor" value="#1A6BA0">
+  <div class="card-header">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span class="card-title">ข้อมูลร้าน</span>
   </div>
   <div class="field">
-    <label>ข้อความหน้าแรก</label>
-    <textarea id="fHomeText" placeholder="เช่น ซื้อไอดี SimCity BuildIt พร้อมเล่น ส่งรวดเร็ว ปลอดภัย 100%"></textarea>
+    <label>ชื่อร้าน</label>
+    <input type="text" id="fSiteName" placeholder="เช่น Mayor Service">
+  </div>
+  <div class="field">
+    <label>คำอธิบายหน้าแรก</label>
+    <input type="text" id="fHomeText" placeholder="เช่น เล่นได้ทุกอุปกรณ์ Android,IOS กดซื้อได้ตลอด 24 ชม.">
+  </div>
+  <div class="field">
+    <label>ประกาศ / ข้อความพิเศษ (แสดงแถบด้านบน)</label>
+    <input type="text" id="fAnnouncement" placeholder="เช่น ลด 10% ทุกออเดอร์วันนี้เท่านั้น">
+    <div class="field-hint">เว้นว่างไว้ถ้าไม่ต้องการแสดงประกาศ</div>
+  </div>
+</div>
+
+<!-- ── 3. รูปภาพ ── -->
+<div class="card">
+  <div class="card-header">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    <span class="card-title">รูปภาพ</span>
+  </div>
+  <div class="field">
+    <label>โลโก้</label>
+    <div class="asset-box">
+      <div class="asset-preview-wrap" id="logoWrap">
+        <img id="logoPreview" alt="logo">
+        <div class="no-img">ยังไม่มีรูป</div>
+      </div>
+      <div class="asset-meta">
+        <div class="asset-name" id="logoName">—</div>
+        <button class="upload-btn" id="logoUploadBtn">เปลี่ยนโลโก้<span class="upload-spinner" id="logoSpinner"></span></button>
+        <input type="file" id="logoFile" accept="image/jpeg,image/png,image/webp" style="display:none;">
+      </div>
+    </div>
+  </div>
+  <div class="field">
+    <label>แบนเนอร์หน้าแรก</label>
+    <div class="asset-preview-wrap banner-wrap" id="bannerWrap">
+      <img id="bannerPreview" alt="banner">
+      <div class="no-img">ยังไม่มีรูป</div>
+    </div>
+    <button class="upload-btn" id="bannerUploadBtn">เปลี่ยนแบนเนอร์<span class="upload-spinner" id="bannerSpinner"></span></button>
+    <input type="file" id="bannerFile" accept="image/jpeg,image/png,image/webp" style="display:none;">
+  </div>
+</div>
+
+<!-- ── 4. ช่องทางติดต่อ ── -->
+<div class="card">
+  <div class="card-header">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.6 3.32a2 2 0 0 1 1.9-2.18h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+    <span class="card-title">ช่องทางติดต่อ</span>
+  </div>
+  <div class="field">
+    <label>Line ID</label>
+    <input type="text" id="fLineId" placeholder="เช่น @mayorservice">
+    <div class="field-hint">ลูกค้าจะเห็นปุ่ม Line บนหน้าร้าน</div>
+  </div>
+  <div class="field">
+    <label>Facebook Page URL</label>
+    <input type="url" id="fFacebookUrl" placeholder="เช่น https://fb.me/mayorservice">
   </div>
   <div class="field">
     <label>ข้อความ Footer</label>
-    <textarea id="fFooterText" placeholder="เช่น © 2026 Mayor Service สงวนลิขสิทธิ์"></textarea>
+    <input type="text" id="fFooterText" placeholder="เช่น © 2026 Mayor Service สงวนลิขสิทธิ์">
   </div>
-  <div class="field">
-    <label>ช่องทางติดต่อ</label>
-    <textarea id="fContactInfo" placeholder="เช่น Line: @mayorservice, โทร 08x-xxx-xxxx"></textarea>
-  </div>
-  <div class="field">
-    <label>ประกาศ (แสดงบนหน้าแรก ถ้ามี)</label>
-    <textarea id="fAnnouncement" placeholder="เช่น ปิดปรับปรุงระบบวันที่ 25 ก.ค. เวลา 02:00-04:00 น."></textarea>
-  </div>
-  <button class="submit-btn" id="saveBtn">บันทึกการตั้งค่า</button>
 </div>
 
+<button class="save-btn" id="saveBtn">บันทึกการตั้งค่า</button>
+
 <script type="module">
-import { auth, admin } from '../../js/api.js';
+import { auth, admin, settings } from '../../js/api.js';
 
-
-// ── UI helpers (dialog + toast) ─────────────────────────────
-const _ICONS = {
-  success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
-  error:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
-  info:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-};
-function _mkOverlay() {
-  const o = document.createElement('div'); o.className = 'sc-overlay'; document.body.appendChild(o);
-  requestAnimationFrame(() => requestAnimationFrame(() => o.classList.add('sc-show')));
-  return o;
-}
-function _closeOverlay(o) {
-  o.classList.remove('sc-show');
-  o.addEventListener('transitionend', () => o.remove(), { once: true });
-}
-function showDialog({ title, msg, confirmLabel = 'ยืนยัน', confirmClass = 'sc-danger', onConfirm }) {
-  const o = _mkOverlay();
-  o.innerHTML = `<div class="sc-box"><div class="sc-title">${title}</div><div class="sc-msg">${msg}</div><div class="sc-actions"><button class="sc-btn sc-cancel" id="_scC">ยกเลิก</button><button class="sc-btn ${confirmClass}" id="_scOk">${confirmLabel}</button></div></div>`;
-  o.addEventListener('click', e => { if (e.target === o) _closeOverlay(o); });
-  o.querySelector('#_scC').addEventListener('click', () => _closeOverlay(o));
-  o.querySelector('#_scOk').addEventListener('click', () => { _closeOverlay(o); onConfirm?.(); });
-}
-function showInfo(title, msg) {
-  const o = _mkOverlay();
-  o.innerHTML = `<div class="sc-box"><div class="sc-title">${title}</div><div class="sc-msg">${msg}</div><div class="sc-actions"><button class="sc-btn sc-ok" id="_scOk">ตกลง</button></div></div>`;
-  o.addEventListener('click', e => { if (e.target === o) _closeOverlay(o); });
-  o.querySelector('#_scOk').addEventListener('click', () => _closeOverlay(o));
-}
-
-// ── Toast ────────────────────────────────────────────────────
 let _toastTimer;
 function showToast(msg, type = '') {
   let el = document.getElementById('sc-toast');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'sc-toast';
-    document.body.appendChild(el);
-  }
+  if (!el) { el = document.createElement('div'); el.id = 'sc-toast'; document.body.appendChild(el); }
   el.textContent = msg;
   el.className = type ? `show ${type}` : 'show';
   clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => { el.className = ''; }, type === 'error' ? 3500 : 3000);
+  _toastTimer = setTimeout(() => { el.className = ''; }, type === 'error' ? 3500 : 2500);
 }
-
-
 
 const session = await auth.getSession();
 if (!session) { window.location.href = '/pages/login.html'; }
-
 const res = await fetch('/api/auth/profile', { headers: { Authorization: `Bearer ${session.access_token}` } });
 const { data: profile } = await res.json();
 if (profile?.role !== 'admin') { window.location.href = '/pages/shop.html'; }
 
-function setPreview(imgEl, url) {
+// ── preview helper ────────────────────────────────────────────
+function setPreview(wrapId, imgId, nameId, url) {
+  const wrap = document.getElementById(wrapId);
+  const img  = document.getElementById(imgId);
+  const name = nameId ? document.getElementById(nameId) : null;
   if (url) {
-    imgEl.src = url;
-    imgEl.classList.remove('empty');
+    img.src = url;
+    img.classList.add('loaded');
+    wrap.querySelector('.no-img').style.display = 'none';
+    if (name) name.textContent = url.split('/').pop().split('?')[0];
   } else {
-    imgEl.removeAttribute('src');
-    imgEl.classList.add('empty');
-    imgEl.alt = 'ยังไม่มีรูป';
+    img.classList.remove('loaded');
+    wrap.querySelector('.no-img').style.display = '';
+    if (name) name.textContent = '—';
   }
 }
 
+// ── load settings ─────────────────────────────────────────────
 async function loadSettings() {
   try {
     const { data: s } = await admin.settings.get();
-    setPreview(document.getElementById('logoPreview'), s.logo_url);
-    setPreview(document.getElementById('bannerPreview'), s.banner_url);
-    document.getElementById('fColor').value       = s.primary_color || '#1A6BA0';
-    document.getElementById('fHomeText').value    = s.home_text || '';
-    document.getElementById('fFooterText').value  = s.footer_text || '';
-    document.getElementById('fContactInfo').value = s.contact_info || '';
-    document.getElementById('fAnnouncement').value = s.announcement || '';
-  } catch (e) {
+    document.getElementById('fIsOpen').checked      = s.is_open !== 'false';
+    document.getElementById('fClosedMsg').value     = s.closed_msg    || '';
+    document.getElementById('fSiteName').value      = s.site_name     || '';
+    document.getElementById('fHomeText').value      = s.home_text     || '';
+    document.getElementById('fAnnouncement').value  = s.announcement  || '';
+    document.getElementById('fLineId').value        = s.line_id       || '';
+    document.getElementById('fFacebookUrl').value   = s.facebook_url  || '';
+    document.getElementById('fFooterText').value    = s.footer_text   || '';
+    updateShopStatus(s.is_open !== 'false');
+    setPreview('logoWrap',   'logoPreview',   'logoName',   s.logo_url   || '');
+    setPreview('bannerWrap', 'bannerPreview', null,         s.banner_url || '');
+  } catch {
     showToast('โหลดการตั้งค่าไม่สำเร็จ', 'error');
   }
 }
 
-// อัปโหลด logo/banner — บันทึกลง site_settings ทันทีที่อัปโหลดสำเร็จ (ไม่ต้องกด "บันทึก" ซ้ำ)
-document.getElementById('logoUploadBtn').addEventListener('click', () => document.getElementById('logoFile').click());
-document.getElementById('bannerUploadBtn').addEventListener('click', () => document.getElementById('bannerFile').click());
-
-document.getElementById('logoFile').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  try {
-    const { data } = await admin.uploadAsset('logo_url', file);
-    setPreview(document.getElementById('logoPreview'), data.url);
-    showToast('อัปโหลดโลโก้สำเร็จ', 'success');
-  } catch (err) { showToast(err.message, 'error'); }
+// ── shop open/close toggle ────────────────────────────────────
+function updateShopStatus(isOpen) {
+  const badge = document.getElementById('shopStatusBadge');
+  badge.textContent = isOpen ? 'เปิดอยู่' : 'ปิดอยู่';
+  badge.className = 'status-badge ' + (isOpen ? 'open' : 'closed');
+}
+document.getElementById('fIsOpen').addEventListener('change', (e) => {
+  updateShopStatus(e.target.checked);
 });
 
-document.getElementById('bannerFile').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  try {
-    const { data } = await admin.uploadAsset('banner_url', file);
-    setPreview(document.getElementById('bannerPreview'), data.url);
-    showToast('อัปโหลดแบนเนอร์สำเร็จ', 'success');
-  } catch (err) { showToast(err.message, 'error'); }
-});
+// ── upload helpers ────────────────────────────────────────────
+function setupUpload(btnId, fileId, spinnerId, assetKey, wrapId, imgId, nameId) {
+  document.getElementById(btnId).addEventListener('click', () => document.getElementById(fileId).click());
+  document.getElementById(fileId).addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const spinner = document.getElementById(spinnerId);
+    const btn     = document.getElementById(btnId);
+    btn.disabled  = true;
+    spinner.style.display = 'inline-block';
+    try {
+      const { data } = await admin.uploadAsset(assetKey, file);
+      setPreview(wrapId, imgId, nameId, data.url);
+      showToast('อัปโหลดสำเร็จ', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    e.target.value = '';
+  });
+}
 
+setupUpload('logoUploadBtn',   'logoFile',   'logoSpinner',   'logo_url',   'logoWrap',   'logoPreview',   'logoName');
+setupUpload('bannerUploadBtn', 'bannerFile', 'bannerSpinner', 'banner_url', 'bannerWrap', 'bannerPreview', null);
+
+// ── save ──────────────────────────────────────────────────────
 document.getElementById('saveBtn').addEventListener('click', async () => {
   const btn = document.getElementById('saveBtn');
-  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึก...';
   try {
     await admin.settings.update({
-      primary_color: document.getElementById('fColor').value,
-      home_text:     document.getElementById('fHomeText').value.trim(),
-      footer_text:   document.getElementById('fFooterText').value.trim(),
-      contact_info:  document.getElementById('fContactInfo').value.trim(),
-      announcement:  document.getElementById('fAnnouncement').value.trim(),
+      is_open:      String(document.getElementById('fIsOpen').checked),
+      closed_msg:   document.getElementById('fClosedMsg').value.trim(),
+      site_name:    document.getElementById('fSiteName').value.trim(),
+      home_text:    document.getElementById('fHomeText').value.trim(),
+      announcement: document.getElementById('fAnnouncement').value.trim(),
+      line_id:      document.getElementById('fLineId').value.trim(),
+      facebook_url: document.getElementById('fFacebookUrl').value.trim(),
+      footer_text:  document.getElementById('fFooterText').value.trim(),
     });
-    showToast('บันทึกการตั้งค่าสำเร็จ', 'success');
+    showToast('บันทึกสำเร็จ', 'success');
   } catch (e) {
     showToast(e.message, 'error');
   }
-  btn.disabled = false; btn.textContent = 'บันทึกการตั้งค่า';
+  btn.disabled = false;
+  btn.textContent = 'บันทึกการตั้งค่า';
 });
 
 loadSettings();
