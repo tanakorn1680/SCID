@@ -141,10 +141,23 @@
   #sc-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   #sc-toast.error{background:#d93025;}
   #sc-toast.success{background:#188038;}
+  /* announcement bar */
+  .announce-bar{background:rgba(217,163,48,0.15);border-bottom:1px solid rgba(217,163,48,0.3);padding:8px 14px;font-size:12.5px;font-weight:600;color:#7a5800;text-align:center;display:none;}
+  .announce-bar.show{display:block;}
+  /* shop closed banner */
+  .closed-bar{background:rgba(224,68,51,0.1);border:1.5px solid rgba(224,68,51,0.2);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13px;font-weight:600;color:var(--danger);text-align:center;display:none;}
+  .closed-bar.show{display:block;}
+  /* footer */
+  .shop-footer{text-align:center;padding:20px 14px 8px;font-size:12px;color:rgba(255,255,255,0.65);}
+  .shop-footer .contact-btns{display:flex;justify-content:center;gap:10px;margin-bottom:10px;}
+  .contact-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;text-decoration:none;border:none;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;}
+  .contact-btn.line{background:#06C755;color:#fff;}
+  .contact-btn.fb{background:#1877F2;color:#fff;}
 </style>
 </head>
 <body>
 
+<div class="announce-bar" id="announceBar"></div>
 <div class="topbar">
   <img id="siteLogo" src="../images/logo-main-service1.png" alt="logo">
   <button class="menu-btn" id="menuBtn" aria-label="เมนู">
@@ -160,6 +173,7 @@
   <div class="hero-sub" id="heroSub"> </div>
 </div>
 
+<div class="closed-bar" id="closedBar"></div>
 <div id="productGrid">
   <div class="loading-state" style="padding:50px 20px;text-align:center;color:rgba(255,255,255,0.75);">กำลังโหลดสินค้า...</div>
 </div>
@@ -248,10 +262,52 @@ function showToast(msg, type = '') {
 
 
 
-// โหลด logo/ข้อความหน้าแรกจาก Website Settings
+// โหลด settings จาก Website Settings
 settings.get().then(({ data }) => {
-  if (data.logo_url)  document.getElementById('siteLogo').src = data.logo_url;
+  // logo
+  if (data.logo_url) document.getElementById('siteLogo').src = data.logo_url;
+  // hero title
+  if (data.site_name) {
+    const t = document.querySelector('.hero-title');
+    if (t) t.textContent = data.site_name;
+  }
+  // hero subtitle
   if (data.home_text) document.getElementById('heroSub').textContent = data.home_text;
+  // announcement bar
+  if (data.announcement) {
+    const bar = document.getElementById('announceBar');
+    bar.textContent = data.announcement;
+    bar.classList.add('show');
+  }
+  // shop closed
+  const isOpen = data.is_open !== 'false';
+  if (!isOpen) {
+    const bar = document.getElementById('closedBar');
+    bar.textContent = data.closed_msg || 'ขณะนี้ปิดรับออเดอร์ชั่วคราว';
+    bar.classList.add('show');
+    // disable buy buttons
+    document.querySelectorAll('.buy-btn').forEach(btn => {
+      btn.disabled = true;
+      btn.style.opacity = '0.45';
+    });
+  }
+  // footer
+  if (data.footer_text) document.getElementById('footerText').textContent = data.footer_text;
+  // contact buttons
+  const contactBtns = document.getElementById('contactBtns');
+  let btnsHtml = '';
+  if (data.line_id) {
+    const lineUrl = data.line_id.startsWith('http') ? data.line_id : `https://line.me/ti/p/${data.line_id.replace('@','')}`;
+    btnsHtml += `<a href="${lineUrl}" target="_blank" rel="noopener" class="contact-btn line">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.02 2 11c0 3.36 1.92 6.3 4.8 8.1L6 22l3.27-1.73C10.14 20.72 11.05 21 12 21c5.52 0 10-4.02 10-9s-4.48-9-10-9z"/></svg>
+      Line</a>`;
+  }
+  if (data.facebook_url) {
+    btnsHtml += `<a href="${data.facebook_url}" target="_blank" rel="noopener" class="contact-btn fb">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+      Facebook</a>`;
+  }
+  contactBtns.innerHTML = btnsHtml;
 }).catch(() => {});
 
 // ตรวจ session
@@ -511,5 +567,9 @@ document.getElementById('confirmModalOkBtn').addEventListener('click', async () 
   }
 });
 </script>
+<div class="shop-footer">
+  <div class="contact-btns" id="contactBtns"></div>
+  <div id="footerText"></div>
+</div>
 </body>
 </html>
