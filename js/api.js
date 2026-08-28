@@ -330,6 +330,11 @@ export const admin = {
     return uploadFetch('/api/admin/site-assets?resource=asset', form);
   },
 
+  // ลบ logo หรือ banner — clear key ใน site_settings
+  async deleteAsset(assetKey) {
+    return apiFetch(`/api/admin/site-assets?asset_key=${assetKey}`, { method: 'DELETE' });
+  },
+
   // upload-payment-qr รวมเข้า /api/admin/site-assets?resource=payment-qr แล้ว
   async uploadPaymentQr(file) {
     const form = new FormData();
