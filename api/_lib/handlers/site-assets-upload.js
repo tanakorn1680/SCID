@@ -99,3 +99,18 @@ export async function uploadPaymentQr(form) {
 
   return { httpStatus: 200, body: { success: true, data: { url: publicUrlData.publicUrl } } };
 }
+
+/**
+ * deleteAsset — ล้าง logo_url หรือ banner_url ออกจาก site_settings
+ * (ไม่ลบไฟล์จาก Storage เพื่อความปลอดภัย แค่ clear key ให้ว่าง)
+ */
+export async function deleteAsset(assetKey) {
+  if (!ALLOWED_ASSET_KEYS.includes(assetKey)) {
+    return { httpStatus: 400, body: { success: false, error: 'ประเภทรูปภาพไม่ถูกต้อง' } };
+  }
+  const { error } = await supabaseAdmin
+    .from('site_settings')
+    .upsert({ key: assetKey, value: '' }, { onConflict: 'key' });
+  if (error) throw error;
+  return { httpStatus: 200, body: { success: true } };
+}
