@@ -56,6 +56,15 @@
     .upload-btn{padding:8px 14px;background:rgba(26,106,160,0.08);color:var(--navy);border:1.5px solid rgba(26,106,160,0.18);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;transition:background .15s;}
     .upload-btn:active{background:rgba(26,106,160,0.16);}
     .upload-spinner{display:none;width:14px;height:14px;border:2px solid rgba(26,106,160,0.3);border-top-color:var(--navy);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-left:6px;}
+    .delete-btn{padding:8px 14px;background:rgba(224,68,51,0.08);color:var(--danger);border:1.5px solid rgba(224,68,51,0.2);border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif;transition:background .15s;margin-left:6px;}
+    .delete-btn:active{background:rgba(224,68,51,0.15);}
+    /* color picker row */
+    .color-row{display:flex;align-items:center;gap:10px;}
+    .color-swatch{width:38px;height:38px;border-radius:8px;border:1.5px solid var(--line);padding:2px;cursor:pointer;background:none;flex-shrink:0;}
+    .color-val{font-size:12px;color:var(--muted);font-family:monospace;}
+    .color-presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+    .color-preset{width:28px;height:28px;border-radius:6px;border:2px solid transparent;cursor:pointer;transition:transform .12s,border-color .12s;flex-shrink:0;}
+    .color-preset:hover,.color-preset.active{transform:scale(1.15);border-color:rgba(26,58,82,0.4);}
     @keyframes spin{to{transform:rotate(360deg);}}
 
     /* save btn */
@@ -154,7 +163,10 @@
       </div>
       <div class="asset-meta">
         <div class="asset-name" id="logoName">—</div>
-        <button class="upload-btn" id="logoUploadBtn">เปลี่ยนโลโก้<span class="upload-spinner" id="logoSpinner"></span></button>
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:0;">
+          <button class="upload-btn" id="logoUploadBtn">เปลี่ยนโลโก้<span class="upload-spinner" id="logoSpinner"></span></button>
+          <button class="delete-btn" id="logoDeleteBtn" style="display:none;">ลบ</button>
+        </div>
         <input type="file" id="logoFile" accept="image/jpeg,image/png,image/webp" style="display:none;">
       </div>
     </div>
@@ -165,8 +177,35 @@
       <img id="bannerPreview" alt="banner">
       <div class="no-img">ยังไม่มีรูป</div>
     </div>
-    <button class="upload-btn" id="bannerUploadBtn">เปลี่ยนแบนเนอร์<span class="upload-spinner" id="bannerSpinner"></span></button>
+    <div style="display:flex;align-items:center;gap:0;flex-wrap:wrap;">
+      <button class="upload-btn" id="bannerUploadBtn">เปลี่ยนแบนเนอร์<span class="upload-spinner" id="bannerSpinner"></span></button>
+      <button class="delete-btn" id="bannerDeleteBtn" style="display:none;">ลบ</button>
+    </div>
     <input type="file" id="bannerFile" accept="image/jpeg,image/png,image/webp" style="display:none;">
+  </div>
+</div>
+
+<!-- ── 3b. ธีมสี ── -->
+<div class="card">
+  <div class="card-header">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+    <span class="card-title">ธีมสี</span>
+  </div>
+  <div class="field">
+    <label>สีพื้นหลังเว็บไซต์</label>
+    <div class="color-row">
+      <input type="color" class="color-swatch" id="fBgColor" value="#81CFF0">
+      <span class="color-val" id="fBgColorVal">#81CFF0</span>
+    </div>
+    <div class="color-presets" id="bgPresets"></div>
+  </div>
+  <div class="field">
+    <label>สีหลัก (ปุ่ม, ลิงก์, accent)</label>
+    <div class="color-row">
+      <input type="color" class="color-swatch" id="fPrimaryColor" value="#1A6BA0">
+      <span class="color-val" id="fPrimaryColorVal">#1A6BA0</span>
+    </div>
+    <div class="color-presets" id="primaryPresets"></div>
   </div>
 </div>
 
@@ -213,23 +252,61 @@ const { data: profile } = await res.json();
 if (profile?.role !== 'admin') { window.location.href = '/pages/shop.html'; }
 
 // ── preview helper ────────────────────────────────────────────
-function setPreview(wrapId, imgId, nameId, url) {
+function setPreview(wrapId, imgId, nameId, url, deleteBtnId) {
   const wrap = document.getElementById(wrapId);
   const img  = document.getElementById(imgId);
   const name = nameId ? document.getElementById(nameId) : null;
+  const delBtn = deleteBtnId ? document.getElementById(deleteBtnId) : null;
   if (url) {
     img.src = url;
     img.classList.add('loaded');
     wrap.querySelector('.no-img').style.display = 'none';
     if (name) name.textContent = url.split('/').pop().split('?')[0];
+    if (delBtn) delBtn.style.display = '';
   } else {
     img.classList.remove('loaded');
     wrap.querySelector('.no-img').style.display = '';
     if (name) name.textContent = '—';
+    if (delBtn) delBtn.style.display = 'none';
   }
 }
 
 // ── load settings ─────────────────────────────────────────────
+// ── Color picker setup ───────────────────────────────────────
+const BG_PRESETS = ['#81CFF0','#B5E8D0','#F0DEB5','#D4B5F0','#F0B5B5','#B5C8F0','#1A2A3A','#2D2D2D','#F5F5F5'];
+const PRI_PRESETS= ['#1A6BA0','#2D7D46','#8B4513','#6B3FA0','#A03F3F','#2D5F8B','#1A3A52','#4A4A4A'];
+
+function initColorPicker(inputId, valId, presetsId, presetColors) {
+  const input  = document.getElementById(inputId);
+  const valEl  = document.getElementById(valId);
+  const wrap   = document.getElementById(presetsId);
+  // presets
+  wrap.innerHTML = presetColors.map(color =>
+    `<div class="color-preset" style="background:${color};" data-color="${color}" title="${color}"></div>`
+  ).join('');
+  wrap.querySelectorAll('.color-preset').forEach(el => {
+    el.addEventListener('click', () => {
+      input.value = el.dataset.color;
+      valEl.textContent = el.dataset.color;
+      wrap.querySelectorAll('.color-preset').forEach(e => e.classList.remove('active'));
+      el.classList.add('active');
+    });
+  });
+  input.addEventListener('input', () => {
+    valEl.textContent = input.value;
+    wrap.querySelectorAll('.color-preset').forEach(e =>
+      e.classList.toggle('active', e.dataset.color.toLowerCase() === input.value.toLowerCase()));
+  });
+}
+initColorPicker('fBgColor',      'fBgColorVal',      'bgPresets',      BG_PRESETS);
+initColorPicker('fPrimaryColor', 'fPrimaryColorVal', 'primaryPresets', PRI_PRESETS);
+
+function syncColorPresetActive(inputId, presetsId) {
+  const val = document.getElementById(inputId).value.toLowerCase();
+  document.getElementById(presetsId).querySelectorAll('.color-preset').forEach(e =>
+    e.classList.toggle('active', e.dataset.color.toLowerCase() === val));
+}
+
 async function loadSettings() {
   try {
     const { data: s } = await admin.settings.get();
@@ -241,9 +318,21 @@ async function loadSettings() {
     document.getElementById('fLineId').value        = s.line_id       || '';
     document.getElementById('fFacebookUrl').value   = s.facebook_url  || '';
     document.getElementById('fFooterText').value    = s.footer_text   || '';
+    // color
+    const bg  = s.bg_color      || '#81CFF0';
+    const pri = s.primary_color || '#1A6BA0';
+    document.getElementById('fBgColor').value      = bg;
+    document.getElementById('fBgColorVal').textContent = bg;
+    document.getElementById('fPrimaryColor').value = pri;
+    document.getElementById('fPrimaryColorVal').textContent = pri;
+    syncColorPresetActive('fBgColor', 'bgPresets');
+    syncColorPresetActive('fPrimaryColor', 'primaryPresets');
     updateShopStatus(s.is_open !== 'false');
     setPreview('logoWrap',   'logoPreview',   'logoName',   s.logo_url   || '');
     setPreview('bannerWrap', 'bannerPreview', null,         s.banner_url || '');
+    // show delete btn ถ้ามีรูป
+    document.getElementById('logoDeleteBtn').style.display   = s.logo_url   ? '' : 'none';
+    document.getElementById('bannerDeleteBtn').style.display = s.banner_url ? '' : 'none';
   } catch {
     showToast('โหลดการตั้งค่าไม่สำเร็จ', 'error');
   }
@@ -260,7 +349,7 @@ document.getElementById('fIsOpen').addEventListener('change', (e) => {
 });
 
 // ── upload helpers ────────────────────────────────────────────
-function setupUpload(btnId, fileId, spinnerId, assetKey, wrapId, imgId, nameId) {
+function setupUpload(btnId, fileId, spinnerId, assetKey, wrapId, imgId, nameId, deleteBtnId) {
   document.getElementById(btnId).addEventListener('click', () => document.getElementById(fileId).click());
   document.getElementById(fileId).addEventListener('change', async (e) => {
     const file = e.target.files[0];
@@ -271,7 +360,7 @@ function setupUpload(btnId, fileId, spinnerId, assetKey, wrapId, imgId, nameId) 
     spinner.style.display = 'inline-block';
     try {
       const { data } = await admin.uploadAsset(assetKey, file);
-      setPreview(wrapId, imgId, nameId, data.url);
+      setPreview(wrapId, imgId, nameId, data.url, deleteBtnId);
       showToast('อัปโหลดสำเร็จ', 'success');
     } catch (err) {
       showToast(err.message, 'error');
@@ -282,8 +371,28 @@ function setupUpload(btnId, fileId, spinnerId, assetKey, wrapId, imgId, nameId) 
   });
 }
 
-setupUpload('logoUploadBtn',   'logoFile',   'logoSpinner',   'logo_url',   'logoWrap',   'logoPreview',   'logoName');
-setupUpload('bannerUploadBtn', 'bannerFile', 'bannerSpinner', 'banner_url', 'bannerWrap', 'bannerPreview', null);
+setupUpload('logoUploadBtn',   'logoFile',   'logoSpinner',   'logo_url',   'logoWrap',   'logoPreview',   'logoName',   'logoDeleteBtn');
+setupUpload('bannerUploadBtn', 'bannerFile', 'bannerSpinner', 'banner_url', 'bannerWrap', 'bannerPreview', null, 'bannerDeleteBtn');
+
+// ── delete asset ──────────────────────────────────────────────
+async function setupDelete(btnId, assetKey, wrapId, imgId, nameId) {
+  document.getElementById(btnId).addEventListener('click', async () => {
+    const btn = document.getElementById(btnId);
+    btn.disabled = true;
+    btn.textContent = 'กำลังลบ...';
+    try {
+      await admin.deleteAsset(assetKey);
+      setPreview(wrapId, imgId, nameId, '', btnId);
+      showToast('ลบรูปสำเร็จ', 'success');
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+    btn.disabled = false;
+    btn.textContent = 'ลบ';
+  });
+}
+setupDelete('logoDeleteBtn',   'logo_url',   'logoWrap',   'logoPreview',   'logoName');
+setupDelete('bannerDeleteBtn', 'banner_url', 'bannerWrap', 'bannerPreview', null);
 
 // ── save ──────────────────────────────────────────────────────
 document.getElementById('saveBtn').addEventListener('click', async () => {
@@ -292,14 +401,16 @@ document.getElementById('saveBtn').addEventListener('click', async () => {
   btn.textContent = 'กำลังบันทึก...';
   try {
     await admin.settings.update({
-      is_open:      String(document.getElementById('fIsOpen').checked),
-      closed_msg:   document.getElementById('fClosedMsg').value.trim(),
-      site_name:    document.getElementById('fSiteName').value.trim(),
-      home_text:    document.getElementById('fHomeText').value.trim(),
-      announcement: document.getElementById('fAnnouncement').value.trim(),
-      line_id:      document.getElementById('fLineId').value.trim(),
-      facebook_url: document.getElementById('fFacebookUrl').value.trim(),
-      footer_text:  document.getElementById('fFooterText').value.trim(),
+      is_open:       String(document.getElementById('fIsOpen').checked),
+      closed_msg:    document.getElementById('fClosedMsg').value.trim(),
+      site_name:     document.getElementById('fSiteName').value.trim(),
+      home_text:     document.getElementById('fHomeText').value.trim(),
+      announcement:  document.getElementById('fAnnouncement').value.trim(),
+      line_id:       document.getElementById('fLineId').value.trim(),
+      facebook_url:  document.getElementById('fFacebookUrl').value.trim(),
+      footer_text:   document.getElementById('fFooterText').value.trim(),
+      bg_color:      document.getElementById('fBgColor').value,
+      primary_color: document.getElementById('fPrimaryColor').value,
     });
     showToast('บันทึกสำเร็จ', 'success');
   } catch (e) {
