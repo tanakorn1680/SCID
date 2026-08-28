@@ -264,6 +264,17 @@ function showToast(msg, type = '') {
 
 // โหลด settings จาก Website Settings
 settings.get().then(({ data }) => {
+  // theme colors — override CSS variables + background
+  if (data.bg_color) {
+    document.documentElement.style.setProperty('--bg-color', data.bg_color);
+    document.documentElement.style.background = data.bg_color;
+    document.body.style.background = data.bg_color;
+  }
+  if (data.primary_color) {
+    document.documentElement.style.setProperty('--navy', data.primary_color);
+    // derive darker shade สำหรับ hover state
+    document.documentElement.style.setProperty('--sky', data.primary_color);
+  }
   // logo
   if (data.logo_url) document.getElementById('siteLogo').src = data.logo_url;
   // hero title
