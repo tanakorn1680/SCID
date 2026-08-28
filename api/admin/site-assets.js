@@ -19,6 +19,7 @@ import {
 import {
   uploadSiteAsset,
   uploadPaymentQr,
+  deleteAsset,
 } from '../_lib/handlers/site-assets-upload.js';
 import { parseRequestUrl } from '../_lib/request-url.js';
 
@@ -73,6 +74,19 @@ export async function PUT(req) {
 
   } catch (err) {
     console.error(`PUT /api/admin/site-assets?resource=${resource} failed:`, err);
+    return errorResponse(err);
+  }
+}
+
+export async function DELETE(req) {
+  try {
+    await requireAdmin(req);
+    const url      = parseRequestUrl(req);
+    const assetKey = url.searchParams.get('asset_key');
+    const { httpStatus, body } = await deleteAsset(assetKey);
+    return Response.json(body, { status: httpStatus });
+  } catch (err) {
+    console.error('DELETE /api/admin/site-assets failed:', err);
     return errorResponse(err);
   }
 }
