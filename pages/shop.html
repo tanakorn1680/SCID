@@ -193,9 +193,11 @@
     <div class="gallery-thumb-strip" id="galleryThumbStrip"></div>
     <!-- ข้อความ spec -->
     <div class="spec-modal-body-wrap">
-      <div class="spec-modal-title" id="specModalTitle"></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:4px;">
+        <div class="spec-modal-title" id="specModalTitle" style="margin-bottom:0;flex:1;min-width:0;"></div>
+        <div id="specModalStock" style="flex-shrink:0;margin-top:2px;"></div>
+      </div>
       <div class="spec-modal-price" id="specModalPrice"></div>
-      <div id="specModalStock"></div>
       <div class="spec-modal-body" id="specModalBody"></div>
     </div>
     <button class="spec-modal-close" id="specModalCloseBtn">ปิด</button>
@@ -465,7 +467,7 @@ try {
                   <div class="product-price">ราคา ${Number(p.price).toLocaleString()} บาท</div>
                   ${specBtn}
                   <button class="buy-btn" onclick='buyProduct(${JSON.stringify({ key: p.key, label: p.label, price: p.price })})' ${inStock ? '' : 'disabled'}>
-                    ${inStock ? 'ซื้อ' : 'สินค้าหมด'}
+                    ซื้อ
                   </button>
                 </div>
               </div>`;
@@ -538,8 +540,8 @@ window.openSpecModal = (product) => {
   const stockEl = document.getElementById('specModalStock');
   const inStock = (product.stock_count ?? 0) > 0;
   stockEl.innerHTML = inStock
-    ? `<span style="font-size:13px;color:var(--ink);font-weight:400;margin-bottom:12px;display:block;">คงเหลือ ${product.stock_count} ชิ้น</span>`
-    : `<span style="font-size:13px;color:var(--danger);font-weight:400;margin-bottom:12px;display:block;">สินค้าหมดชั่วคราว</span>`;
+    ? `<span style="font-size:12px;color:var(--green-go);font-weight:600;background:rgba(63,133,87,0.1);border:1px solid rgba(63,133,87,0.22);border-radius:20px;padding:2px 8px;white-space:nowrap;">เหลือ ${product.stock_count} ชิ้น</span>`
+    : `<span style="font-size:12px;color:var(--danger);font-weight:600;background:rgba(224,68,51,0.08);border:1px solid rgba(224,68,51,0.2);border-radius:20px;padding:2px 8px;white-space:nowrap;">สินค้าหมด</span>`;
 
   buildGallery(images);
   specBackdrop.classList.add('show');
