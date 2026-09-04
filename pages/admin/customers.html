@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>สมาชิก — Admin</title>
@@ -15,14 +17,45 @@
   .page-title svg{width:20px;height:20px;flex-shrink:0;}
   .search-input{width:100%;padding:10px 14px;border:1.5px solid var(--line);border-radius:9px;font-size:13px;font-family:'IBM Plex Sans Thai',sans-serif;background:#fff;margin-bottom:14px;}
   .card{background:#fff;border-radius:13px;padding:16px;box-shadow:0 2px 10px rgba(0,40,80,0.08);}
-  .cust-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dotted var(--line);gap:10px;}
+  .cust-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px dotted var(--line);gap:10px;cursor:pointer;border-radius:8px;transition:background .12s;}
   .cust-row:last-child{border-bottom:none;}
+  .cust-row:active{background:rgba(26,106,160,0.06);}
   .cust-email{font-size:13px;font-weight:600;word-break:break-all;}
   .cust-meta{font-size:11.5px;color:rgba(26,58,82,0.5);margin-top:2px;}
   .cust-stats{text-align:right;flex-shrink:0;}
   .cust-spent{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:14px;}
   .cust-orders{font-size:11px;color:rgba(26,58,82,0.5);}
   .empty-state{text-align:center;padding:30px 20px;color:rgba(26,58,82,0.5);font-size:13px;}
+
+  /* ── Detail Drawer ── */
+  .drawer-backdrop{position:fixed;inset:0;background:rgba(10,25,40,0.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s;}
+  .drawer-backdrop.open{opacity:1;pointer-events:all;}
+  .drawer{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:520px;max-height:88vh;display:flex;flex-direction:column;transform:translateY(40px);transition:transform .26s cubic-bezier(.32,.72,0,1);}
+  .drawer-backdrop.open .drawer{transform:translateY(0);}
+  .drawer-header{padding:16px 16px 12px;border-bottom:1px solid rgba(26,106,160,0.1);flex-shrink:0;}
+  .drawer-title{font-family:'Baloo 2',sans-serif;font-size:15px;font-weight:800;color:var(--ink);word-break:break-all;}
+  .drawer-close{position:absolute;top:14px;right:14px;background:rgba(26,58,82,0.08);border:none;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);}
+  .drawer-close:active{opacity:0.7;}
+  .drawer-body{overflow-y:auto;flex:1;padding:14px 16px 24px;}
+  .detail-badge-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+  .badge.confirmed{background:rgba(63,133,87,0.1);color:var(--green-go);border:1px solid rgba(63,133,87,0.25);}
+  .badge.unconfirmed{background:rgba(224,68,51,0.08);color:var(--danger);border:1px solid rgba(224,68,51,0.2);}
+  .badge.spent{background:rgba(217,163,48,0.1);color:#8a6000;border:1px solid rgba(217,163,48,0.25);}
+  .section-label{font-size:11px;font-weight:700;color:rgba(26,58,82,0.45);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;}
+  .order-row{padding:10px 0;border-bottom:1px dotted var(--line);display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+  .order-row:last-child{border-bottom:none;}
+  .order-product{font-size:12.5px;font-weight:600;}
+  .order-date{font-size:11px;color:rgba(26,58,82,0.45);margin-top:2px;}
+  .order-right{text-align:right;flex-shrink:0;}
+  .order-amount{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:13px;color:var(--gold);}
+  .order-status{font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:10px;margin-top:3px;display:inline-block;}
+  .order-status.delivered{background:rgba(63,133,87,0.1);color:var(--green-go);}
+  .order-status.pending{background:rgba(217,163,48,0.1);color:#8a6000;}
+  .order-status.cancelled{background:rgba(224,68,51,0.08);color:var(--danger);}
+  .order-status.paid{background:rgba(26,106,160,0.1);color:var(--navy);}
+  .no-orders{text-align:center;padding:20px;color:rgba(26,58,82,0.4);font-size:13px;}
+  .drawer-loading{text-align:center;padding:30px;color:rgba(26,58,82,0.45);font-size:13px;}
   .card{background:rgba(255,255,255,0.92);border:1.5px solid rgba(255,255,255,0.65);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
   .search-input{transition:border-color .15s,box-shadow .15s;}
   .search-input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(33,150,201,0.15);}
@@ -43,6 +76,20 @@
   <div id="custList"><div class="empty-state">กำลังโหลด...</div></div>
 </div>
 
+<div class="drawer-backdrop" id="drawerBackdrop">
+  <div class="drawer" style="position:relative;">
+    <button class="drawer-close" id="drawerClose">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="drawer-header">
+      <div class="drawer-title" id="drawerTitle">—</div>
+    </div>
+    <div class="drawer-body" id="drawerBody">
+      <div class="drawer-loading">กำลังโหลด...</div>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import { auth, admin } from '../../js/api.js';
 
@@ -55,6 +102,8 @@ if (profile?.role !== 'admin') { window.location.href = '/pages/shop.html'; }
 
 let allCustomers = [];
 
+const STATUS_LABEL = { delivered:'ส่งแล้ว', pending:'รอชำระ', paid:'รอตรวจสลิป', cancelled:'ยกเลิก' };
+
 function render(list) {
   const listEl = document.getElementById('custList');
   if (!list.length) {
@@ -62,7 +111,7 @@ function render(list) {
     return;
   }
   listEl.innerHTML = list.map(c => `
-    <div class="cust-row">
+    <div class="cust-row" data-id="${c.user_id}" data-email="${c.email}" data-spent="${c.total_spent}" data-orders="${c.order_count}">
       <div>
         <div class="cust-email">${c.email}</div>
         <div class="cust-meta">สมัครเมื่อ ${new Date(c.created_at).toLocaleDateString('th-TH')}</div>
@@ -73,7 +122,63 @@ function render(list) {
       </div>
     </div>
   `).join('');
+
+  listEl.querySelectorAll('.cust-row').forEach(row => {
+    row.addEventListener('click', () => openDrawer(row.dataset.id, row.dataset.email, Number(row.dataset.spent)));
+  });
 }
+
+// ── Drawer ──────────────────────────────────────────────────
+const backdrop   = document.getElementById('drawerBackdrop');
+const drawerBody = document.getElementById('drawerBody');
+const drawerTitle= document.getElementById('drawerTitle');
+
+async function openDrawer(userId, email, totalSpent) {
+  drawerTitle.textContent = email;
+  drawerBody.innerHTML = `<div class="drawer-loading">กำลังโหลด...</div>`;
+  backdrop.classList.add('open');
+
+  try {
+    const { data } = await admin.customerDetail(userId);
+    const confirmed = data.email_confirmed;
+    const orders    = data.orders ?? [];
+
+    const ordersHtml = orders.length
+      ? orders.map(o => {
+          const st = o.status ?? 'pending';
+          return `
+          <div class="order-row">
+            <div>
+              <div class="order-product">${o.product_label}</div>
+              <div class="order-date">${new Date(o.created_at).toLocaleDateString('th-TH', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}</div>
+            </div>
+            <div class="order-right">
+              <div class="order-amount">฿${Number(o.amount).toLocaleString()}</div>
+              <span class="order-status ${st}">${STATUS_LABEL[st] ?? st}</span>
+            </div>
+          </div>`;
+        }).join('')
+      : `<div class="no-orders">ยังไม่มีประวัติคำสั่งซื้อ</div>`;
+
+    drawerBody.innerHTML = `
+      <div class="detail-badge-row">
+        <span class="badge ${confirmed ? 'confirmed' : 'unconfirmed'}">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">${confirmed ? '<polyline points="20 6 9 17 4 12"/>' : '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'}</svg>
+          ${confirmed ? 'ยืนยันอีเมลแล้ว' : 'ยังไม่ยืนยันอีเมล'}
+        </span>
+        <span class="badge spent">฿${totalSpent.toLocaleString()} ยอดรวม</span>
+      </div>
+      <div class="section-label">ประวัติคำสั่งซื้อ</div>
+      ${ordersHtml}
+    `;
+  } catch {
+    drawerBody.innerHTML = `<div class="drawer-loading">โหลดไม่สำเร็จ</div>`;
+  }
+}
+
+function closeDrawer() { backdrop.classList.remove('open'); }
+document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+backdrop.addEventListener('click', e => { if (e.target === backdrop) closeDrawer(); });
 
 async function loadCustomers() {
   const listEl = document.getElementById('custList');
@@ -93,6 +198,7 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
 });
 
 loadCustomers();
+
 </script>
 </body>
 </html>

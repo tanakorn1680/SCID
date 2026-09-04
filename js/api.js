@@ -321,6 +321,9 @@ export const admin = {
   async customers() {
     return apiFetch('/api/admin/customers');
   },
+  async customerDetail(userId) {
+    return apiFetch(`/api/admin/customers?user_id=${encodeURIComponent(userId)}`);
+  },
 
   // upload-asset รวมเข้า /api/admin/site-assets?resource=asset แล้ว
   async uploadAsset(assetKey, file) {
@@ -328,6 +331,11 @@ export const admin = {
     form.append('asset_key', assetKey);
     form.append('file', file);
     return uploadFetch('/api/admin/site-assets?resource=asset', form);
+  },
+
+  // ลบ logo หรือ banner — clear key ใน site_settings
+  async deleteAsset(assetKey) {
+    return apiFetch(`/api/admin/site-assets?asset_key=${assetKey}`, { method: 'DELETE' });
   },
 
   // upload-payment-qr รวมเข้า /api/admin/site-assets?resource=payment-qr แล้ว
