@@ -240,7 +240,7 @@
     <div class="spec-modal-body-wrap">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:4px;">
         <div class="spec-modal-title" id="specModalTitle" style="margin-bottom:0;flex:1;min-width:0;"></div>
-        <div id="specModalStock" style="flex-shrink:0;margin-top:2px;"></div>
+        <div id="specModalStock" style="flex-shrink:0;margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div>
       </div>
       <div class="spec-modal-price" id="specModalPrice"></div>
       <div class="spec-modal-body" id="specModalBody"></div>
@@ -496,9 +496,6 @@ try {
           <div class="product-grid">
             ${seen.get(category).map(p => {
               const inStock   = p.stock_count > 0;
-              const soldLine  = p.sold_count > 0
-                ? `<div class="sold-count-line">ขายแล้ว ${p.sold_count} ชิ้น</div>`
-                : '';
               const images   = p.images ?? [];
               const hasSpec  = !!p.spec;
               const hasImg   = images.length > 0;
@@ -524,7 +521,6 @@ try {
                     ${stockBadge}
                   </div>
                   <div class="product-price">ราคา ${Number(p.price).toLocaleString()} บาท</div>
-                  ${soldLine}
                   ${specBtn}
                   <button class="buy-btn" onclick='buyProduct(${JSON.stringify({ key: p.key, label: p.label, price: p.price })})' ${inStock ? '' : 'disabled'}>
                     ซื้อ
@@ -678,12 +674,19 @@ window.openSpecModal = (product) => {
   document.getElementById('specModalPrice').textContent = `ราคา ${Number(product.price).toLocaleString()} บาท`;
   document.getElementById('specModalBody').textContent = product.spec ?? '';
 
-  // stock badge
+  // stock + sold badge
   const stockEl = document.getElementById('specModalStock');
   const inStock = (product.stock_count ?? 0) > 0;
-  stockEl.innerHTML = inStock
-    ? `<span style="font-size:13px;color:var(--ink);font-weight:400;white-space:nowrap;">คงเหลือ ${product.stock_count} ชิ้น</span>`
-    : `<span style="font-size:13px;color:var(--danger);font-weight:400;white-space:nowrap;">สินค้าหมด</span>`;
+  const soldCount = product.sold_count ?? 0;
+  const soldHtml = soldCount > 0
+    ? `<span style="font-size:13px;color:var(--muted);font-weight:400;white-space:nowrap;">ขายแล้ว ${soldCount} ชิ้น</span>`
+    : '';
+  stockEl.innerHTML = `
+    <span style="font-size:13px;color:${inStock ? 'var(--ink)' : 'var(--danger)'};font-weight:400;white-space:nowrap;">
+      ${inStock ? `คงเหลือ ${product.stock_count} ชิ้น` : 'สินค้าหมด'}
+    </span>
+    ${soldHtml}
+  `;
 
   buildGallery(images);
   specBackdrop.classList.add('show');
