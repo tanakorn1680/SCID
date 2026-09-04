@@ -540,4 +540,137 @@ imgLightbox.addEventListener('touchend',   e => {
 });
 
 // gallery state
-let _galImages
+let _galImages = [], _galIdx = 0;
+function galSetIdx(idx) {
+  _galIdx = idx;
+  galleryMain.src = _galImages[idx].url;
+  galleryPrev.classList.toggle('hidden', _galImages.length <= 1);
+  galleryNext.classList.toggle('hidden', _galImages.length <= 1);
+  galleryThumbStrip.querySelectorAll('.gallery-thumb').forEach((t, i) => t.classList.toggle('active', i === idx));
+  const active = galleryThumbStrip.querySelectorAll('.gallery-thumb')[idx];
+  if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+}
+
+function buildGallery(images) {
+  _galImages = images;
+  if (!images.length) {
+    galleryWrap.classList.remove('has-images');
+    galleryThumbStrip.classList.remove('has-images');
+    galleryThumbStrip.style.display = 'none';
+    galleryPrev.classList.add('hidden');
+    galleryNext.classList.add('hidden');
+    return;
+  }
+
+  const coverIdx = images.findIndex(img => img.is_cover);
+  _galIdx = coverIdx >= 0 ? coverIdx : 0;
+
+  galleryMain.src = images[_galIdx].url;
+  galleryWrap.classList.add('has-images');
+  galleryPrev.classList.toggle('hidden', images.length <= 1);
+  galleryNext.classList.toggle('hidden', images.length <= 1);
+
+  if (images.length > 1) {
+    galleryThumbStrip.style.display = 'flex';
+    galleryThumbStrip.classList.add('has-images');
+    galleryThumbStrip.innerHTML = images.map((img, i) => `
+      <img class="gallery-thumb ${i === _galIdx ? 'active' : ''}"
+           src="${img.url}" alt="thumb ${i + 1}" loading="lazy" data-idx="${i}">`
+    ).join('');
+    galleryThumbStrip.querySelectorAll('.gallery-thumb').forEach(thumb => {
+      thumb.addEventListener('click', () => galSetIdx(Number(thumb.dataset.idx)));
+    });
+  } else {
+    galleryThumbStrip.style.display = 'none';
+    galleryThumbStrip.classList.remove('has-images');
+  }
+
+  // nav
+  galleryPrev.onclick = () => galSetIdx((_galIdx - 1 + _galImages.length) % _galImages.length);
+  galleryNext.onclick = () => galSetIdx((_galIdx + 1) % _galImages.length);
+
+  // expand → lightbox
+  galleryExpandBtn.onclick = () => lbShow(_galImages, _galIdx);
+  galleryMain.style.cursor = 'zoom-in';
+  galleryMain.onclick = () => lbShow(_galImages, _galIdx);
+}
+
+// ── Modal ดูรายละเอียดสเปค + Gallery ──────────────────────
+const specBackdrop = document.getElementById('specModalBackdrop');
+
+window.openSpecModal = (product) => {
+  const images = product.images ?? [];
+  document.getElementById('specModalTitle').textContent = product.label;
+  document.getElementById('specModalPrice').textContent = `ราคา ${Number(product.price).toLocaleString()} บาท`;
+  document.getElementById('specModalBody').textContent = product.spec ?? '';
+
+  // stock badge
+  const stockEl = document.getElementById('specModalStock');
+  const inStock = (product.stock_count ?? 0) > 0;
+  const dotSvg = inStock
+    ? `<svg width="7" height="7" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#3F8557"/></svg>`
+    : `<svg width="7" height="7" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#E04433"/></svg>`;
+  stockEl.innerHTML = inStock
+    ? `<span class="spec-modal-stock in-stock">${dotSvg}คงเหลือ ${product.stock_count} ชิ้น</span>`
+    : `<span class="spec-modal-stock out-of-stock">${dotSvg}สินค้าหมดชั่วคราว</span>`;
+
+  buildGallery(images);
+  specBackdrop.classList.add('show');
+};
+
+function closeSpecModal() {
+  specBackdrop.classList.remove('show');
+  // รอ transition จบ (~260ms) แล้วค่อย reset gallery state
+  setTimeout(() => {
+    galleryMain.src = '';
+    galleryThumbStrip.innerHTML = '';
+  }, 280);
+}
+
+document.getElementById('specModalCloseBtn').addEventListener('click', closeSpecModal);
+specBackdrop.addEventListener('click', (e) => {
+  if (e.target === specBackdrop) closeSpecModal();
+});
+
+// ── Modal ยืนยันการสั่งซื้อ ─────────────────────────────────
+const confirmBackdrop = document.getElementById('confirmModalBackdrop');
+let pendingProduct = null;
+
+window.buyProduct = (product) => {
+  if (!session) return window.location.href = '/pages/login.html';
+  pendingProduct = product;
+  document.getElementById('confirmModalProduct').textContent = product.label;
+  document.getElementById('confirmModalPrice').textContent = `ราคา ${Number(product.price).toLocaleString()} บาท`;
+  confirmBackdrop.classList.add('show');
+};
+
+function closeConfirmModal() {
+  confirmBackdrop.classList.remove('show');
+  pendingProduct = null;
+}
+
+document.getElementById('confirmModalCancelBtn').addEventListener('click', closeConfirmModal);
+confirmBackdrop.addEventListener('click', (e) => {
+  if (e.target === confirmBackdrop) closeConfirmModal();
+});
+
+document.getElementById('confirmModalOkBtn').addEventListener('click', async () => {
+  if (!pendingProduct) return;
+  const product = pendingProduct;
+  const btn = document.getElementById('confirmModalOkBtn');
+  btn.disabled = true; btn.textContent = 'กำลังสั่งซื้อ...';
+  try {
+    const { data } = await orders.create(product.key);
+    window.location.href = `/pages/checkout.html?order_id=${data.id}`;
+  } catch (e) {
+    showToast(e.message, 'error');
+    btn.disabled = false; btn.textContent = 'ยืนยัน';
+  }
+});
+</script>
+<div class="shop-footer">
+  <div class="contact-btns" id="contactBtns"></div>
+  <div id="footerText"></div>
+</div>
+</body>
+</html>
