@@ -120,9 +120,52 @@ export async function approveOrder(orderId) {
 }
 
 /**
- * reject — ปฏิเสธสลิป กลับเป็น pending ให้ลูกค้าส่งใหม่
- * เดิมคือ POST /api/admin/reject
+ * deleteOrder — ลบออเดอร์ได้เฉพาะ cancelled และ delivered
+ * - cancelled: ลบได้เลย ไม่มี inventory ผูกอยู่
+ * - delivered: ต้อง reset inventory กลับเป็น ready ก่อน แล้วค่อยลบ order
  */
+export async function deleteOrder(orderId) {
+  if (!orderId) {
+    return { httpStatus: 400, body: { success: false, error: 'ไม่ระบุ order_id' } };
+  }
+
+  const { data: order, error: orderErr } = await supabaseAdmin
+    .from('orders')
+    .select('id, status')
+    .eq('id', orderId)
+    .single();
+
+  if (orderErr || !order) {
+    return { httpStatus: 404, body: { success: false, error: 'ไม่พบออเดอร์' } };
+  }
+
+  if (!['cancelled', 'delivered'].includes(order.status)) {
+    return {
+      httpStatus: 400,
+      body: { success: false, error: 'ลบได้เฉพาะออเดอร์ที่ยกเลิกหรือส่งแล้วเท่านั้น' },
+    };
+  }
+
+  // ถ้าเป็น delivered → reset inventory กลับเป็น ready ก่อน
+  if (order.status === 'delivered') {
+    const { error: invErr } = await supabaseAdmin
+      .from('inventory')
+      .update({ status: 'ready', sold_at: null })
+      .eq('order_id', orderId);
+
+    if (invErr) throw invErr;
+  }
+
+  const { error: delErr } = await supabaseAdmin
+    .from('orders')
+    .delete()
+    .eq('id', orderId);
+
+  if (delErr) throw delErr;
+
+  return { httpStatus: 200, body: { success: true } };
+}
+
 export async function rejectOrder(orderId, reason) {
   if (!orderId || !reason?.trim()) {
     return { httpStatus: 400, body: { success: false, error: 'กรุณาระบุเหตุผล' } };

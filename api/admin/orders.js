@@ -1,13 +1,14 @@
 // api/admin/orders.js
 // Router เท่านั้น — business logic อยู่ที่ _lib/handlers/admin-orders.js
 //
-// GET  /api/admin/orders?status=&page=&search=        → list
-// POST /api/admin/orders  body:{action:'approve', order_id}          → approve (auto-deliver)
-// POST /api/admin/orders  body:{action:'reject', order_id, reason}   → reject
+// GET    /api/admin/orders?status=&page=&search=              → list
+// POST   /api/admin/orders  body:{action:'approve', order_id} → approve
+// POST   /api/admin/orders  body:{action:'reject', order_id, reason} → reject
+// DELETE /api/admin/orders  body:{order_id}                   → delete (cancelled/delivered only)
 
-import { requireAdmin, errorResponse }        from '../_lib/auth.js';
-import { listOrders, approveOrder, rejectOrder } from '../_lib/handlers/admin-orders.js';
-import { parseRequestUrl }                       from '../_lib/request-url.js';
+import { requireAdmin, errorResponse }                          from '../_lib/auth.js';
+import { listOrders, approveOrder, rejectOrder, deleteOrder }   from '../_lib/handlers/admin-orders.js';
+import { parseRequestUrl }                                       from '../_lib/request-url.js';
 
 export const config = { runtime: "nodejs" };
 
@@ -43,6 +44,18 @@ export async function POST(req) {
     );
   } catch (err) {
     console.error('POST /api/admin/orders failed:', err);
+    return errorResponse(err);
+  }
+}
+
+export async function DELETE(req) {
+  try {
+    await requireAdmin(req);
+    const { order_id } = await req.json();
+    const { httpStatus, body } = await deleteOrder(order_id);
+    return Response.json(body, { status: httpStatus });
+  } catch (err) {
+    console.error('DELETE /api/admin/orders failed:', err);
     return errorResponse(err);
   }
 }

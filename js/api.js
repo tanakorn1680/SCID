@@ -187,6 +187,12 @@ export const admin = {
       body: JSON.stringify({ action: 'reject', order_id: orderId, reason }),
     });
   },
+  async orderDelete(orderId) {
+    return apiFetch('/api/admin/orders', {
+      method: 'DELETE',
+      body: JSON.stringify({ order_id: orderId }),
+    });
+  },
 
   // slip-url รวมเข้า /api/orders/slip แล้ว (GET = แอดมินอ่าน, POST = ลูกค้าเขียน)
   async slipUrl(orderId) {
