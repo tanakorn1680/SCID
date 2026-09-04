@@ -124,7 +124,7 @@ function render(list) {
   `).join('');
 
   listEl.querySelectorAll('.cust-row').forEach(row => {
-    row.addEventListener('click', () => openDrawer(row.dataset.id, row.dataset.email, Number(row.dataset.spent)));
+    row.addEventListener('click', () => openDrawer(row.dataset.email, row.dataset.email, Number(row.dataset.spent)));
   });
 }
 

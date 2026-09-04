@@ -16,27 +16,42 @@ export async function GET(req) {
 
     // ── รายละเอียดลูกค้าคนเดียว ────────────────────────────
     if (userId) {
-      const [authRes, ordersRes] = await Promise.all([
-        supabaseAdmin.auth.admin.getUserById(userId),
-        supabaseAdmin
-          .from('orders')
-          .select('id, product_label, amount, status, created_at, updated_at')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(50),
-      ]);
+      // userId อาจเป็น email (ถ้า customer_summary ไม่ return user_id)
+      // รองรับทั้ง UUID และ email
+      const isEmail = userId.includes('@');
 
-      if (authRes.error) throw authRes.error;
-      if (ordersRes.error) throw ordersRes.error;
+      let authUser;
+      if (isEmail) {
+        // ค้นจาก email → listUsers แล้ว filter
+        const { data: listData, error: listErr } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+        if (listErr) throw listErr;
+        authUser = listData.users.find(u => u.email === userId);
+      } else {
+        const { data: userData, error: userErr } = await supabaseAdmin.auth.admin.getUserById(userId);
+        if (userErr) throw userErr;
+        authUser = userData.user;
+      }
 
-      const u = authRes.data.user;
+      if (!authUser) {
+        return Response.json({ success: false, error: 'ไม่พบผู้ใช้' }, { status: 404 });
+      }
+
+      const { data: orders, error: ordersErr } = await supabaseAdmin
+        .from('orders')
+        .select('id, product_label, amount, status, created_at, updated_at')
+        .eq('user_email', authUser.email)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (ordersErr) throw ordersErr;
+
       return Response.json({
         success: true,
         data: {
-          email:           u.email,
-          email_confirmed: !!u.email_confirmed_at,
-          created_at:      u.created_at,
-          orders:          ordersRes.data,
+          email:           authUser.email,
+          email_confirmed: !!authUser.email_confirmed_at,
+          created_at:      authUser.created_at,
+          orders:          orders ?? [],
         },
       });
     }
