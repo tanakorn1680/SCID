@@ -262,10 +262,9 @@ function showToast(msg, type = '') {
 
 
 
-// apply settings ที่โหลดมาแล้ว
-;(() => {
-  const data = siteSettings;
-  // theme colors
+// โหลด settings จาก Website Settings
+settings.get().then(({ data }) => {
+  // theme colors — override CSS variables + background
   if (data.bg_color) {
     document.documentElement.style.setProperty('--bg-color', data.bg_color);
     document.documentElement.style.background = data.bg_color;
@@ -273,6 +272,7 @@ function showToast(msg, type = '') {
   }
   if (data.primary_color) {
     document.documentElement.style.setProperty('--navy', data.primary_color);
+    // derive darker shade สำหรับ hover state
     document.documentElement.style.setProperty('--sky', data.primary_color);
   }
   // logo
@@ -319,7 +319,7 @@ function showToast(msg, type = '') {
       Facebook</a>`;
   }
   contactBtns.innerHTML = btnsHtml;
-})();
+}).catch(() => {});
 
 // ตรวจ session
 const session = await auth.getSession();
@@ -400,17 +400,10 @@ function buildCardImage(images) {
     </div>`;
 }
 
-// โหลด settings + สินค้าพร้อมกัน (parallel)
+// โหลดสินค้า
 const grid = document.getElementById('productGrid');
-const [settingsRes, productsRes] = await Promise.allSettled([
-  settings.get(),
-  products.list(),
-]);
-const siteSettings = settingsRes.status === 'fulfilled' ? (settingsRes.value?.data ?? {}) : {};
 try {
-  const { data } = productsRes.status === 'fulfilled'
-    ? productsRes.value
-    : (() => { throw new Error(productsRes.reason); })();
+  const { data } = await products.list();
   if (!data.length) {
     grid.innerHTML = `<div class="empty-state" style="padding:50px 20px;text-align:center;color:rgba(255,255,255,0.75);">ยังไม่มีสินค้า</div>`;
   } else {
@@ -421,10 +414,11 @@ try {
       if (!seen.has(p.category)) { seen.set(p.category, []); apiOrder.push(p.category); }
       seen.get(p.category).push(p);
     }
-    // apply ลำดับ category จาก site_settings (เรียงโดยแอดมิน)
+    // apply ลำดับ category ที่แอดมินบันทึกไว้ใน site_settings
     let grouped = apiOrder;
     try {
-      const savedOrder = JSON.parse(siteSettings.category_order ?? 'null');
+      const settingsData = await settings.get().then(r => r.data).catch(() => ({}));
+      const savedOrder = JSON.parse(settingsData.category_order ?? 'null');
       if (Array.isArray(savedOrder) && savedOrder.length) {
         const known = savedOrder.filter(c => seen.has(c));
         const extra = apiOrder.filter(c => !known.includes(c));
