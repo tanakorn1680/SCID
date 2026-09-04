@@ -321,6 +321,9 @@ export const admin = {
   async customers() {
     return apiFetch('/api/admin/customers');
   },
+  async customerDetail(userId) {
+    return apiFetch(`/api/admin/customers?user_id=${encodeURIComponent(userId)}`);
+  },
 
   // upload-asset รวมเข้า /api/admin/site-assets?resource=asset แล้ว
   async uploadAsset(assetKey, file) {
