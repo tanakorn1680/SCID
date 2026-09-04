@@ -240,9 +240,12 @@
     <div class="spec-modal-body-wrap">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:4px;">
         <div class="spec-modal-title" id="specModalTitle" style="margin-bottom:0;flex:1;min-width:0;"></div>
-        <div id="specModalStock" style="flex-shrink:0;margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div>
+        <div id="specModalStock" style="flex-shrink:0;margin-top:2px;font-size:13px;font-weight:400;white-space:nowrap;"></div>
       </div>
-      <div class="spec-modal-price" id="specModalPrice"></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px;">
+        <div class="spec-modal-price" id="specModalPrice" style="margin-bottom:0;"></div>
+        <div id="specModalSold" style="flex-shrink:0;font-size:13px;font-weight:400;white-space:nowrap;color:var(--muted);"></div>
+      </div>
       <div class="spec-modal-body" id="specModalBody"></div>
     </div>
     <button class="spec-modal-close" id="specModalCloseBtn">ปิด</button>
@@ -674,19 +677,16 @@ window.openSpecModal = (product) => {
   document.getElementById('specModalPrice').textContent = `ราคา ${Number(product.price).toLocaleString()} บาท`;
   document.getElementById('specModalBody').textContent = product.spec ?? '';
 
-  // stock + sold badge
+  // stock (บรรทัดเดียวกับชื่อ ฝั่งขวา)
   const stockEl = document.getElementById('specModalStock');
   const inStock = (product.stock_count ?? 0) > 0;
+  stockEl.style.color = inStock ? 'var(--ink)' : 'var(--danger)';
+  stockEl.textContent = inStock ? `คงเหลือ ${product.stock_count} ชิ้น` : 'สินค้าหมด';
+
+  // sold (บรรทัดเดียวกับราคา ฝั่งขวา)
+  const soldEl = document.getElementById('specModalSold');
   const soldCount = product.sold_count ?? 0;
-  const soldHtml = soldCount > 0
-    ? `<span style="font-size:13px;color:var(--muted);font-weight:400;white-space:nowrap;">ขายแล้ว ${soldCount} ชิ้น</span>`
-    : '';
-  stockEl.innerHTML = `
-    <span style="font-size:13px;color:${inStock ? 'var(--ink)' : 'var(--danger)'};font-weight:400;white-space:nowrap;">
-      ${inStock ? `คงเหลือ ${product.stock_count} ชิ้น` : 'สินค้าหมด'}
-    </span>
-    ${soldHtml}
-  `;
+  soldEl.textContent = soldCount > 0 ? `ขายแล้ว ${soldCount} ชิ้น` : '';
 
   buildGallery(images);
   specBackdrop.classList.add('show');
