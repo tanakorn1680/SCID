@@ -73,3 +73,29 @@ export async function GET(req) {
     return errorResponse(err);
   }
 }
+
+export async function DELETE(req) {
+  try {
+    await requireAdmin(req);
+
+    const { email } = await req.json();
+    if (!email) return Response.json({ success: false, error: 'ไม่ระบุ email' }, { status: 400 });
+
+    // หา user จาก email
+    const { data: listData, error: listErr } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+    if (listErr) throw listErr;
+
+    const user = listData.users.find(u => u.email === email);
+    if (!user) return Response.json({ success: false, error: 'ไม่พบผู้ใช้' }, { status: 404 });
+
+    // ลบจาก Supabase Auth
+    const { error: deleteErr } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+    if (deleteErr) throw deleteErr;
+
+    return Response.json({ success: true });
+
+  } catch (err) {
+    console.error('DELETE /api/admin/customers failed:', err);
+    return errorResponse(err);
+  }
+}

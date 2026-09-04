@@ -56,6 +56,19 @@
   .order-status.paid{background:rgba(26,106,160,0.1);color:var(--navy);}
   .no-orders{text-align:center;padding:20px;color:rgba(26,58,82,0.4);font-size:13px;}
   .drawer-loading{text-align:center;padding:30px;color:rgba(26,58,82,0.45);font-size:13px;}
+  .drawer-footer{padding:12px 16px 20px;border-top:1px solid rgba(26,106,160,0.1);flex-shrink:0;}
+  .btn-delete-member{width:100%;padding:10px;border:1.5px solid rgba(224,68,51,0.35);background:rgba(224,68,51,0.06);color:var(--danger);border-radius:9px;font-size:13px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif;cursor:pointer;transition:background .15s;}
+  .btn-delete-member:active{background:rgba(224,68,51,0.14);}
+  /* confirm dialog */
+  .confirm-backdrop{position:fixed;inset:0;background:rgba(10,25,40,0.5);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .18s;}
+  .confirm-backdrop.open{opacity:1;pointer-events:all;}
+  .confirm-box{background:#fff;border-radius:14px;padding:20px;width:100%;max-width:340px;box-shadow:0 8px 32px rgba(0,40,80,0.18);}
+  .confirm-title{font-family:'Baloo 2',sans-serif;font-size:15px;font-weight:800;color:var(--ink);margin-bottom:6px;}
+  .confirm-msg{font-size:13px;color:rgba(26,58,82,0.65);line-height:1.5;margin-bottom:16px;word-break:break-all;}
+  .confirm-actions{display:flex;gap:8px;justify-content:flex-end;}
+  .confirm-btn{padding:9px 18px;border-radius:9px;border:none;font-size:13px;font-weight:700;font-family:'IBM Plex Sans Thai',sans-serif;cursor:pointer;}
+  .confirm-btn.cancel{background:rgba(26,58,82,0.08);color:var(--ink);}
+  .confirm-btn.danger{background:var(--danger);color:#fff;}
   .card{background:rgba(255,255,255,0.92);border:1.5px solid rgba(255,255,255,0.65);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
   .search-input{transition:border-color .15s,box-shadow .15s;}
   .search-input:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(33,150,201,0.15);}
@@ -86,6 +99,21 @@
     </div>
     <div class="drawer-body" id="drawerBody">
       <div class="drawer-loading">กำลังโหลด...</div>
+    </div>
+    <div class="drawer-footer">
+      <button class="btn-delete-member" id="drawerDeleteBtn">ลบสมาชิกนี้</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm dialog -->
+<div class="confirm-backdrop" id="confirmBackdrop">
+  <div class="confirm-box">
+    <div class="confirm-title">ยืนยันลบสมาชิก</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-actions">
+      <button class="confirm-btn cancel" id="confirmCancel">ยกเลิก</button>
+      <button class="confirm-btn danger" id="confirmOk">ลบ</button>
     </div>
   </div>
 </div>
@@ -134,6 +162,7 @@ const drawerBody = document.getElementById('drawerBody');
 const drawerTitle= document.getElementById('drawerTitle');
 
 async function openDrawer(userId, email, totalSpent) {
+  pendingDeleteEmail = email;
   drawerTitle.textContent = email;
   drawerBody.innerHTML = `<div class="drawer-loading">กำลังโหลด...</div>`;
   backdrop.classList.add('open');
@@ -179,6 +208,40 @@ async function openDrawer(userId, email, totalSpent) {
 function closeDrawer() { backdrop.classList.remove('open'); }
 document.getElementById('drawerClose').addEventListener('click', closeDrawer);
 backdrop.addEventListener('click', e => { if (e.target === backdrop) closeDrawer(); });
+
+// ── Delete + Confirm ─────────────────────────────────────────
+const confirmBackdrop = document.getElementById('confirmBackdrop');
+const confirmMsg      = document.getElementById('confirmMsg');
+const confirmOk       = document.getElementById('confirmOk');
+const confirmCancel   = document.getElementById('confirmCancel');
+let pendingDeleteEmail = null;
+
+document.getElementById('drawerDeleteBtn').addEventListener('click', () => {
+  if (!pendingDeleteEmail) return;
+  confirmMsg.textContent = `ต้องการลบสมาชิก "${pendingDeleteEmail}" ออกจากระบบหรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้`;
+  confirmBackdrop.classList.add('open');
+});
+
+confirmCancel.addEventListener('click', () => confirmBackdrop.classList.remove('open'));
+confirmBackdrop.addEventListener('click', e => { if (e.target === confirmBackdrop) confirmBackdrop.classList.remove('open'); });
+
+confirmOk.addEventListener('click', async () => {
+  if (!pendingDeleteEmail) return;
+  confirmOk.disabled = true;
+  confirmOk.textContent = 'กำลังลบ...';
+  try {
+    await admin.customerDelete(pendingDeleteEmail);
+    confirmBackdrop.classList.remove('open');
+    closeDrawer();
+    allCustomers = allCustomers.filter(c => c.email !== pendingDeleteEmail);
+    render(allCustomers);
+    pendingDeleteEmail = null;
+  } catch (e) {
+    confirmOk.textContent = 'ลบ';
+    confirmOk.disabled = false;
+    alert('ลบไม่สำเร็จ: ' + e.message);
+  }
+});
 
 async function loadCustomers() {
   const listEl = document.getElementById('custList');

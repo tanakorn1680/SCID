@@ -324,6 +324,12 @@ export const admin = {
   async customerDetail(userId) {
     return apiFetch(`/api/admin/customers?user_id=${encodeURIComponent(userId)}`);
   },
+  async customerDelete(email) {
+    return apiFetch('/api/admin/customers', {
+      method: 'DELETE',
+      body: JSON.stringify({ email }),
+    });
+  },
 
   // upload-asset รวมเข้า /api/admin/site-assets?resource=asset แล้ว
   async uploadAsset(assetKey, file) {
