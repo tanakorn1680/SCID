@@ -146,21 +146,34 @@ export async function deleteOrder(orderId) {
     };
   }
 
-  // ถ้าเป็น delivered → reset inventory กลับเป็น ready ก่อน
+  // 1) inventory → reset กลับเป็น ready (เฉพาะ delivered)
   if (order.status === 'delivered') {
     const { error: invErr } = await supabaseAdmin
       .from('inventory')
-      .update({ status: 'ready', sold_at: null })
+      .update({ status: 'ready', sold_at: null, order_id: null })
       .eq('order_id', orderId);
-
     if (invErr) throw invErr;
   }
 
+  // 2) credentials → ลบทิ้ง (ไอดีที่ส่งไปแล้วไม่มีประโยชน์เก็บไว้ถ้าลบ order)
+  const { error: credErr } = await supabaseAdmin
+    .from('credentials')
+    .delete()
+    .eq('order_id', orderId);
+  if (credErr) throw credErr;
+
+  // 3) bank_notifications → set null เก็บประวัติสลิปไว้แต่ตัดความผูกกับ order
+  const { error: bankErr } = await supabaseAdmin
+    .from('bank_notifications')
+    .update({ matched_order_id: null })
+    .eq('matched_order_id', orderId);
+  if (bankErr) throw bankErr;
+
+  // 4) ลบ order
   const { error: delErr } = await supabaseAdmin
     .from('orders')
     .delete()
     .eq('id', orderId);
-
   if (delErr) throw delErr;
 
   return { httpStatus: 200, body: { success: true } };
