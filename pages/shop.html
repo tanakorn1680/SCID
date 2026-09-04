@@ -56,6 +56,7 @@
   .product-name-row{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:6px;min-height:2.7em;}
   .product-name{font-size:13px;font-weight:700;line-height:1.35;flex:1;min-width:0;}
   .stock-count-badge{flex-shrink:0;font-size:10.5px;font-weight:600;color:var(--green-go);background:rgba(63,133,87,0.1);border:1px solid rgba(63,133,87,0.22);border-radius:20px;padding:2px 7px;line-height:1.5;white-space:nowrap;margin-top:1px;}
+  .sold-count-line{font-size:11px;color:var(--muted);margin-bottom:4px;}
   .product-price{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:15px;margin-bottom:4px;}
   .stock-line{font-size:11px;margin-bottom:6px;min-height:1.4em;}
   .stock-line.in-stock{color:var(--green-go);}
@@ -494,7 +495,10 @@ try {
         <div class="product-scroll-wrap">
           <div class="product-grid">
             ${seen.get(category).map(p => {
-              const inStock  = p.stock_count > 0;
+              const inStock   = p.stock_count > 0;
+              const soldLine  = p.sold_count > 0
+                ? `<div class="sold-count-line">ขายแล้ว ${p.sold_count} ชิ้น</div>`
+                : '';
               const images   = p.images ?? [];
               const hasSpec  = !!p.spec;
               const hasImg   = images.length > 0;
@@ -520,6 +524,7 @@ try {
                     ${stockBadge}
                   </div>
                   <div class="product-price">ราคา ${Number(p.price).toLocaleString()} บาท</div>
+                  ${soldLine}
                   ${specBtn}
                   <button class="buy-btn" onclick='buyProduct(${JSON.stringify({ key: p.key, label: p.label, price: p.price })})' ${inStock ? '' : 'disabled'}>
                     ซื้อ
