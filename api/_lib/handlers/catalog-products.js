@@ -19,23 +19,28 @@ import { getImagesByKeys } from './catalog-product-images.js';
  * v2: เพิ่ม images[] ต่อสินค้า — batch query 1 ครั้ง ไม่เป็น N+1
  */
 export async function publicListProducts() {
-  const [productsResult, countsResult] = await Promise.all([
+  const [productsResult, countsResult, soldResult] = await Promise.all([
     supabaseAdmin
       .from('products')
       .select('key, label, category, price, spec')
       .eq('is_active', true)
       .order('sort_order', { ascending: true }),
     supabaseAdmin.rpc('inventory_ready_counts'),
+    supabaseAdmin.rpc('inventory_sold_counts'),
   ]);
 
   if (productsResult.error) throw productsResult.error;
-  if (countsResult.error) throw countsResult.error;
+  if (countsResult.error)   throw countsResult.error;
+  if (soldResult.error)     throw soldResult.error;
 
   const productKeys = productsResult.data.map(p => p.key);
 
-  const [stockByKey, imagesByKey] = await Promise.all([
+  const [stockByKey, soldByKey, imagesByKey] = await Promise.all([
     Promise.resolve(
       new Map(countsResult.data.map(row => [row.product_key, Number(row.ready_count)]))
+    ),
+    Promise.resolve(
+      new Map(soldResult.data.map(row => [row.product_key, Number(row.sold_count)]))
     ),
     getImagesByKeys(productKeys),
   ]);
@@ -43,6 +48,7 @@ export async function publicListProducts() {
   const data = productsResult.data.map(p => ({
     ...p,
     stock_count: stockByKey.get(p.key) ?? 0,
+    sold_count:  soldByKey.get(p.key)  ?? 0,
     images:      imagesByKey.get(p.key) ?? [],
   }));
 
