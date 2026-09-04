@@ -605,16 +605,19 @@ document.getElementById('lightboxBackdrop').addEventListener('click', (e) => {
 // ── category drag-and-drop ─────────────────────────────────
 const CAT_ORDER_KEY = 'scid_cat_order';
 
-function saveCatOrder(order) {
-  try { localStorage.setItem(CAT_ORDER_KEY, JSON.stringify(order)); } catch(_) {}
-}
-function loadCatOrder() {
-  try { return JSON.parse(localStorage.getItem(CAT_ORDER_KEY) ?? 'null'); } catch(_) { return null; }
+// save category order → site_settings (DB) เพื่อให้ shop.html อ่านได้ทุก browser
+async function saveCatOrder(order) {
+  try {
+    await admin.settings.update({ category_order: JSON.stringify(order) });
+  } catch(_) {
+    // fallback: localStorage ถ้า API ล้มเหลว
+    try { localStorage.setItem(CAT_ORDER_KEY, JSON.stringify(order)); } catch(_) {}
+  }
 }
 function applyCatOrder(catOrder) {
-  const saved = loadCatOrder();
-  if (!saved?.length) return catOrder;
-  // รักษา category ใหม่ที่ยังไม่อยู่ใน saved ไว้ท้ายสุด
+  // catOrderFromDB ถูก inject จาก loadProducts() ตอน settings โหลด
+  const saved = window._scidCatOrder;
+  if (!Array.isArray(saved) || !saved.length) return catOrder;
   const known = saved.filter(c => catOrder.includes(c));
   const extra = catOrder.filter(c => !known.includes(c));
   return [...known, ...extra];
@@ -696,7 +699,14 @@ function moveCatSection(listEl, srcCat, targetCat) {
 async function loadProducts() {
   const listEl = document.getElementById('productList');
   try {
-    const { data } = await admin.products.list();
+    // โหลด settings + products พร้อมกัน
+    const [{ data }, settingsRes] = await Promise.all([
+      admin.products.list(),
+      admin.settings.get().catch(() => ({ data: {} })),
+    ]);
+    try {
+      window._scidCatOrder = JSON.parse(settingsRes.data?.category_order ?? 'null');
+    } catch(_) { window._scidCatOrder = null; }
 
     const cats = [...new Set(data.map(p => p.category))];
     document.getElementById('categoryList').innerHTML =
