@@ -19,7 +19,8 @@ import { getImagesByKeys } from './catalog-product-images.js';
  * v2: เพิ่ม images[] ต่อสินค้า — batch query 1 ครั้ง ไม่เป็น N+1
  */
 export async function publicListProducts() {
-  const [productsResult, countsResult, soldResult] = await Promise.all([
+  // รัน 4 queries พร้อมกันใน parallel ทันที — ไม่มี waterfall
+  const [productsResult, countsResult, soldResult, imagesResult] = await Promise.all([
     supabaseAdmin
       .from('products')
       .select('key, label, category, price, spec')
@@ -27,23 +28,26 @@ export async function publicListProducts() {
       .order('sort_order', { ascending: true }),
     supabaseAdmin.rpc('inventory_ready_counts'),
     supabaseAdmin.rpc('inventory_sold_counts'),
+    supabaseAdmin
+      .from('product_images')
+      .select('product_key, url, is_cover, sort_order')
+      .order('sort_order', { ascending: true }),
   ]);
 
   if (productsResult.error) throw productsResult.error;
   if (countsResult.error)   throw countsResult.error;
   if (soldResult.error)     throw soldResult.error;
+  if (imagesResult.error)   throw imagesResult.error;
 
-  const productKeys = productsResult.data.map(p => p.key);
+  const stockByKey = new Map(countsResult.data.map(r => [r.product_key, Number(r.ready_count)]));
+  const soldByKey  = new Map(soldResult.data.map(r => [r.product_key, Number(r.sold_count)]));
 
-  const [stockByKey, soldByKey, imagesByKey] = await Promise.all([
-    Promise.resolve(
-      new Map(countsResult.data.map(row => [row.product_key, Number(row.ready_count)]))
-    ),
-    Promise.resolve(
-      new Map(soldResult.data.map(row => [row.product_key, Number(row.sold_count)]))
-    ),
-    getImagesByKeys(productKeys),
-  ]);
+  // group images by product_key
+  const imagesByKey = new Map();
+  for (const row of imagesResult.data) {
+    if (!imagesByKey.has(row.product_key)) imagesByKey.set(row.product_key, []);
+    imagesByKey.get(row.product_key).push({ url: row.url, is_cover: row.is_cover });
+  }
 
   const data = productsResult.data.map(p => ({
     ...p,
