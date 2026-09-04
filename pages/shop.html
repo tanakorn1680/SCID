@@ -73,10 +73,28 @@
   .spec-modal-backdrop.show{opacity:1;pointer-events:all;}
   .spec-modal{background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:520px;max-height:82vh;display:flex;flex-direction:column;padding:0 0 calc(16px + env(safe-area-inset-bottom));transform:translateY(48px);transition:transform .26s cubic-bezier(.32,.72,0,1);}
   .spec-modal-backdrop.show .spec-modal{transform:translateY(0);}
-  /* Gallery strip ด้านบน modal */
-  .gallery-wrap{flex-shrink:0;background:#000;border-radius:18px 18px 0 0;overflow:hidden;position:relative;aspect-ratio:4/3;display:none;}
+  /* Gallery */
+  .gallery-wrap{flex-shrink:0;background:#0d1c2b;border-radius:18px 18px 0 0;overflow:hidden;position:relative;aspect-ratio:4/3;display:none;}
   .gallery-wrap.has-images{display:block;}
-  .gallery-main{width:100%;height:100%;object-fit:contain;background:#0d1c2b;}
+  .gallery-main{width:100%;height:100%;object-fit:contain;background:#0d1c2b;cursor:zoom-in;}
+  /* ปุ่ม prev/next — โปร่งใส overlay บนรูป */
+  .gal-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.32);border:none;color:#fff;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;transition:background .15s,opacity .15s;opacity:0;}
+  .gallery-wrap:hover .gal-nav,.gallery-wrap:focus-within .gal-nav{opacity:1;}
+  .gal-nav:active{background:rgba(0,0,0,0.58);}
+  .gal-nav.prev{left:10px;}
+  .gal-nav.next{right:10px;}
+  .gal-nav.hidden{display:none;}
+  /* ปุ่มขยายเต็มจอ — มุมขวาล่าง */
+  .gal-expand{position:absolute;bottom:9px;right:9px;background:rgba(0,0,0,0.32);border:none;color:#fff;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;transition:background .15s,opacity .15s;opacity:0;}
+  .gallery-wrap:hover .gal-expand,.gallery-wrap:focus-within .gal-expand{opacity:1;}
+  .gal-expand:active{background:rgba(0,0,0,0.58);}
+  /* dot indicator แทน thumbnail เมื่อมีหลายรูป */
+  .gal-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:2;pointer-events:none;}
+  .gal-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,0.45);transition:background .15s,transform .15s;}
+  .gal-dot.active{background:#fff;transform:scale(1.3);}
+  /* counter มุมซ้ายบน */
+  .gal-counter{position:absolute;top:9px;left:10px;background:rgba(0,0,0,0.38);color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;z-index:3;pointer-events:none;display:none;}
+  .gal-counter.show{display:block;}
   .gallery-thumb-strip{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding:8px 14px;background:rgba(255,255,255,0.97);flex-shrink:0;}
   .gallery-thumb-strip::-webkit-scrollbar{display:none;}
   .gallery-thumb-strip.has-images{display:flex;}
@@ -94,6 +112,18 @@
   .spec-modal-stock.in-stock{background:rgba(63,133,87,0.1);color:var(--green-go);border:1px solid rgba(63,133,87,0.25);}
   .spec-modal-stock.out-of-stock{background:rgba(224,68,51,0.08);color:var(--danger);border:1px solid rgba(224,68,51,0.2);}
   .spec-modal-stock svg{flex-shrink:0;}
+  /* ── Lightbox ── */
+  .lb-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .lb-backdrop.show{opacity:1;pointer-events:all;}
+  .lb-img{max-width:96vw;max-height:88vh;object-fit:contain;border-radius:4px;user-select:none;display:block;}
+  .lb-close{position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.12);border:none;color:#fff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;}
+  .lb-close:active{background:rgba(255,255,255,0.25);}
+  .lb-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.12);border:none;color:#fff;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;transition:background .15s;}
+  .lb-nav:active{background:rgba(255,255,255,0.25);}
+  .lb-prev{left:12px;}
+  .lb-next{right:12px;}
+  .lb-nav.hidden{display:none;}
+  .lb-counter{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.55);font-size:12px;}
 
   /* ── Confirm Modal ── */
   .confirm-modal-backdrop{position:fixed;inset:0;background:rgba(10,25,40,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .18s ease;}
@@ -186,9 +216,23 @@
 <!-- ── Spec + Gallery Modal ── -->
 <div class="spec-modal-backdrop" id="specModalBackdrop">
   <div class="spec-modal">
-    <!-- Gallery: แสดงเฉพาะถ้าสินค้ามีรูป -->
     <div class="gallery-wrap" id="galleryWrap">
       <img class="gallery-main" id="galleryMain" src="" alt="product image">
+      <!-- prev/next — โผล่เมื่อ hover -->
+      <button class="gal-nav prev hidden" id="galPrev" aria-label="ภาพก่อนหน้า">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="gal-nav next hidden" id="galNext" aria-label="ภาพถัดไป">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <!-- ขยายเต็มจอ -->
+      <button class="gal-expand" id="galExpand" aria-label="ดูภาพเต็มจอ">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+      </button>
+      <!-- counter: 1/3 -->
+      <div class="gal-counter" id="galCounter"></div>
+      <!-- dots -->
+      <div class="gal-dots" id="galDots"></div>
     </div>
     <div class="gallery-thumb-strip" id="galleryThumbStrip"></div>
     <!-- ข้อความ spec -->
@@ -202,6 +246,17 @@
     </div>
     <button class="spec-modal-close" id="specModalCloseBtn">ปิด</button>
   </div>
+</div>
+
+<!-- ── Lightbox ── -->
+<div class="lb-backdrop" id="lbBackdrop">
+  <button class="lb-close" id="lbClose" aria-label="ปิด">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <button class="lb-nav lb-prev hidden" id="lbPrev">&#8249;</button>
+  <img class="lb-img" id="lbImg" src="" alt="">
+  <button class="lb-nav lb-next hidden" id="lbNext">&#8250;</button>
+  <div class="lb-counter" id="lbCounter"></div>
 </div>
 
 <!-- ── Confirm Modal ── -->
@@ -454,7 +509,7 @@ try {
               // จำนวนคงเหลือ — แสดงมุมขวาของชื่อเฉพาะตอนมีสินค้า
               // (ถ้ามี spec/รูป → stock แสดงใน modal แทน ไม่ต้องซ้ำบน card)
               const stockBadge = (inStock && !(hasSpec || hasImg))
-                ? `<span class="stock-count-badge">คงเหลือ ${p.stock_count}</span>`
+                ? `<span class="stock-count-badge">เหลือ ${p.stock_count}</span>`
                 : '';
               return `
               <div class="product-card">
@@ -481,51 +536,133 @@ try {
   grid.innerHTML = `<div class="empty-state" style="padding:50px 20px;text-align:center;color:rgba(255,255,255,0.75);">โหลดสินค้าไม่สำเร็จ</div>`;
 }
 
-// ── Gallery helper ──────────────────────────────────────────
+// ── Gallery ─────────────────────────────────────────────────
 const galleryWrap       = document.getElementById('galleryWrap');
 const galleryMain       = document.getElementById('galleryMain');
 const galleryThumbStrip = document.getElementById('galleryThumbStrip');
+const galPrev           = document.getElementById('galPrev');
+const galNext           = document.getElementById('galNext');
+const galExpand         = document.getElementById('galExpand');
+const galCounter        = document.getElementById('galCounter');
+const galDots           = document.getElementById('galDots');
+
+let _galImages = [], _galIdx = 0;
+
+function galSetIdx(idx) {
+  _galIdx = idx;
+  galleryMain.src = _galImages[idx].url;
+  // counter
+  if (_galImages.length > 1) {
+    galCounter.textContent = `${idx + 1} / ${_galImages.length}`;
+  }
+  // dots
+  galDots.querySelectorAll('.gal-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+  // thumbs
+  galleryThumbStrip.querySelectorAll('.gallery-thumb').forEach((t, i) => {
+    t.classList.toggle('active', i === idx);
+    if (i === idx) t.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  });
+}
 
 function buildGallery(images) {
+  _galImages = images;
   if (!images.length) {
     galleryWrap.classList.remove('has-images');
-    galleryThumbStrip.classList.remove('has-images');
     galleryThumbStrip.style.display = 'none';
+    galCounter.classList.remove('show');
+    galDots.innerHTML = '';
+    galPrev.classList.add('hidden');
+    galNext.classList.add('hidden');
     return;
   }
 
-  // ปก = is_cover=true หรือรูปแรกถ้าไม่มี
   const coverIdx = images.findIndex(img => img.is_cover);
-  const startIdx = coverIdx >= 0 ? coverIdx : 0;
+  _galIdx = coverIdx >= 0 ? coverIdx : 0;
 
-  galleryMain.src = images[startIdx].url;
+  galleryMain.src = images[_galIdx].url;
   galleryWrap.classList.add('has-images');
 
-  // Thumbnails (ซ่อนถ้ามีรูปเดียว)
-  if (images.length > 1) {
+  const multi = images.length > 1;
+  galPrev.classList.toggle('hidden', !multi);
+  galNext.classList.toggle('hidden', !multi);
+
+  if (multi) {
+    // counter
+    galCounter.textContent = `${_galIdx + 1} / ${images.length}`;
+    galCounter.classList.add('show');
+    // dots (แสดงไม่เกิน 7)
+    const showDots = images.length <= 7;
+    galDots.innerHTML = showDots
+      ? images.map((_, i) => `<div class="gal-dot${i === _galIdx ? ' active' : ''}"></div>`).join('')
+      : '';
+    // thumbs
     galleryThumbStrip.style.display = 'flex';
     galleryThumbStrip.classList.add('has-images');
     galleryThumbStrip.innerHTML = images.map((img, i) => `
-      <img class="gallery-thumb ${i === startIdx ? 'active' : ''}"
-           src="${img.url}" alt="thumb ${i + 1}" loading="lazy"
-           data-idx="${i}">
-    `).join('');
-
-    galleryThumbStrip.querySelectorAll('.gallery-thumb').forEach(thumb => {
-      thumb.addEventListener('click', () => {
-        const idx = Number(thumb.dataset.idx);
-        galleryMain.src = images[idx].url;
-        galleryThumbStrip.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
-        thumb.classList.add('active');
-        // scroll thumbnail ให้อยู่กึ่งกลาง
-        thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      });
+      <img class="gallery-thumb ${i === _galIdx ? 'active' : ''}"
+           src="${img.url}" alt="thumb ${i + 1}" loading="lazy" data-idx="${i}">`).join('');
+    galleryThumbStrip.querySelectorAll('.gallery-thumb').forEach(t => {
+      t.addEventListener('click', () => galSetIdx(Number(t.dataset.idx)));
     });
   } else {
+    galCounter.classList.remove('show');
+    galDots.innerHTML = '';
     galleryThumbStrip.style.display = 'none';
     galleryThumbStrip.classList.remove('has-images');
   }
 }
+
+// prev/next
+galPrev.addEventListener('click', () => galSetIdx((_galIdx - 1 + _galImages.length) % _galImages.length));
+galNext.addEventListener('click', () => galSetIdx((_galIdx + 1) % _galImages.length));
+
+// swipe บน gallery
+let _galTouchX = 0;
+galleryMain.addEventListener('touchstart', e => { _galTouchX = e.touches[0].clientX; }, { passive: true });
+galleryMain.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - _galTouchX;
+  if (Math.abs(dx) > 40 && _galImages.length > 1)
+    galSetIdx(dx < 0 ? (_galIdx + 1) % _galImages.length : (_galIdx - 1 + _galImages.length) % _galImages.length);
+});
+
+// ── Lightbox ────────────────────────────────────────────────
+const lbBackdrop = document.getElementById('lbBackdrop');
+const lbImg      = document.getElementById('lbImg');
+const lbCounter  = document.getElementById('lbCounter');
+const lbPrev     = document.getElementById('lbPrev');
+const lbNext     = document.getElementById('lbNext');
+let _lbImages = [], _lbIdx = 0;
+
+function lbShow(images, idx) {
+  _lbImages = images; _lbIdx = idx;
+  lbImg.src = images[idx].url;
+  const multi = images.length > 1;
+  lbCounter.textContent = multi ? `${idx + 1} / ${images.length}` : '';
+  lbPrev.classList.toggle('hidden', !multi);
+  lbNext.classList.toggle('hidden', !multi);
+  lbBackdrop.classList.add('show');
+}
+function lbMove(delta) {
+  _lbIdx = (_lbIdx + delta + _lbImages.length) % _lbImages.length;
+  lbImg.src = _lbImages[_lbIdx].url;
+  lbCounter.textContent = `${_lbIdx + 1} / ${_lbImages.length}`;
+}
+
+galExpand.addEventListener('click', () => lbShow(_galImages, _galIdx));
+galleryMain.addEventListener('click', () => { if (_galImages.length) lbShow(_galImages, _galIdx); });
+
+document.getElementById('lbClose').addEventListener('click', () => lbBackdrop.classList.remove('show'));
+lbPrev.addEventListener('click', () => lbMove(-1));
+lbNext.addEventListener('click', () => lbMove(1));
+lbBackdrop.addEventListener('click', e => { if (e.target === lbBackdrop) lbBackdrop.classList.remove('show'); });
+
+// swipe บน lightbox
+let _lbTouchX = 0;
+lbBackdrop.addEventListener('touchstart', e => { _lbTouchX = e.touches[0].clientX; }, { passive: true });
+lbBackdrop.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - _lbTouchX;
+  if (Math.abs(dx) > 40 && _lbImages.length > 1) lbMove(dx < 0 ? 1 : -1);
+});
 
 // ── Modal ดูรายละเอียดสเปค + Gallery ──────────────────────
 const specBackdrop = document.getElementById('specModalBackdrop');
@@ -540,7 +677,7 @@ window.openSpecModal = (product) => {
   const stockEl = document.getElementById('specModalStock');
   const inStock = (product.stock_count ?? 0) > 0;
   stockEl.innerHTML = inStock
-    ? `<span style="font-size:13px;color:var(--ink);font-weight:400;white-space:nowrap;">เหลือ ${product.stock_count} ชิ้น</span>`
+    ? `<span style="font-size:13px;color:var(--ink);font-weight:400;white-space:nowrap;">คงเหลือ ${product.stock_count} ชิ้น</span>`
     : `<span style="font-size:13px;color:var(--danger);font-weight:400;white-space:nowrap;">สินค้าหมด</span>`;
 
   buildGallery(images);
@@ -602,4 +739,4 @@ document.getElementById('confirmModalOkBtn').addEventListener('click', async () 
   <div id="footerText"></div>
 </div>
 </body>
-</
+</html>
