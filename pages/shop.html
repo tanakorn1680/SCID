@@ -85,31 +85,10 @@
   .spec-modal-body{white-space:pre-line;font-size:13px;line-height:1.75;color:var(--ink);}
   .spec-modal-close{margin:14px 18px 0;width:calc(100% - 36px);padding:11px 0;background:rgba(26,58,82,0.08);color:var(--ink);border:none;border-radius:9px;font-size:13px;font-weight:700;font-family:'Baloo 2',sans-serif;cursor:pointer;flex-shrink:0;}
   /* stock badge ใน modal */
-  .spec-modal-stock{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+  .spec-modal-stock{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:12px;}
   .spec-modal-stock.in-stock{background:rgba(63,133,87,0.1);color:var(--green-go);border:1px solid rgba(63,133,87,0.25);}
   .spec-modal-stock.out-of-stock{background:rgba(224,68,51,0.08);color:var(--danger);border:1px solid rgba(224,68,51,0.2);}
   .spec-modal-stock svg{flex-shrink:0;}
-  /* title row: ชื่อ + stock badge ซ้าย/ขวา */
-  .spec-modal-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:4px;}
-  .spec-modal-title-row .spec-modal-title{margin-bottom:0;flex:1;min-width:0;}
-  /* gallery nav btn */
-  .gallery-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.38);border:none;color:#fff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;transition:background .15s;}
-  .gallery-nav:active{background:rgba(0,0,0,0.6);}
-  .gallery-nav.prev{left:8px;}
-  .gallery-nav.next{right:8px;}
-  .gallery-nav.hidden{display:none;}
-  /* expand btn บนรูปหลัก */
-  .gallery-expand-btn{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.38);border:none;color:#fff;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;transition:background .15s;}
-  .gallery-expand-btn:active{background:rgba(0,0,0,0.6);}
-  /* fullscreen lightbox */
-  .img-lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.94);z-index:200;display:none;align-items:center;justify-content:center;}
-  .img-lightbox.show{display:flex;}
-  .img-lightbox-img{max-width:96vw;max-height:88vh;object-fit:contain;border-radius:6px;user-select:none;}
-  .img-lightbox-close{position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.12);border:none;color:#fff;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;}
-  .img-lightbox-prev,.img-lightbox-next{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.12);border:none;color:#fff;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;}
-  .img-lightbox-prev{left:10px;}
-  .img-lightbox-next{right:10px;}
-  .img-lightbox-counter{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.6);font-size:12px;}
 
   /* ── Confirm Modal ── */
   .confirm-modal-backdrop{position:fixed;inset:0;background:rgba(10,25,40,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:8000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .18s ease;}
@@ -205,39 +184,17 @@
     <!-- Gallery: แสดงเฉพาะถ้าสินค้ามีรูป -->
     <div class="gallery-wrap" id="galleryWrap">
       <img class="gallery-main" id="galleryMain" src="" alt="product image">
-      <button class="gallery-nav prev hidden" id="galleryPrev" aria-label="ภาพก่อนหน้า">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
-      <button class="gallery-nav next hidden" id="galleryNext" aria-label="ภาพถัดไป">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-      </button>
-      <button class="gallery-expand-btn" id="galleryExpandBtn" aria-label="ดูเต็มจอ">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-      </button>
     </div>
     <div class="gallery-thumb-strip" id="galleryThumbStrip"></div>
     <!-- ข้อความ spec -->
     <div class="spec-modal-body-wrap">
-      <div class="spec-modal-title-row">
-        <div class="spec-modal-title" id="specModalTitle"></div>
-        <div id="specModalStock"></div>
-      </div>
+      <div class="spec-modal-title" id="specModalTitle"></div>
       <div class="spec-modal-price" id="specModalPrice"></div>
+      <div id="specModalStock"></div>
       <div class="spec-modal-body" id="specModalBody"></div>
     </div>
     <button class="spec-modal-close" id="specModalCloseBtn">ปิด</button>
   </div>
-</div>
-
-<!-- ── Fullscreen Lightbox ── -->
-<div class="img-lightbox" id="imgLightbox">
-  <button class="img-lightbox-close" id="lightboxClose" aria-label="ปิด">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-  </button>
-  <button class="img-lightbox-prev" id="lightboxPrev">&#8249;</button>
-  <img class="img-lightbox-img" id="lightboxImg" src="" alt="">
-  <button class="img-lightbox-next" id="lightboxNext">&#8250;</button>
-  <div class="img-lightbox-counter" id="lightboxCounter"></div>
 </div>
 
 <!-- ── Confirm Modal ── -->
@@ -450,13 +407,24 @@ try {
   if (!data.length) {
     grid.innerHTML = `<div class="empty-state" style="padding:50px 20px;text-align:center;color:rgba(255,255,255,0.75);">ยังไม่มีสินค้า</div>`;
   } else {
-    // จัดกลุ่มตาม category รักษาลำดับ sort_order จาก backend
-    const grouped = [];
+    // จัดกลุ่มตาม category
     const seen = new Map();
+    const apiOrder = [];
     for (const p of data) {
-      if (!seen.has(p.category)) { seen.set(p.category, []); grouped.push(p.category); }
+      if (!seen.has(p.category)) { seen.set(p.category, []); apiOrder.push(p.category); }
       seen.get(p.category).push(p);
     }
+    // apply ลำดับ category ที่แอดมินบันทึกไว้ใน site_settings
+    let grouped = apiOrder;
+    try {
+      const settingsData = await settings.get().then(r => r.data).catch(() => ({}));
+      const savedOrder = JSON.parse(settingsData.category_order ?? 'null');
+      if (Array.isArray(savedOrder) && savedOrder.length) {
+        const known = savedOrder.filter(c => seen.has(c));
+        const extra = apiOrder.filter(c => !known.includes(c));
+        grouped = [...known, ...extra];
+      }
+    } catch(_) {}
 
     grid.innerHTML = grouped.map(category => `
       <div class="category-section">
@@ -506,93 +474,46 @@ try {
 const galleryWrap       = document.getElementById('galleryWrap');
 const galleryMain       = document.getElementById('galleryMain');
 const galleryThumbStrip = document.getElementById('galleryThumbStrip');
-const galleryPrev       = document.getElementById('galleryPrev');
-const galleryNext       = document.getElementById('galleryNext');
-const galleryExpandBtn  = document.getElementById('galleryExpandBtn');
-
-// lightbox state
-let _lbImages = [], _lbIdx = 0;
-const imgLightbox    = document.getElementById('imgLightbox');
-const lightboxImg    = document.getElementById('lightboxImg');
-const lightboxCounter= document.getElementById('lightboxCounter');
-
-function lbShow(images, idx) {
-  _lbImages = images; _lbIdx = idx;
-  lightboxImg.src = images[idx].url;
-  lightboxCounter.textContent = images.length > 1 ? `${idx + 1} / ${images.length}` : '';
-  imgLightbox.classList.add('show');
-}
-function lbMove(delta) {
-  _lbIdx = (_lbIdx + delta + _lbImages.length) % _lbImages.length;
-  lightboxImg.src = _lbImages[_lbIdx].url;
-  lightboxCounter.textContent = _lbImages.length > 1 ? `${_lbIdx + 1} / ${_lbImages.length}` : '';
-}
-document.getElementById('lightboxClose').addEventListener('click', () => imgLightbox.classList.remove('show'));
-document.getElementById('lightboxPrev').addEventListener('click', () => lbMove(-1));
-document.getElementById('lightboxNext').addEventListener('click', () => lbMove(1));
-imgLightbox.addEventListener('click', (e) => { if (e.target === imgLightbox) imgLightbox.classList.remove('show'); });
-// swipe บน lightbox
-let _lbTouchX = 0;
-imgLightbox.addEventListener('touchstart', e => { _lbTouchX = e.touches[0].clientX; }, { passive: true });
-imgLightbox.addEventListener('touchend',   e => {
-  const dx = e.changedTouches[0].clientX - _lbTouchX;
-  if (Math.abs(dx) > 40) lbMove(dx < 0 ? 1 : -1);
-});
-
-// gallery state
-let _galImages = [], _galIdx = 0;
-function galSetIdx(idx) {
-  _galIdx = idx;
-  galleryMain.src = _galImages[idx].url;
-  galleryPrev.classList.toggle('hidden', _galImages.length <= 1);
-  galleryNext.classList.toggle('hidden', _galImages.length <= 1);
-  galleryThumbStrip.querySelectorAll('.gallery-thumb').forEach((t, i) => t.classList.toggle('active', i === idx));
-  const active = galleryThumbStrip.querySelectorAll('.gallery-thumb')[idx];
-  if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-}
 
 function buildGallery(images) {
-  _galImages = images;
   if (!images.length) {
     galleryWrap.classList.remove('has-images');
     galleryThumbStrip.classList.remove('has-images');
     galleryThumbStrip.style.display = 'none';
-    galleryPrev.classList.add('hidden');
-    galleryNext.classList.add('hidden');
     return;
   }
 
+  // ปก = is_cover=true หรือรูปแรกถ้าไม่มี
   const coverIdx = images.findIndex(img => img.is_cover);
-  _galIdx = coverIdx >= 0 ? coverIdx : 0;
+  const startIdx = coverIdx >= 0 ? coverIdx : 0;
 
-  galleryMain.src = images[_galIdx].url;
+  galleryMain.src = images[startIdx].url;
   galleryWrap.classList.add('has-images');
-  galleryPrev.classList.toggle('hidden', images.length <= 1);
-  galleryNext.classList.toggle('hidden', images.length <= 1);
 
+  // Thumbnails (ซ่อนถ้ามีรูปเดียว)
   if (images.length > 1) {
     galleryThumbStrip.style.display = 'flex';
     galleryThumbStrip.classList.add('has-images');
     galleryThumbStrip.innerHTML = images.map((img, i) => `
-      <img class="gallery-thumb ${i === _galIdx ? 'active' : ''}"
-           src="${img.url}" alt="thumb ${i + 1}" loading="lazy" data-idx="${i}">`
-    ).join('');
+      <img class="gallery-thumb ${i === startIdx ? 'active' : ''}"
+           src="${img.url}" alt="thumb ${i + 1}" loading="lazy"
+           data-idx="${i}">
+    `).join('');
+
     galleryThumbStrip.querySelectorAll('.gallery-thumb').forEach(thumb => {
-      thumb.addEventListener('click', () => galSetIdx(Number(thumb.dataset.idx)));
+      thumb.addEventListener('click', () => {
+        const idx = Number(thumb.dataset.idx);
+        galleryMain.src = images[idx].url;
+        galleryThumbStrip.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+        thumb.classList.add('active');
+        // scroll thumbnail ให้อยู่กึ่งกลาง
+        thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      });
     });
   } else {
     galleryThumbStrip.style.display = 'none';
     galleryThumbStrip.classList.remove('has-images');
   }
-
-  // nav
-  galleryPrev.onclick = () => galSetIdx((_galIdx - 1 + _galImages.length) % _galImages.length);
-  galleryNext.onclick = () => galSetIdx((_galIdx + 1) % _galImages.length);
-
-  // expand → lightbox
-  galleryExpandBtn.onclick = () => lbShow(_galImages, _galIdx);
-  galleryMain.style.cursor = 'zoom-in';
-  galleryMain.onclick = () => lbShow(_galImages, _galIdx);
 }
 
 // ── Modal ดูรายละเอียดสเปค + Gallery ──────────────────────
@@ -607,12 +528,9 @@ window.openSpecModal = (product) => {
   // stock badge
   const stockEl = document.getElementById('specModalStock');
   const inStock = (product.stock_count ?? 0) > 0;
-  const dotSvg = inStock
-    ? `<svg width="7" height="7" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#3F8557"/></svg>`
-    : `<svg width="7" height="7" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="#E04433"/></svg>`;
   stockEl.innerHTML = inStock
-    ? `<span class="spec-modal-stock in-stock">${dotSvg}คงเหลือ ${product.stock_count} ชิ้น</span>`
-    : `<span class="spec-modal-stock out-of-stock">${dotSvg}สินค้าหมดชั่วคราว</span>`;
+    ? `<span style="font-size:13px;color:var(--ink);font-weight:400;margin-bottom:12px;display:block;">คงเหลือ ${product.stock_count} ชิ้น</span>`
+    : `<span style="font-size:13px;color:var(--danger);font-weight:400;margin-bottom:12px;display:block;">สินค้าหมดชั่วคราว</span>`;
 
   buildGallery(images);
   specBackdrop.classList.add('show');
