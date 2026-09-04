@@ -49,8 +49,13 @@
   .product-img-wrap .placeholder-icon{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#9DBDD6;}
   /* badge จำนวนรูปเพิ่มเติม */
   .img-count-badge{position:absolute;bottom:5px;right:6px;background:rgba(0,0,0,0.48);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px;line-height:1.4;pointer-events:none;}
+  /* badge สินค้าหมด — มุมขวาบนของรูป */
+  .out-of-stock-badge{position:absolute;top:8px;right:8px;background:var(--danger);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;line-height:1.5;pointer-events:none;font-family:'IBM Plex Sans Thai',sans-serif;box-shadow:0 2px 6px rgba(224,68,51,0.35);}
   .product-info{padding:10px 11px 12px;display:flex;flex-direction:column;flex:1;}
-  .product-name{font-size:13px;font-weight:700;margin-bottom:6px;line-height:1.35;min-height:2.7em;}
+  /* แถวชื่อ + จำนวนคงเหลือ */
+  .product-name-row{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:6px;min-height:2.7em;}
+  .product-name{font-size:13px;font-weight:700;line-height:1.35;flex:1;min-width:0;}
+  .stock-count-badge{flex-shrink:0;font-size:10.5px;font-weight:600;color:var(--green-go);background:rgba(63,133,87,0.1);border:1px solid rgba(63,133,87,0.22);border-radius:20px;padding:2px 7px;line-height:1.5;white-space:nowrap;margin-top:1px;}
   .product-price{font-family:'Baloo 2',sans-serif;font-weight:800;color:var(--gold);font-size:15px;margin-bottom:4px;}
   .stock-line{font-size:11px;margin-bottom:6px;min-height:1.4em;}
   .stock-line.in-stock{color:var(--green-go);}
@@ -372,11 +377,10 @@ menuBtn.addEventListener('click', (e) => {
 // ปิด dropdown เมื่อคลิกที่อื่น
 document.addEventListener('click', () => menuDropdown.classList.remove('open'));
 
-// ── helper: สร้าง HTML ส่วนรูปภาพของ card ──
-function buildCardImage(images) {
+// ── helper: สร้าง HTML ส่วนรูปภาพของ card (รับ overlay เช่น badge สินค้าหมด) ──
+function buildCardImage(images, overlay = '') {
   const cover = images.find(img => img.is_cover) ?? images[0] ?? null;
   if (!cover) {
-    // ไม่มีรูป → placeholder SVG เดิม
     return `
       <div class="product-img-wrap">
         <div class="placeholder-icon">
@@ -385,9 +389,9 @@ function buildCardImage(images) {
             <path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/>
           </svg>
         </div>
+        ${overlay}
       </div>`;
   }
-  // มีรูป → แสดง cover
   return `
     <div class="product-img-wrap">
       <img src="${cover.url}" alt="product" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
@@ -397,6 +401,7 @@ function buildCardImage(images) {
           <path d="M6 12h4M8 10v4"/><circle cx="16" cy="11" r="1"/><circle cx="18" cy="13" r="1"/>
         </svg>
       </div>
+      ${overlay}
     </div>`;
 }
 
@@ -440,20 +445,24 @@ try {
               const specBtn  = (hasSpec || hasImg)
                 ? `<button class="spec-link" onclick='openSpecModal(${JSON.stringify(p)})'>ดูรายละเอียด</button>`
                 : `<span class="spec-link" style="visibility:hidden;display:block;">ดูรายละเอียด</span>`;
-              // แสดง stock บน card เฉพาะกรณีที่ไม่มีปุ่ม "ดูรายละเอียด"
-              // (ถ้ามีปุ่ม → stock จะแสดงใน modal แทน)
-              const stockLine = (hasSpec || hasImg)
-                ? ''
-                : inStock
-                  ? `<div class="stock-line in-stock">คงเหลือ ${p.stock_count} ชิ้น</div>`
-                  : `<div class="stock-line out-of-stock">สินค้าหมดชั่วคราว</div>`;
+              // badge สินค้าหมด — แสดงบนรูปเสมอเมื่อหมด
+              const oosOverlay = !inStock
+                ? `<div class="out-of-stock-badge">สินค้าหมด</div>`
+                : '';
+              // จำนวนคงเหลือ — แสดงมุมขวาของชื่อเฉพาะตอนมีสินค้า
+              // (ถ้ามี spec/รูป → stock แสดงใน modal แทน ไม่ต้องซ้ำบน card)
+              const stockBadge = (inStock && !(hasSpec || hasImg))
+                ? `<span class="stock-count-badge">เหลือ ${p.stock_count}</span>`
+                : '';
               return `
               <div class="product-card">
-                ${buildCardImage(images)}
+                ${buildCardImage(images, oosOverlay)}
                 <div class="product-info">
-                  <div class="product-name">${p.label}</div>
+                  <div class="product-name-row">
+                    <div class="product-name">${p.label}</div>
+                    ${stockBadge}
+                  </div>
                   <div class="product-price">ราคา ${Number(p.price).toLocaleString()} บาท</div>
-                  ${stockLine}
                   ${specBtn}
                   <button class="buy-btn" onclick='buyProduct(${JSON.stringify({ key: p.key, label: p.label, price: p.price })})' ${inStock ? '' : 'disabled'}>
                     ${inStock ? 'ซื้อ' : 'สินค้าหมด'}
