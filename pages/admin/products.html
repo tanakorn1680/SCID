@@ -15,7 +15,7 @@
   .back-link{font-size:13px;font-weight:600;color:var(--navy);text-decoration:none;}
   .page-title{font-family:'Baloo 2',sans-serif;font-size:18px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
   .page-title svg{width:20px;height:20px;flex-shrink:0;}
-  .card{background:#fff;border-radius:13px;padding:16px;box-shadow:0 2px 10px rgba(0,40,80,0.08);margin-bottom:14px;}
+  .card{background:rgba(255,255,255,0.92);border:1.5px solid rgba(255,255,255,0.65);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:14px;padding:16px;box-shadow:0 2px 12px rgba(0,40,80,0.08);margin-bottom:14px;}
   .card-title{font-size:14px;font-weight:700;margin-bottom:12px;}
   .field{margin-bottom:12px;}
   .field label{font-size:12.5px;font-weight:600;display:block;margin-bottom:5px;}
@@ -121,13 +121,29 @@
   .icon-btn.danger{background:rgba(224,68,51,0.1);color:var(--danger);}
   .inactive{opacity:0.5;}
   .empty-state{text-align:center;padding:30px 20px;color:rgba(26,58,82,0.5);font-size:13px;}
+  /* category header */
+  .cat-header{display:flex;align-items:center;gap:8px;padding:10px 0 5px;font-size:11px;font-weight:700;color:var(--navy);letter-spacing:.5px;text-transform:uppercase;border-bottom:1.5px solid rgba(26,106,160,0.15);margin-bottom:4px;cursor:grab;user-select:none;-webkit-user-select:none;}
+  .cat-header:active{cursor:grabbing;}
+  .cat-header svg{flex-shrink:0;color:rgba(26,106,160,0.4);}
+  .cat-header .cat-name{flex:1;}
+  .cat-header .cat-count{font-size:10px;font-weight:600;background:rgba(26,106,160,0.1);color:var(--navy);padding:2px 7px;border-radius:10px;}
+  .cat-section{margin-bottom:4px;}
+  .cat-section.cat-dragging{opacity:0.35;}
+  .cat-section.cat-drag-over > .cat-header{background:rgba(26,106,160,0.07);border-radius:6px;}
+  /* drag handle สินค้า */
+  .drag-handle{color:rgba(26,58,82,0.25);cursor:grab;padding:0 4px;flex-shrink:0;}
+  .drag-handle:active{cursor:grabbing;}
+  .product-row.dragging{opacity:0.3;transform:scale(0.98);}
+  .product-row.drag-over{border-top:2px solid var(--navy);}
+  /* sort saving badge */
+  .sort-saving{display:none;font-size:11.5px;color:var(--navy);font-weight:600;padding:4px 0 8px;opacity:.7;}
+  .sort-saving.show{display:block;}
 
   /* ── Image preview modal (lightbox) ───────────────── */
   .lightbox-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:100;align-items:center;justify-content:center;}
   .lightbox-backdrop.show{display:flex;}
   .lightbox-img{max-width:92vw;max-height:82vh;border-radius:10px;object-fit:contain;}
   .lightbox-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:20px;line-height:1;padding:8px 12px;border-radius:8px;cursor:pointer;}
-  .card{background:rgba(255,255,255,0.92);border:1.5px solid rgba(255,255,255,0.65);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);}
   .submit-btn{transition:opacity .18s,transform .12s cubic-bezier(.32,.72,0,1),box-shadow .18s;box-shadow:0 3px 10px rgba(26,106,160,0.2);}
   .submit-btn:active{transform:scale(0.97);opacity:0.88;box-shadow:0 1px 4px rgba(26,106,160,0.12);}
   .submit-btn:disabled{box-shadow:none;}
@@ -586,6 +602,96 @@ document.getElementById('lightboxBackdrop').addEventListener('click', (e) => {
     document.getElementById('lightboxBackdrop').classList.remove('show');
 });
 
+// ── category drag-and-drop ─────────────────────────────────
+const CAT_ORDER_KEY = 'scid_cat_order';
+
+function saveCatOrder(order) {
+  try { localStorage.setItem(CAT_ORDER_KEY, JSON.stringify(order)); } catch(_) {}
+}
+function loadCatOrder() {
+  try { return JSON.parse(localStorage.getItem(CAT_ORDER_KEY) ?? 'null'); } catch(_) { return null; }
+}
+function applyCatOrder(catOrder) {
+  const saved = loadCatOrder();
+  if (!saved?.length) return catOrder;
+  // รักษา category ใหม่ที่ยังไม่อยู่ใน saved ไว้ท้ายสุด
+  const known = saved.filter(c => catOrder.includes(c));
+  const extra = catOrder.filter(c => !known.includes(c));
+  return [...known, ...extra];
+}
+
+function bindCategoryDrag(listEl, catOrder) {
+  let dragSrcCat = null;
+  const sections = [...listEl.querySelectorAll('.cat-section')];
+
+  sections.forEach(sec => {
+    const header = sec.querySelector('.cat-header');
+
+    // Desktop
+    sec.addEventListener('dragstart', (e) => {
+      if (e.target !== sec) return; // ต้องเป็น section ไม่ใช่ product-row
+      dragSrcCat = sec.dataset.cat;
+      sec.classList.add('cat-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.stopPropagation();
+    });
+    sec.addEventListener('dragend', () => {
+      sec.classList.remove('cat-dragging');
+      listEl.querySelectorAll('.cat-section').forEach(s => s.classList.remove('cat-drag-over'));
+    });
+    sec.addEventListener('dragover', (e) => {
+      if (!dragSrcCat || dragSrcCat === sec.dataset.cat) return;
+      // รับเฉพาะ drag ที่มาจาก cat-section (ไม่ใช่ product-row)
+      e.preventDefault();
+      sec.classList.add('cat-drag-over');
+    });
+    sec.addEventListener('dragleave', (e) => {
+      if (!sec.contains(e.relatedTarget)) sec.classList.remove('cat-drag-over');
+    });
+    sec.addEventListener('drop', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      sec.classList.remove('cat-drag-over');
+      if (!dragSrcCat || dragSrcCat === sec.dataset.cat) return;
+      moveCatSection(listEl, dragSrcCat, sec.dataset.cat);
+      dragSrcCat = null;
+    });
+
+    // Mobile — pointerdown บน header เท่านั้น
+    let ptY = 0, ptMoved = false;
+    header.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      ptY = e.clientY; ptMoved = false;
+      dragSrcCat = sec.dataset.cat;
+      header.setPointerCapture(e.pointerId);
+    });
+    header.addEventListener('pointermove', (e) => {
+      if (Math.abs(e.clientY - ptY) > 8) {
+        ptMoved = true;
+        sec.classList.add('cat-dragging');
+      }
+    });
+    header.addEventListener('pointerup', (e) => {
+      sec.classList.remove('cat-dragging');
+      listEl.querySelectorAll('.cat-section').forEach(s => s.classList.remove('cat-drag-over'));
+      if (!ptMoved || !dragSrcCat) { dragSrcCat = null; return; }
+      const el = document.elementFromPoint(e.clientX, e.clientY)?.closest('.cat-section');
+      if (el && el.dataset.cat !== dragSrcCat) moveCatSection(listEl, dragSrcCat, el.dataset.cat);
+      dragSrcCat = null; ptMoved = false;
+    });
+  });
+}
+
+function moveCatSection(listEl, srcCat, targetCat) {
+  const src = listEl.querySelector(`.cat-section[data-cat="${CSS.escape(srcCat)}"]`);
+  const tgt = listEl.querySelector(`.cat-section[data-cat="${CSS.escape(targetCat)}"]`);
+  if (!src || !tgt) return;
+  // แทรก src ก่อน target
+  listEl.insertBefore(src, tgt);
+  // save order ใหม่
+  const newOrder = [...listEl.querySelectorAll('.cat-section')].map(s => s.dataset.cat);
+  saveCatOrder(newOrder);
+}
+
 // ── โหลดรายการสินค้า ────────────────────────────────────────
 async function loadProducts() {
   const listEl = document.getElementById('productList');
@@ -601,9 +707,9 @@ async function loadProducts() {
       return;
     }
 
-    // จัดกลุ่มตาม category รักษาลำดับ sort_order จาก backend
-    const catOrder = [];
-    const grouped  = new Map();
+    // จัดกลุ่มตาม category
+    let catOrder = [];
+    const grouped = new Map();
     for (const p of data) {
       if (!grouped.has(p.category)) {
         grouped.set(p.category, []);
@@ -611,6 +717,8 @@ async function loadProducts() {
       }
       grouped.get(p.category).push(p);
     }
+    // apply saved category order จาก localStorage
+    catOrder = applyCatOrder(catOrder);
 
     listEl.innerHTML = catOrder.map(cat => {
       const items = grouped.get(cat);
@@ -656,8 +764,12 @@ async function loadProducts() {
       }).join('');
 
       return `
-        <div class="cat-section" data-cat="${cat}">
-          <div class="cat-header">${cat}</div>
+        <div class="cat-section" data-cat="${cat}" draggable="true">
+          <div class="cat-header">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+            <span class="cat-name">${cat}</span>
+            <span class="cat-count">${items.length} รายการ</span>
+          </div>
           ${rows}
         </div>`;
     }).join('');
@@ -700,6 +812,7 @@ async function loadProducts() {
     });
 
     bindProductDrag(listEl, data);
+    bindCategoryDrag(listEl, catOrder);
 
   } catch {
     listEl.innerHTML = `<div class="empty-state">โหลดไม่สำเร็จ</div>`;
