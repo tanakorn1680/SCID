@@ -69,7 +69,19 @@
   .back-link{transition:opacity .15s;}
   .back-link:active{opacity:0.65;}
 
-  /* ── Dialog overlay (แทน confirm/alert) ── */
+  /* ── Credential fields (เหมือน inventory modal) ── */
+  .cred-field{margin-bottom:12px;}
+  .cred-label{font-size:11.5px;font-weight:600;color:rgba(26,58,82,0.55);margin-bottom:4px;}
+  .cred-value{font-family:'Space Mono',monospace;font-size:13px;background:#F0F4F8;border-radius:8px;padding:9px 12px;word-break:break-all;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .cred-text{flex:1;min-width:0;}
+  .copy-btn{background:none;border:none;cursor:pointer;color:var(--navy);padding:2px;flex-shrink:0;}
+  .copy-btn svg{width:15px;height:15px;display:block;}
+  .cred-loading{text-align:center;padding:20px;color:rgba(26,58,82,0.45);font-size:13px;}
+  .inst-block{background:rgba(26,106,160,0.05);border:1px solid rgba(26,106,160,0.15);border-radius:10px;padding:12px 14px;margin-top:14px;}
+  .inst-block-label{font-size:11px;font-weight:700;color:var(--navy);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em;}
+  .inst-block-heading{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:6px;}
+  .inst-block-body{font-size:12.5px;color:rgba(26,58,82,0.8);line-height:1.7;white-space:pre-wrap;}
+  .inv-section-title{font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.04em;margin:14px 0 8px;}
   .sc-overlay{position:fixed;inset:0;background:rgba(10,30,50,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .18s ease;}
   .sc-overlay.sc-show{opacity:1;pointer-events:all;}
   .sc-box{background:rgba(255,255,255,0.97);border:1.5px solid rgba(255,255,255,0.7);border-radius:18px;padding:24px 20px 18px;max-width:320px;width:100%;box-shadow:0 8px 32px rgba(0,40,80,0.18);transform:scale(0.94) translateY(8px);transition:transform .22s cubic-bezier(.32,.72,0,1);}
@@ -304,17 +316,43 @@ async function openModal(orderId, allOrders) {
 
   // lazy-load ข้อมูลไอดีที่ส่งไป (เฉพาะ delivered)
   if (order.status === 'delivered') {
+    const iconCopy = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
     const invEl = overlay.querySelector('#inventoryDetail');
-    invEl.innerHTML = `<div style="padding:8px 0;font-size:12px;color:rgba(26,58,82,0.4);">กำลังโหลดข้อมูลไอดี...</div>`;
+    invEl.innerHTML = `<div class="cred-loading">กำลังโหลดข้อมูลไอดี...</div>`;
     admin.orderDetail(orderId).then(({ data }) => {
       if (!data) { invEl.innerHTML = ''; return; }
+      const instHtml = (data.instruction_title || data.instruction_body) ? `
+        <div class="inst-block">
+          <div class="inst-block-label">วิธีใช้ที่แนบมา</div>
+          ${data.instruction_title ? `<div class="inst-block-heading">${data.instruction_title}</div>` : ''}
+          ${data.instruction_body  ? `<div class="inst-block-body">${data.instruction_body}</div>`    : ''}
+        </div>` : '';
       invEl.innerHTML = `
-        <div style="margin:10px 0 4px;font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.04em;">ข้อมูลไอดีที่ส่งไป</div>
-        <div class="detail-row"><span class="label">วันที่ส่ง</span><span class="value">${fmtDate(data.sold_at)}</span></div>
-        <div class="detail-row"><span class="label">Gmail</span><span class="value" style="font-family:'Space Mono',monospace;font-size:12px;">${data.gmail ?? '—'}</span></div>
-        <div class="detail-row"><span class="label">Password</span><span class="value" style="font-family:'Space Mono',monospace;font-size:12px;">${data.password ?? '—'}</span></div>
-        ${data.instruction_title ? `<div class="detail-row"><span class="label">วิธีใช้</span><span class="value">${data.instruction_title}</span></div>` : ''}
+        <div class="inv-section-title">ข้อมูลไอดีที่ส่งไป</div>
+        <div style="font-size:11.5px;color:rgba(26,58,82,0.5);margin-bottom:10px;">ส่งเมื่อ ${fmtDate(data.sold_at)}</div>
+        <div class="cred-field">
+          <div class="cred-label">Email</div>
+          <div class="cred-value">
+            <span class="cred-text">${data.gmail ?? '—'}</span>
+            <button class="copy-btn" data-copy="${data.gmail ?? ''}" title="คัดลอก">${iconCopy}</button>
+          </div>
+        </div>
+        <div class="cred-field">
+          <div class="cred-label">Password</div>
+          <div class="cred-value">
+            <span class="cred-text">${data.password ?? '—'}</span>
+            <button class="copy-btn" data-copy="${data.password ?? ''}" title="คัดลอก">${iconCopy}</button>
+          </div>
+        </div>
+        ${instHtml}
       `;
+      invEl.querySelectorAll('.copy-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          navigator.clipboard.writeText(btn.dataset.copy).catch(() => {});
+          btn.style.color = 'var(--green-go)';
+          setTimeout(() => { btn.style.color = ''; }, 1200);
+        });
+      });
     }).catch(() => { invEl.innerHTML = ''; });
   }
 
