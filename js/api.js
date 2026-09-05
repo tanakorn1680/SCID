@@ -193,6 +193,9 @@ export const admin = {
       body: JSON.stringify({ order_id: orderId }),
     });
   },
+  async orderDetail(orderId) {
+    return apiFetch(`/api/admin/orders?order_id=${encodeURIComponent(orderId)}`);
+  },
 
   // slip-url รวมเข้า /api/orders/slip แล้ว (GET = แอดมินอ่าน, POST = ลูกค้าเขียน)
   async slipUrl(orderId) {

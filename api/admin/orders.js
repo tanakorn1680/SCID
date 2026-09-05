@@ -6,15 +6,23 @@
 // POST   /api/admin/orders  body:{action:'reject', order_id, reason} → reject
 // DELETE /api/admin/orders  body:{order_id}                   → delete (cancelled/delivered only)
 
-import { requireAdmin, errorResponse }                          from '../_lib/auth.js';
-import { listOrders, approveOrder, rejectOrder, deleteOrder }   from '../_lib/handlers/admin-orders.js';
-import { parseRequestUrl }                                       from '../_lib/request-url.js';
+import { requireAdmin, errorResponse }                                          from '../_lib/auth.js';
+import { listOrders, approveOrder, rejectOrder, deleteOrder, getOrderDetail }   from '../_lib/handlers/admin-orders.js';
+import { parseRequestUrl }                                                       from '../_lib/request-url.js';
 
 export const config = { runtime: "nodejs" };
 
 export async function GET(req) {
   try {
     await requireAdmin(req);
+    const url     = new URL(req.url);
+    const orderId = url.searchParams.get('order_id');
+
+    if (orderId) {
+      const { httpStatus, body } = await getOrderDetail(orderId);
+      return Response.json(body, { status: httpStatus });
+    }
+
     const result = await listOrders(parseRequestUrl(req));
     return Response.json({ success: true, ...result });
   } catch (err) {

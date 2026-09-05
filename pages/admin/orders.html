@@ -282,18 +282,42 @@ async function openModal(orderId, allOrders) {
     </div>
   ` : '';
 
+  const fmtDate = d => d
+    ? new Date(d).toLocaleString('th-TH', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })
+    : '—';
+
   overlay.innerHTML = `
     <div class="modal-box">
-      <div class="modal-title">ออเดอร์ #${orderId.slice(0,8)}</div>
+      <div class="modal-title">ออเดอร์ #${orderId.slice(0,6).toUpperCase()}</div>
       ${slipHtml}
       <div class="detail-row"><span class="label">อีเมลลูกค้า</span><span class="value">${order.user_email}</span></div>
       <div class="detail-row"><span class="label">สินค้า</span><span class="value">${order.product_label}</span></div>
       <div class="detail-row"><span class="label">ยอดเงิน</span><span class="value">฿${Number(order.amount).toLocaleString()}</span></div>
       <div class="detail-row"><span class="label">สถานะ</span><span class="value">${STATUS_LABEL[order.status]||order.status}</span></div>
+      <div class="detail-row"><span class="label">วันที่สั่ง</span><span class="value">${fmtDate(order.created_at)}</span></div>
+      <div class="detail-row"><span class="label">อัปเดตล่าสุด</span><span class="value">${fmtDate(order.updated_at)}</span></div>
+      ${order.reject_reason ? `<div class="detail-row"><span class="label">เหตุผลปฏิเสธ</span><span class="value" style="color:var(--danger)">${order.reject_reason}</span></div>` : ''}
+      <div id="inventoryDetail"></div>
       ${actionHtml}
       <button class="modal-btn close-btn" id="closeModalBtn" style="margin-top:10px;width:100%;">ปิด</button>
     </div>
   `;
+
+  // lazy-load ข้อมูลไอดีที่ส่งไป (เฉพาะ delivered)
+  if (order.status === 'delivered') {
+    const invEl = overlay.querySelector('#inventoryDetail');
+    invEl.innerHTML = `<div class="detail-row" style="color:rgba(26,58,82,0.4);font-size:12px;">กำลังโหลดข้อมูลไอดี...</div>`;
+    admin.orderDetail(orderId).then(({ data }) => {
+      if (!data) { invEl.innerHTML = ''; return; }
+      const soldAt = fmtDate(data.sold_at);
+      invEl.innerHTML = `
+        <div style="margin:10px 0 4px;font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.04em;">ข้อมูลไอดีที่ส่งไป</div>
+        <div class="detail-row"><span class="label">Gmail</span><span class="value" style="font-family:'Space Mono',monospace;font-size:12px;">${data.gmail ?? '—'}</span></div>
+        <div class="detail-row"><span class="label">วันที่ส่ง</span><span class="value">${soldAt}</span></div>
+        ${data.instruction_title ? `<div class="detail-row"><span class="label">วิธีใช้</span><span class="value">${data.instruction_title}</span></div>` : ''}
+      `;
+    }).catch(() => { invEl.innerHTML = ''; });
+  }
 
   overlay.querySelector('#closeModalBtn').addEventListener('click', () => overlay.remove());
 

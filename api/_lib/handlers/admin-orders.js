@@ -119,6 +119,16 @@ export async function approveOrder(orderId) {
   };
 }
 
+export async function getOrderDetail(orderId) {
+  const { data, error } = await supabaseAdmin
+    .from('inventory')
+    .select('gmail, sold_at, instruction_title, instruction_body, product_key')
+    .eq('order_id', orderId)
+    .maybeSingle();
+  if (error) throw error;
+  return { httpStatus: 200, body: { success: true, data } };
+}
+
 /**
  * deleteOrder — ลบออเดอร์ได้เฉพาะ cancelled และ delivered
  * - cancelled: ลบได้เลย ไม่มี inventory ผูกอยู่
