@@ -122,11 +122,29 @@ export async function approveOrder(orderId) {
 export async function getOrderDetail(orderId) {
   const { data, error } = await supabaseAdmin
     .from('inventory')
-    .select('gmail, sold_at, instruction_title, instruction_body, product_key')
+    .select('gmail, password_enc, sold_at, instruction_title, instruction_body, product_key')
     .eq('order_id', orderId)
     .maybeSingle();
   if (error) throw error;
-  return { httpStatus: 200, body: { success: true, data } };
+  if (!data) return { httpStatus: 200, body: { success: true, data: null } };
+
+  let password = null;
+  try { password = decrypt(data.password_enc); } catch { /* non-fatal */ }
+
+  return {
+    httpStatus: 200,
+    body: {
+      success: true,
+      data: {
+        gmail:             data.gmail,
+        password,
+        sold_at:           data.sold_at,
+        instruction_title: data.instruction_title ?? null,
+        instruction_body:  data.instruction_body  ?? null,
+        product_key:       data.product_key,
+      },
+    },
+  };
 }
 
 /**

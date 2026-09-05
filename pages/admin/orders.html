@@ -295,7 +295,6 @@ async function openModal(orderId, allOrders) {
       <div class="detail-row"><span class="label">ยอดเงิน</span><span class="value">฿${Number(order.amount).toLocaleString()}</span></div>
       <div class="detail-row"><span class="label">สถานะ</span><span class="value">${STATUS_LABEL[order.status]||order.status}</span></div>
       <div class="detail-row"><span class="label">วันที่สั่ง</span><span class="value">${fmtDate(order.created_at)}</span></div>
-      <div class="detail-row"><span class="label">อัปเดตล่าสุด</span><span class="value">${fmtDate(order.updated_at)}</span></div>
       ${order.reject_reason ? `<div class="detail-row"><span class="label">เหตุผลปฏิเสธ</span><span class="value" style="color:var(--danger)">${order.reject_reason}</span></div>` : ''}
       <div id="inventoryDetail"></div>
       ${actionHtml}
@@ -306,14 +305,14 @@ async function openModal(orderId, allOrders) {
   // lazy-load ข้อมูลไอดีที่ส่งไป (เฉพาะ delivered)
   if (order.status === 'delivered') {
     const invEl = overlay.querySelector('#inventoryDetail');
-    invEl.innerHTML = `<div class="detail-row" style="color:rgba(26,58,82,0.4);font-size:12px;">กำลังโหลดข้อมูลไอดี...</div>`;
+    invEl.innerHTML = `<div style="padding:8px 0;font-size:12px;color:rgba(26,58,82,0.4);">กำลังโหลดข้อมูลไอดี...</div>`;
     admin.orderDetail(orderId).then(({ data }) => {
       if (!data) { invEl.innerHTML = ''; return; }
-      const soldAt = fmtDate(data.sold_at);
       invEl.innerHTML = `
         <div style="margin:10px 0 4px;font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.04em;">ข้อมูลไอดีที่ส่งไป</div>
+        <div class="detail-row"><span class="label">วันที่ส่ง</span><span class="value">${fmtDate(data.sold_at)}</span></div>
         <div class="detail-row"><span class="label">Gmail</span><span class="value" style="font-family:'Space Mono',monospace;font-size:12px;">${data.gmail ?? '—'}</span></div>
-        <div class="detail-row"><span class="label">วันที่ส่ง</span><span class="value">${soldAt}</span></div>
+        <div class="detail-row"><span class="label">Password</span><span class="value" style="font-family:'Space Mono',monospace;font-size:12px;">${data.password ?? '—'}</span></div>
         ${data.instruction_title ? `<div class="detail-row"><span class="label">วิธีใช้</span><span class="value">${data.instruction_title}</span></div>` : ''}
       `;
     }).catch(() => { invEl.innerHTML = ''; });
