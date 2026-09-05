@@ -139,9 +139,10 @@ export async function deleteOrder(orderId) {
     return { httpStatus: 400, body: { success: false, error: 'ไม่ระบุ order_id' } };
   }
 
+  // ดึง slip_path ก่อนลบ เพื่อลบไฟล์ใน Storage ด้วย
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
-    .select('id, status')
+    .select('id, status, slip_path')
     .eq('id', orderId)
     .single();
 
@@ -179,7 +180,15 @@ export async function deleteOrder(orderId) {
     .eq('matched_order_id', orderId);
   if (bankErr) throw bankErr;
 
-  // 4) ลบ order
+  // 4) ลบสลิปออกจาก Storage (ถ้ามี) — non-fatal ถ้าลบไม่ได้ไม่ block
+  if (order.slip_path) {
+    await supabaseAdmin.storage
+      .from('slips')
+      .remove([order.slip_path])
+      .catch(err => console.warn('Storage remove slip failed (non-fatal):', err));
+  }
+
+  // 5) ลบ order
   const { error: delErr } = await supabaseAdmin
     .from('orders')
     .delete()
